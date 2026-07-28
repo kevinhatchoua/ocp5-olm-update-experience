@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Link, useParams } from "react-router";
+import { Link, useNavigate, useParams } from "react-router";
 import {
   Button,
   Content,
@@ -32,11 +32,13 @@ import FavoriteButton from "../../components/FavoriteButton";
 import {
   getService,
   serviceDetailPath,
+  serviceEditPath,
   serviceYaml,
 } from "./networkingMockData";
 import { NETWORKING_CRUMB as CRUMB } from "./networkingShared";
 
 export default function ServiceDetailPage() {
+  const navigate = useNavigate();
   const { namespace = "", name = "" } = useParams();
   const decodedNs = decodeURIComponent(namespace);
   const decodedName = decodeURIComponent(name);
@@ -108,7 +110,14 @@ export default function ServiceDetailPage() {
               <DropdownList>
                 <DropdownItem>Edit Labels</DropdownItem>
                 <DropdownItem>Edit Annotations</DropdownItem>
-                <DropdownItem>Edit Service</DropdownItem>
+                <DropdownItem
+                  onClick={() => {
+                    setActionsOpen(false);
+                    navigate(serviceEditPath(decodedNs, decodedName));
+                  }}
+                >
+                  Edit Service
+                </DropdownItem>
                 <DropdownItem>Delete Service</DropdownItem>
               </DropdownList>
             </Dropdown>

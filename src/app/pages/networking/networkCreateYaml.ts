@@ -64,6 +64,54 @@ export function createDefaultServiceFormState(): ServiceFormState {
   };
 }
 
+/** Prefill edit form from a list/detail ServiceRecord (HPUX-1721). */
+export function serviceRecordToFormState(record: {
+  name: string;
+  namespace: string;
+  type: string;
+  selectorPairs: string[];
+  ports: { name: string; port: string; protocol: string; targetPort: string }[];
+  sessionAffinity: string;
+  labels: { key: string; value: string }[];
+  location?: string;
+}): ServiceFormState {
+  const type = record.type || "ClusterIP";
+  const isExternalName = type === "ExternalName";
+  const selector =
+    !isExternalName && record.selectorPairs.length > 0
+      ? record.selectorPairs.map((line) => {
+          const eq = line.indexOf("=");
+          if (eq === -1) return { key: line, value: "" };
+          return { key: line.slice(0, eq).trim(), value: line.slice(eq + 1).trim() };
+        })
+      : [{ ...EMPTY_SERVICE_SELECTOR_PAIR }];
+  const ports =
+    !isExternalName && record.ports.length > 0
+      ? record.ports.map((p) => ({
+          protocol: p.protocol || "TCP",
+          port: p.port,
+          targetPort: p.targetPort || p.port,
+          name: p.name || "",
+          nodePort: "",
+        }))
+      : [{ ...EMPTY_SERVICE_PORT_ROW }];
+
+  return {
+    name: record.name,
+    namespace: record.namespace,
+    type,
+    selector,
+    ports,
+    externalName: isExternalName ? record.location || "" : "",
+    externalTrafficPolicy: "Cluster",
+    loadBalancerIP: "",
+    sessionAffinity: record.sessionAffinity || "None",
+    internalTrafficPolicy: "Cluster",
+    externalIPs: "",
+    annotations: record.labels.map((l) => ({ key: l.key, value: l.value })),
+  };
+}
+
 export function selectorPairsToLines(pairs: ServiceKeyValuePair[]): string {
   return pairs
     .filter((p) => p.key.trim())

@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useParams } from "react-router";
 import {
   Alert,
   Button,
@@ -30,12 +30,19 @@ import {
   EMPTY_SERVICE_SELECTOR_PAIR,
   selectorPairsToLines,
   serviceFormToYaml,
+  serviceRecordToFormState,
   serviceYamlToForm,
   type ServiceFormState,
   type ServiceKeyValuePair,
   type ServicePortRow,
 } from "./networkCreateYaml";
-import { countPodsMatchingSelector, createService } from "./networkingMockData";
+import {
+  countPodsMatchingSelector,
+  createService,
+  getService,
+  serviceDetailPath,
+  serviceEditPath,
+} from "./networkingMockData";
 import { NETWORKING_CRUMB } from "./networkingShared";
 import { useSyncedFormYaml } from "./useSyncedFormYaml";
 
@@ -271,7 +278,19 @@ function PortsBuilder({
 
 export default function CreateServicePage() {
   const navigate = useNavigate();
+  const { namespace: routeNs = "", name: routeName = "" } = useParams();
+  const editNamespace = routeNs ? decodeURIComponent(routeNs) : "";
+  const editName = routeName ? decodeURIComponent(routeName) : "";
+  const existing = editNamespace && editName ? getService(editNamespace, editName) : undefined;
+  const isEdit = Boolean(existing);
+
   const [advancedOpen, setAdvancedOpen] = useState(false);
+  const initialForm = useMemo(
+    () => (existing ? serviceRecordToFormState(existing) : createDefaultServiceFormState()),
+    // Remount via key below when edit target changes; compute once per mount.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    []
+  );
   const sync = useSyncedFormYaml<ServiceFormState & Record<string, unknown>>(
     {
       toYaml: serviceFormToYaml,
@@ -279,7 +298,7 @@ export default function CreateServicePage() {
       schemaTitle: "Service",
       schemaFields: [],
     },
-    createDefaultServiceFormState()
+    initialForm
   );
 
   const form = sync.formState;
@@ -295,7 +314,7 @@ export default function CreateServicePage() {
 
   const selectorComplete = hasCompleteSelector(form.selector);
 
-  const canCreate =
+  const canSubmit =
     sync.canSubmit &&
     hasRequiredText(form.name) &&
     hasRequiredText(form.namespace) &&
@@ -306,8 +325,8 @@ export default function CreateServicePage() {
 
   const patch = (next: Partial<ServiceFormState>) => sync.patchFormState(next);
 
-  const handleCreate = () => {
-    if (!canCreate) return;
+  const handleSubmit = () => {
+    if (!canSubmit) return;
     createService({
       name: form.name,
       namespace: form.namespace,
@@ -326,7 +345,7 @@ export default function CreateServicePage() {
       sessionAffinity: form.sessionAffinity,
       annotationCount: (form.annotations ?? []).filter((a) => a.key.trim()).length,
     });
-    navigate("/networking");
+    navigate(isEdit ? serviceDetailPath(form.namespace, form.name) : "/networking");
   };
 
   const handleDownload = () => {
@@ -339,19 +358,52 @@ export default function CreateServicePage() {
     URL.revokeObjectURL(url);
   };
 
+  const pagePath = isEdit ? serviceEditPath(editNamespace, editName) : "/networking/services/create";
+  const pageTitle = isEdit ? "Edit Service" : "Create Service";
   const description =
     sync.viewMode === "yaml"
-      ? "Create by manually entering YAML or JSON definitions, or by dragging and dropping a file into the editor."
-      : "Create a Service using the form. Switch to YAML view for full control, including fields not shown in the form.";
+      ? isEdit
+        ? "Edit this Service by updating YAML or JSON definitions."
+        : "Create by manually entering YAML or JSON definitions, or by dragging and dropping a file into the editor."
+      : isEdit
+        ? "Update this Service using the form. Name and namespace cannot be changed. Switch to YAML view for full control."
+        : "Create a Service using the form. Switch to YAML view for full control, including fields not shown in the form.";
+
+  if (editNamespace && editName && !existing) {
+    return (
+      <div className="ocs-app-page-outer w-full ocs-create-service-page">
+        <Breadcrumbs
+          items={[
+            { label: "Home", path: "/" },
+            NETWORKING_CRUMB,
+            { label: "Services", path: "/networking" },
+            { label: "Edit Service", path: pagePath },
+          ]}
+        >
+          <Alert variant="danger" title="Service not found" isInline>
+            No Service named {editName} in namespace {editNamespace}.
+          </Alert>
+          <Button variant="secondary" className="pf-v6-u-mt-md" onClick={() => navigate("/networking")}>
+            Back to Services
+          </Button>
+        </Breadcrumbs>
+      </div>
+    );
+  }
 
   return (
-    <div className="ocs-app-page-outer w-full ocs-create-service-page">
+    <div className="ocs-app-page-outer w-full ocs-create-service-page" key={isEdit ? pagePath : "create"}>
       <Breadcrumbs
         items={[
           { label: "Home", path: "/" },
           NETWORKING_CRUMB,
           { label: "Services", path: "/networking" },
-          { label: "Create Service", path: "/networking/services/create" },
+          ...(isEdit
+            ? [
+                { label: editName, path: serviceDetailPath(editNamespace, editName) },
+                { label: "Edit Service", path: pagePath },
+              ]
+            : [{ label: "Create Service", path: "/networking/services/create" }]),
         ]}
       >
         <Flex direction={{ default: "column" }} gap={{ default: "gapMd" }} className="ocs-create-service-page__body">
@@ -362,13 +414,13 @@ export default function CreateServicePage() {
           >
             <Flex direction={{ default: "column" }} gap={{ default: "gapXs" }}>
               <Title headingLevel="h1" size="2xl">
-                Create Service
+                {pageTitle}
               </Title>
               <Content component="p" className="ocs-create-service-page__desc">
                 {description}
               </Content>
             </Flex>
-            <FavoriteButton name="Create Service" path="/networking/services/create" />
+            <FavoriteButton name={pageTitle} path={pagePath} />
           </Flex>
 
           <EditorToggle value={sync.viewMode} onChange={sync.setViewMode} idPrefix="service-create" />
@@ -407,7 +459,16 @@ export default function CreateServicePage() {
                     value={form.name}
                     onChange={(_e, v) => patch({ name: v })}
                     type="text"
+                    isReadOnly={isEdit}
+                    readOnlyVariant={isEdit ? "default" : undefined}
                   />
+                  {isEdit ? (
+                    <FormHelperText>
+                      <HelperText>
+                        <HelperTextItem>Name cannot be changed after the Service is created.</HelperTextItem>
+                      </HelperText>
+                    </FormHelperText>
+                  ) : null}
                 </FormGroup>
                 <FormGroup label="Namespace" isRequired fieldId="service-namespace">
                   <TextInput
@@ -415,7 +476,16 @@ export default function CreateServicePage() {
                     value={form.namespace}
                     onChange={(_e, v) => patch({ namespace: v })}
                     type="text"
+                    isReadOnly={isEdit}
+                    readOnlyVariant={isEdit ? "default" : undefined}
                   />
+                  {isEdit ? (
+                    <FormHelperText>
+                      <HelperText>
+                        <HelperTextItem>Namespace cannot be changed after the Service is created.</HelperTextItem>
+                      </HelperText>
+                    </FormHelperText>
+                  ) : null}
                 </FormGroup>
                 <FormGroup label="Type" isRequired fieldId="service-type">
                   <FormSelect
@@ -593,10 +663,15 @@ export default function CreateServicePage() {
             gap={{ default: "gapMd" }}
           >
             <Flex gap={{ default: "gapMd" }}>
-              <Button variant="primary" isDisabled={!canCreate} onClick={handleCreate}>
-                Create
+              <Button variant="primary" isDisabled={!canSubmit} onClick={handleSubmit}>
+                {isEdit ? "Save" : "Create"}
               </Button>
-              <Button variant="secondary" onClick={() => navigate("/networking")}>
+              <Button
+                variant="secondary"
+                onClick={() =>
+                  navigate(isEdit ? serviceDetailPath(editNamespace, editName) : "/networking")
+                }
+              >
                 Cancel
               </Button>
             </Flex>

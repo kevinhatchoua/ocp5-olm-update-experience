@@ -941,6 +941,10 @@ export function serviceDetailPath(namespace: string, name: string): string {
   return `/networking/services/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}`;
 }
 
+export function serviceEditPath(namespace: string, name: string): string {
+  return `/networking/services/${encodeURIComponent(namespace)}/${encodeURIComponent(name)}/edit`;
+}
+
 export function udnDetailPath(record: UdnRecord): string {
   if (record.kind === "CUDN") {
     return `/networking/userdefinednetworks/cluster/${encodeURIComponent(record.name)}`;

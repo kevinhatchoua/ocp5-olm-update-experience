@@ -129,6 +129,7 @@ export const router = createBrowserRouter([
           { path: "workloads/topology", Component: TopologyPage },
           { path: "networking", Component: ServicesPage },
           { path: "networking/services/create", Component: CreateServicePage },
+          { path: "networking/services/:namespace/:name/edit", Component: CreateServicePage },
           { path: "networking/services/:namespace/:name", Component: ServiceDetailPage },
           { path: "networking/topology", Component: NetworkTopologyPage },
           { path: "networking/routes", Component: RoutesPage },
