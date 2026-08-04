@@ -14,6 +14,8 @@ import {
   Search,
   ChevronDown,
   ChevronUp,
+  AlertTriangle,
+  CheckCircle,
 } from "@/lib/pfIcons";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import CatalogOperatorDetailPanel from "../../components/CatalogOperatorDetailPanel";
