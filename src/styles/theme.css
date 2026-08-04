@@ -3447,3 +3447,69 @@ html.dark .ocs-net-topo-panel__canvas {
     padding-block-start: var(--pf-t--global--spacer--md);
   }
 }
+/* White Hub return bar — match console capture chrome; never yellow/orange PF warning Banner. */
+.ocs-back-to-prototypes-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 2.75rem;
+  padding: 4px 16px;
+  background: #f5f5f5;
+  border-bottom: 1px solid #d2d2d2;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
+  font-family: "Red Hat Text", Overpass, Arial, sans-serif;
+  font-size: 14px;
+  flex-shrink: 0;
+  z-index: 200;
+}
+
+.ocs-back-to-prototypes-banner__link {
+  font-weight: 600;
+  color: #0066cc;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.ocs-back-to-prototypes-banner__link:hover {
+  text-decoration: underline;
+}
+
+.ocs-back-to-prototypes-banner__meta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-left: auto;
+  min-width: 0;
+}
+
+.ocs-back-to-prototypes-banner__badge {
+  background: #c9190b;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 3px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+}
+
+.ocs-back-to-prototypes-banner__context {
+  color: #151515;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ocs-back-to-prototypes-banner__note {
+  color: #6a6e73;
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.dark .ocs-back-to-prototypes-banner {
+  background: #f5f5f5;
+  color: #151515;
+}

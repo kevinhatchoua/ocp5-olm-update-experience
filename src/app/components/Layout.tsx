@@ -55,6 +55,7 @@ import UsersIcon from "@patternfly/react-icons/dist/esm/icons/users-icon";
 import RhMicronsCaretDownIcon from "@patternfly/react-icons/dist/esm/icons/rh-microns-caret-down-icon";
 import SyncAltIcon from "@patternfly/react-icons/dist/esm/icons/sync-alt-icon";
 import ImpersonateUserModal from "./ImpersonateUserModal";
+import BackToPrototypesBanner from "./BackToPrototypesBanner";
 import { MastheadFedoraMark } from "./MastheadFedoraMark";
 import { usePermissions } from "../contexts/PermissionsContext";
 import { useChat } from "../contexts/ChatContext";
@@ -630,6 +631,7 @@ export default function Layout() {
           )}
           style={{ minHeight: "var(--pf-t--global--spacer--0, 0px)" }}
         >
+          <BackToPrototypesBanner />
           <Page
             className={css(sizingStyles.h_100, "ocs-console-page")}
             isManagedSidebar
