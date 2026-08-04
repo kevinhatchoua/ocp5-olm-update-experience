@@ -6,11 +6,17 @@ import {
   ToggleGroup,
   ToggleGroupItem,
 } from "@patternfly/react-core";
+import { useLocation } from "react-router";
 import { useClusterUpdateDemoVariant } from "../contexts/ClusterUpdateDemoContext";
 
-/** Sits above the masthead; variant toggle is shared with Cluster Update via context. */
+/** Sits above the masthead on Cluster Update routes; variant toggle is shared via context. */
 export default function ClusterUpdateDemoBanner() {
+  const { pathname } = useLocation();
   const { demoVariant, setDemoVariant, performClusterUpdateDemoReset } = useClusterUpdateDemoVariant();
+
+  if (!pathname.startsWith("/administration/cluster-update")) {
+    return null;
+  }
 
   return (
     <Banner status="info" aria-label="Prototype demo">
