@@ -1,17 +1,11 @@
-import { Link, Outlet, useLocation } from "react-router";
+import { Link, Outlet, useLocation, useNavigate } from "react-router";
 import { forwardRef, useEffect, useState } from "react";
-import {
-  applyThemeToDocument,
-  readThemePreferences,
-  writeThemePreferences,
-} from "@/lib/documentTheme";
 import {
   Badge,
   Banner,
   Button,
   Content,
   Dropdown,
-  DropdownGroup,
   DropdownItem,
   Divider,
   Flex,
@@ -44,23 +38,19 @@ import sizingStyles from "@patternfly/react-styles/css/utilities/Sizing/sizing.m
 import BellIcon from "@patternfly/react-icons/dist/esm/icons/bell-icon";
 import CogIcon from "@patternfly/react-icons/dist/esm/icons/cog-icon";
 import MinusCircleIcon from "@patternfly/react-icons/dist/esm/icons/minus-circle-icon";
-import MoonIcon from "@patternfly/react-icons/dist/esm/icons/moon-icon";
 import QuestionCircleIcon from "@patternfly/react-icons/dist/esm/icons/question-circle-icon";
 import SignOutAltIcon from "@patternfly/react-icons/dist/esm/icons/sign-out-alt-icon";
-import SunIcon from "@patternfly/react-icons/dist/esm/icons/sun-icon";
 import ThIcon from "@patternfly/react-icons/dist/esm/icons/th-icon";
-import UserCogIcon from "@patternfly/react-icons/dist/esm/icons/user-cog-icon";
-import UserIcon from "@patternfly/react-icons/dist/esm/icons/user-icon";
 import UsersIcon from "@patternfly/react-icons/dist/esm/icons/users-icon";
 import RhMicronsCaretDownIcon from "@patternfly/react-icons/dist/esm/icons/rh-microns-caret-down-icon";
-import SyncAltIcon from "@patternfly/react-icons/dist/esm/icons/sync-alt-icon";
 import ImpersonateUserModal from "./ImpersonateUserModal";
+import CopyLoginCommandModal from "./CopyLoginCommandModal";
+import ClusterUpdateDemoBanner from "./ClusterUpdateDemoBanner";
 import BackToPrototypesBanner from "./BackToPrototypesBanner";
 import { MastheadFedoraMark } from "./MastheadFedoraMark";
 import { usePermissions } from "../contexts/PermissionsContext";
 import { useChat } from "../contexts/ChatContext";
 import { useFavorites } from "../contexts/FavoritesContext";
-import { useClusterUpdateDemoVariant } from "../contexts/ClusterUpdateDemoContext";
 import { useToast } from "../contexts/ToastContext";
 import {
   ADMINISTRATION_SUB,
@@ -180,40 +170,18 @@ function UserMenu({
   impersonatedUser,
   onImpersonate,
   onStopImpersonation,
+  onCopyLoginCommand,
 }: {
   impersonatedUser: ImpersonatedUser | null;
   onImpersonate: () => void;
   onStopImpersonation: () => void;
+  onCopyLoginCommand: () => void;
 }) {
   const [isOpen, setIsOpen] = useState(false);
-  const [isDark, setIsDark] = useState(() => readThemePreferences().dark);
-  const [isGlass, setIsGlass] = useState(() => readThemePreferences().glass);
-  const { performClusterUpdateDemoReset, demoVariant, setDemoVariant } = useClusterUpdateDemoVariant();
+  const navigate = useNavigate();
+  const { pushToast } = useToast();
 
   const displayName = impersonatedUser ? impersonatedUser.name : "kube:admin";
-  const displayEmail = impersonatedUser ? impersonatedUser.email : "kube:admin";
-
-  useEffect(() => {
-    if (!isOpen) return;
-    const p = readThemePreferences();
-    setIsDark(p.dark);
-    setIsGlass(p.glass);
-  }, [isOpen]);
-
-  const toggleTheme = () => {
-    const newIsDark = !isDark;
-    setIsDark(newIsDark);
-    const next = { dark: newIsDark, glass: isGlass };
-    applyThemeToDocument(next);
-    writeThemePreferences(next);
-  };
-
-  const setGlass = (glass: boolean) => {
-    setIsGlass(glass);
-    const next = { dark: isDark, glass };
-    applyThemeToDocument(next);
-    writeThemePreferences(next);
-  };
 
   return (
     <Dropdown
@@ -242,94 +210,24 @@ function UserMenu({
       )}
       onSelect={() => setIsOpen(false)}
     >
-      <DropdownGroup
-        label={
-          <Flex direction={{ default: "column" }} gap={{ default: "gapXs" }}>
-            <Content component="p">{impersonatedUser ? impersonatedUser.name : "kube:admin"}</Content>
-            <Content component="small">{displayEmail}</Content>
-            {impersonatedUser ? (
-              <Content component="small">
-                {impersonatedUser.role} • {impersonatedUser.department}
-              </Content>
-            ) : null}
-          </Flex>
-        }
+      <DropdownItem
+        itemId="copy-login"
+        onClick={() => {
+          onCopyLoginCommand();
+          setIsOpen(false);
+        }}
       >
-        <DropdownItem
-          itemId="reset-demo"
-          icon={<SyncAltIcon aria-hidden />}
-          onClick={() => {
-            performClusterUpdateDemoReset();
-            setIsOpen(false);
-          }}
-        >
-          Reset demo
-        </DropdownItem>
-        <DropdownItem
-          itemId="demo-agent-led"
-          onClick={() => {
-            setDemoVariant("agent-only");
-            setIsOpen(false);
-          }}
-        >
-          {demoVariant === "agent-only" ? "Agent-led update flow (current)" : "Agent-led update flow"}
-        </DropdownItem>
-        <DropdownItem
-          itemId="demo-manual"
-          onClick={() => {
-            setDemoVariant("manual-and-agent");
-            setIsOpen(false);
-          }}
-        >
-          {demoVariant === "manual-and-agent" ? "Manual updates (current)" : "Manual updates"}
-        </DropdownItem>
-        <DropdownItem itemId="account" icon={<UserIcon aria-hidden />} onClick={() => setIsOpen(false)}>
-          My Account
-        </DropdownItem>
-        <DropdownItem itemId="prefs" icon={<CogIcon aria-hidden />} onClick={() => setIsOpen(false)}>
-          User Preferences
-        </DropdownItem>
-        <DropdownItem itemId="roles" icon={<UserCogIcon aria-hidden />} onClick={() => setIsOpen(false)}>
-          Role Management
-        </DropdownItem>
-      </DropdownGroup>
-      <Divider component="li" />
-      <DropdownGroup label="Theme mode">
-        <DropdownItem
-          itemId="toggle-theme"
-          icon={isDark ? <SunIcon aria-hidden /> : <MoonIcon aria-hidden />}
-          onClick={() => {
-            toggleTheme();
-            setIsOpen(false);
-          }}
-        >
-          {isDark ? "Switch to light theme" : "Switch to dark theme"}
-        </DropdownItem>
-      </DropdownGroup>
-      <Divider component="li" />
-      <DropdownGroup label="Glass effect">
-        {isGlass ? (
-          <DropdownItem
-            itemId="glass-off"
-            onClick={() => {
-              setGlass(false);
-              setIsOpen(false);
-            }}
-          >
-            Disable glass effect
-          </DropdownItem>
-        ) : (
-          <DropdownItem
-            itemId="glass-on"
-            onClick={() => {
-              setGlass(true);
-              setIsOpen(false);
-            }}
-          >
-            Enable glass effect
-          </DropdownItem>
-        )}
-      </DropdownGroup>
+        Copy login command
+      </DropdownItem>
+      <DropdownItem
+        itemId="prefs"
+        onClick={() => {
+          navigate("/user-preferences");
+          setIsOpen(false);
+        }}
+      >
+        User Preferences
+      </DropdownItem>
       <Divider component="li" />
       {impersonatedUser ? (
         <DropdownItem
@@ -356,8 +254,19 @@ function UserMenu({
         </DropdownItem>
       )}
       <Divider component="li" />
-      <DropdownItem itemId="logout" icon={<SignOutAltIcon aria-hidden />} isDanger onClick={() => setIsOpen(false)}>
-        Logout
+      <DropdownItem
+        itemId="logout"
+        icon={<SignOutAltIcon aria-hidden />}
+        isDanger
+        onClick={() => {
+          pushToast({
+            variant: "info",
+            title: "Logged out (prototype)",
+          });
+          setIsOpen(false);
+        }}
+      >
+        Log out
       </DropdownItem>
     </Dropdown>
   );
@@ -365,6 +274,7 @@ function UserMenu({
 
 export default function Layout() {
   const [isImpersonateModalOpen, setIsImpersonateModalOpen] = useState(false);
+  const [isCopyLoginOpen, setIsCopyLoginOpen] = useState(false);
   const [isFavoritesExpanded, setIsFavoritesExpanded] = useState(false);
   const [isHomeExpanded, setIsHomeExpanded] = useState(true);
   const location = useLocation();
@@ -458,6 +368,7 @@ export default function Layout() {
                   impersonatedUser={impersonatedUser}
                   onImpersonate={() => setIsImpersonateModalOpen(true)}
                   onStopImpersonation={handleStopImpersonation}
+                  onCopyLoginCommand={() => setIsCopyLoginOpen(true)}
                 />
               </ToolbarItem>
             </ToolbarGroup>
@@ -632,6 +543,7 @@ export default function Layout() {
           style={{ minHeight: "var(--pf-t--global--spacer--0, 0px)" }}
         >
           <BackToPrototypesBanner />
+          <ClusterUpdateDemoBanner />
           <Page
             className={css(sizingStyles.h_100, "ocs-console-page")}
             isManagedSidebar
@@ -675,6 +587,7 @@ export default function Layout() {
         onClose={() => setIsImpersonateModalOpen(false)}
         onImpersonate={handleImpersonate}
       />
+      <CopyLoginCommandModal isOpen={isCopyLoginOpen} onClose={() => setIsCopyLoginOpen(false)} />
 
       <Button
         type="button"

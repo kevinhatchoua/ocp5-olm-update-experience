@@ -42,6 +42,7 @@ import ObservePage from "./pages/ObservePage";
 import ComputePage from "./pages/ComputePage";
 import UserManagementPage from "./pages/UserManagementPage";
 import SettingsPage from "./pages/SettingsPage";
+import UserPreferencesPage from "./pages/UserPreferencesPage";
 import AlertsPage from "./pages/AlertsPage";
 import ActivityDetailsPage from "./pages/ActivityDetailsPage";
 import ClusterInventoryPage from "./pages/ClusterInventoryPage";
@@ -160,6 +161,7 @@ export const router = createBrowserRouter([
           { path: "administration/limit-ranges", Component: LimitRangesPage },
           { path: "administration/custom-resource-definitions", Component: CustomResourceDefinitionsPage },
           { path: "administration/dynamic-plugins", Component: DynamicPluginsPage },
+          { path: "user-preferences", Component: UserPreferencesPage },
           { path: "settings", Component: SettingsPage },
           { path: "alerts", Component: AlertsPage },
           { path: "activity/:id", Component: ActivityDetailsPage },

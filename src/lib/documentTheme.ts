@@ -11,19 +11,38 @@ export const PF_THEME_GLASS_CLASS = "pf-v6-theme-glass";
 
 const STORAGE_KEY = "ocp5-cluster-update-experience:theme";
 
+/** OpenShift User Preferences → Theme options. */
+export type ColorTheme = "light" | "dark" | "system";
+
 export type ThemePreferences = {
+  /** Resolved preference used for class application (legacy + derived). */
   dark: boolean;
   glass: boolean;
+  /** Explicit theme choice; OpenShift defaults to system when unset historically — we persist choice. */
+  colorTheme: ColorTheme;
 };
 
 const DEFAULT_PREFERENCES: ThemePreferences = {
   dark: true,
   glass: true,
+  colorTheme: "dark",
 };
+
+function systemPrefersDark(): boolean {
+  if (typeof window === "undefined") return true;
+  return window.matchMedia("(prefers-color-scheme: dark)").matches;
+}
 
 function systemPrefersReducedTransparency(): boolean {
   if (typeof window === "undefined") return false;
   return window.matchMedia("(prefers-reduced-transparency: reduce)").matches;
+}
+
+export function resolveDark(prefs: Pick<ThemePreferences, "colorTheme" | "dark">): boolean {
+  if (prefs.colorTheme === "system") return systemPrefersDark();
+  if (prefs.colorTheme === "light") return false;
+  if (prefs.colorTheme === "dark") return true;
+  return prefs.dark;
 }
 
 /** User preference + OS accessibility: glass blur only when both allow it. */
@@ -35,10 +54,23 @@ export function readThemePreferences(): ThemePreferences {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return { ...DEFAULT_PREFERENCES };
-    const parsed = JSON.parse(raw) as Partial<ThemePreferences>;
-    return {
+    const parsed = JSON.parse(raw) as Partial<ThemePreferences> & { colorTheme?: string };
+    const colorTheme: ColorTheme =
+      parsed.colorTheme === "light" || parsed.colorTheme === "dark" || parsed.colorTheme === "system"
+        ? parsed.colorTheme
+        : typeof parsed.dark === "boolean"
+          ? parsed.dark
+            ? "dark"
+            : "light"
+          : DEFAULT_PREFERENCES.colorTheme;
+    const base: ThemePreferences = {
+      colorTheme,
       dark: typeof parsed.dark === "boolean" ? parsed.dark : DEFAULT_PREFERENCES.dark,
       glass: typeof parsed.glass === "boolean" ? parsed.glass : DEFAULT_PREFERENCES.glass,
+    };
+    return {
+      ...base,
+      dark: resolveDark(base),
     };
   } catch {
     return { ...DEFAULT_PREFERENCES };
@@ -47,7 +79,12 @@ export function readThemePreferences(): ThemePreferences {
 
 export function writeThemePreferences(prefs: ThemePreferences): void {
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(prefs));
+    const toStore: ThemePreferences = {
+      colorTheme: prefs.colorTheme,
+      glass: prefs.glass,
+      dark: resolveDark(prefs),
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(toStore));
   } catch {
     /* ignore quota / private mode */
   }
@@ -59,7 +96,8 @@ export function applyThemeToDocument(prefs: ThemePreferences): void {
   root.classList.remove("pf-v6-theme-redhat");
   root.classList.add(PF_THEME_FELT_CLASS);
 
-  if (prefs.dark) {
+  const dark = resolveDark(prefs);
+  if (dark) {
     root.classList.add("dark", PF_THEME_DARK_CLASS);
   } else {
     root.classList.remove("dark", PF_THEME_DARK_CLASS);
@@ -79,14 +117,19 @@ export function applyStoredOrDefaultTheme(): void {
   applyThemeToDocument(readThemePreferences());
 }
 
-/** Re-apply when OS `prefers-reduced-transparency` changes (PF glass handbook requirement). */
+/** Re-apply when OS color-scheme or reduced-transparency changes. */
 export function initThemePreferenceListeners(): () => void {
   if (typeof window === "undefined") return () => undefined;
 
-  const mq = window.matchMedia("(prefers-reduced-transparency: reduce)");
+  const reduced = window.matchMedia("(prefers-reduced-transparency: reduce)");
+  const colorScheme = window.matchMedia("(prefers-color-scheme: dark)");
   const onChange = () => applyThemeToDocument(readThemePreferences());
-  mq.addEventListener("change", onChange);
-  return () => mq.removeEventListener("change", onChange);
+  reduced.addEventListener("change", onChange);
+  colorScheme.addEventListener("change", onChange);
+  return () => {
+    reduced.removeEventListener("change", onChange);
+    colorScheme.removeEventListener("change", onChange);
+  };
 }
 
 /** True when PatternFly glass theme is active (use for `Card isGlass`, etc.). */

@@ -1,5 +1,6 @@
 import {
   Banner,
+  Button,
   Content,
   Flex,
   ToggleGroup,
@@ -9,7 +10,7 @@ import { useClusterUpdateDemoVariant } from "../contexts/ClusterUpdateDemoContex
 
 /** Sits above the masthead; variant toggle is shared with Cluster Update via context. */
 export default function ClusterUpdateDemoBanner() {
-  const { demoVariant, setDemoVariant } = useClusterUpdateDemoVariant();
+  const { demoVariant, setDemoVariant, performClusterUpdateDemoReset } = useClusterUpdateDemoVariant();
 
   return (
     <Banner status="info" aria-label="Prototype demo">
@@ -31,33 +32,27 @@ export default function ClusterUpdateDemoBanner() {
         >
           Prototype demo
         </Content>
-        <ToggleGroup
-          aria-label="Cluster update experience variant"
-          isCompact
-        >
-          <ToggleGroupItem
-            text={
-              <Content component="span">Agent-led</Content>
-            }
-            isSelected={demoVariant === "agent-only"}
-            onChange={(_event, selected) => {
-              if (selected) {
-                setDemoVariant("agent-only");
-              }
-            }}
-          />
-          <ToggleGroupItem
-            text={
-              <Content component="span">Manual updates</Content>
-            }
-            isSelected={demoVariant === "manual-and-agent"}
-            onChange={(_event, selected) => {
-              if (selected) {
-                setDemoVariant("manual-and-agent");
-              }
-            }}
-          />
-        </ToggleGroup>
+        <Flex alignItems={{ default: "alignItemsCenter" }} gap={{ default: "gapSm" }} flexWrap={{ default: "wrap" }}>
+          <ToggleGroup aria-label="Cluster update experience variant" isCompact>
+            <ToggleGroupItem
+              text="Agent-led"
+              isSelected={demoVariant === "agent-only"}
+              onChange={(_event, selected) => {
+                if (selected) setDemoVariant("agent-only");
+              }}
+            />
+            <ToggleGroupItem
+              text="Manual updates"
+              isSelected={demoVariant === "manual-and-agent"}
+              onChange={(_event, selected) => {
+                if (selected) setDemoVariant("manual-and-agent");
+              }}
+            />
+          </ToggleGroup>
+          <Button variant="link" isInline onClick={() => performClusterUpdateDemoReset()}>
+            Reset demo
+          </Button>
+        </Flex>
       </Flex>
     </Banner>
   );
