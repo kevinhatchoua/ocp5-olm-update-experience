@@ -71,6 +71,7 @@ import OperatorInstalledPage from "./pages/ecosystem/OperatorInstalledPage";
 
 import NodeDetailPage from "./pages/compute/NodeDetailPage";
 import ConsoleStubPage from "./pages/ConsoleStubPage";
+import ConsoleMockLaunchPage from "./pages/ConsoleMockLaunchPage";
 
 const consoleStubRoutes = collectStubPaths().map((fullPath) => ({
   path: fullPath.replace(/^\//, ""),
@@ -115,6 +116,11 @@ export const router = createBrowserRouter([
           { path: "workloads/jobs", Component: JobsPage },
           { path: "workloads/cronjobs", Component: CronJobsPage },
           { path: "workloads/topology", Component: TopologyPage },
+          { path: "gitops", Component: ConsoleMockLaunchPage },
+          { path: "gitops/rollouts", Component: ConsoleMockLaunchPage },
+          { path: "gitops/argocd", Component: ConsoleMockLaunchPage },
+          { path: "gitops/applications", Component: ConsoleMockLaunchPage },
+          { path: "gitops/applicationsets", Component: ConsoleMockLaunchPage },
           { path: "networking", Component: ServicesPage },
           { path: "networking/topology", Component: NetworkTopologyPage },
           { path: "networking/routes", Component: RoutesPage },

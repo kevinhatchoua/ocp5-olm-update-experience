@@ -20,8 +20,8 @@ export const ECOSYSTEM_SUB: SubNavEntry[] = [
 ];
 
 export const WORKLOADS_SUB: SubNavEntry[] = [
-  { path: "/workloads/topology", label: "Topology" },
   { path: "/workloads/pods", label: "Pods" },
+  { path: "/workloads/topology", label: "Topology" },
   { path: "/workloads/deployments", label: "Deployments" },
   { path: "/workloads/deploymentconfigs", label: "DeploymentConfigs" },
   { path: "/workloads/statefulsets", label: "StatefulSets" },
@@ -118,12 +118,21 @@ export const ADMINISTRATION_SUB: SubNavEntry[] = [
   { path: "/administration/dynamic-plugins", label: "Dynamic Plugins" },
 ];
 
+/** GitOps console-plugin surfaces — launched via console mock (HPUX-1943). */
+export const GITOPS_SUB: SubNavEntry[] = [
+  { path: "/gitops/rollouts", label: "Rollouts" },
+  { path: "/gitops/argocd", label: "Argo CD" },
+  { path: "/gitops/applications", label: "Applications" },
+  { path: "/gitops/applicationsets", label: "ApplicationSets" },
+];
+
 /** Paths that should render {@link ConsoleStubPage} (plus any ad-hoc additions in routes). */
 export function collectStubPaths(): string[] {
   const all: SubNavEntry[][] = [
     HOME_SUB,
     ECOSYSTEM_SUB,
     WORKLOADS_SUB,
+    GITOPS_SUB,
     NETWORKING_SUB,
     STORAGE_SUB,
     BUILDS_SUB,
@@ -146,6 +155,11 @@ export function collectStubPaths(): string[] {
     "/workloads/daemonsets",
     "/workloads/jobs",
     "/workloads/cronjobs",
+    "/gitops",
+    "/gitops/rollouts",
+    "/gitops/argocd",
+    "/gitops/applications",
+    "/gitops/applicationsets",
     "/networking",
     "/networking/topology",
     "/networking/routes",

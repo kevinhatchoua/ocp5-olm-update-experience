@@ -1,6 +1,8 @@
 import { useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router";
 import {
+  Alert,
+  AlertActionLink,
   Button,
   Content,
   Flex,
@@ -41,6 +43,9 @@ import {
   type SortDirection,
 } from "../../components/dataView/OcsPrototypeListTable";
 import { PODS, podDetailPath, type PodRecord, type PodStatus } from "./podListData";
+import { buildConsoleMockUrl } from "../ConsoleMockLaunchPage";
+
+const DEBUG_POD_MOCK_URL = buildConsoleMockUrl("/k8s/ns/demo-workloads/pods", "hpux-1947-debug-pod");
 
 type PodFilters = {
   name: string;
@@ -203,6 +208,19 @@ export default function PodsPage() {
             </Flex>
             <Button variant="primary">Create Pod</Button>
           </Flex>
+
+          <Alert
+            variant="info"
+            isInline
+            title="Try the Debug Pod prototype"
+            actionLinks={
+              <AlertActionLink component="a" href={DEBUG_POD_MOCK_URL} target="_blank" rel="noreferrer">
+                Open in console mock
+              </AlertActionLink>
+            }
+          >
+            Debug a running pod with the live console-mock prototype (opens in a new tab).
+          </Alert>
 
           <div className="ocs-pods-list__panel app-glass-panel">
             <DataView ouiaId="pods-data-view" className={OCS_PROTOTYPE_DATAVIEW_CLASS}>

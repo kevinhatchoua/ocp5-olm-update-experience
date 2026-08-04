@@ -57,6 +57,7 @@ import {
   BUILDS_SUB,
   COMPUTE_SUB,
   ECOSYSTEM_SUB,
+  GITOPS_SUB,
   HOME_SUB,
   NETWORKING_SUB,
   OBSERVE_SUB,
@@ -442,6 +443,12 @@ export default function Layout() {
               label="Workloads"
               pathname={location.pathname}
               subItems={WORKLOADS_SUB}
+            />
+            <ExpandableNavRouteGroup
+              groupId="layout-nav-gitops"
+              label="GitOps"
+              pathname={location.pathname}
+              subItems={GITOPS_SUB}
             />
             <ExpandableNavRouteGroup
               groupId="layout-nav-virtualization"
