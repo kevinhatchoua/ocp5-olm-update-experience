@@ -2,6 +2,7 @@ import {
   createContext,
   useCallback,
   useContext,
+  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -47,6 +48,31 @@ export function ClusterUpdateDemoProvider({ children }: { children: ReactNode })
       /* ignore */
     }
   }, []);
+
+  // Prototype demo controls (:9000 bridge) → keep React state in sync without reload.
+  useEffect(() => {
+    const onVariant = (ev: Event) => {
+      const detail = (ev as CustomEvent<{ demoVariant?: string }>).detail;
+      const next = detail?.demoVariant;
+      if (next === "agent-only" || next === "manual-and-agent") {
+        setDemoVariant(next);
+      }
+    };
+    const onSwitcher = (ev: Event) => {
+      const detail = (ev as CustomEvent<{ option?: string; area?: string }>).detail;
+      if (!detail) return;
+      if (detail.area && detail.area !== "administration" && detail.area !== "ecosystem") return;
+      if (detail.option === "agent-only" || detail.option === "manual-and-agent") {
+        setDemoVariant(detail.option);
+      }
+    };
+    document.addEventListener("platform-demo-variant", onVariant as EventListener);
+    document.addEventListener("demo-switcher-change", onSwitcher as EventListener);
+    return () => {
+      document.removeEventListener("platform-demo-variant", onVariant as EventListener);
+      document.removeEventListener("demo-switcher-change", onSwitcher as EventListener);
+    };
+  }, [setDemoVariant]);
 
   const performClusterUpdateDemoReset = useCallback(() => {
     try {

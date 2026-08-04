@@ -1477,9 +1477,8 @@ export default function InstalledOperatorsPage() {
   /** Agent-led demo (`agent-only`): AI Assessment + summary cards. Manual updates demo hides them. */
   const showAssessmentAndOverviewCards = demoVariant === "agent-only";
 
-  useEffect(() => {
-    setDemoVariant("manual-and-agent");
-  }, [setDemoVariant]);
+  // Demo variant is controlled by Prototype demo controls (or the masthead menu).
+  // Do not force manual-and-agent on mount — that fought the Design option switcher.
 
   const openChatbot = useCallback((context: string) => {
     setChatbotContext(context);
