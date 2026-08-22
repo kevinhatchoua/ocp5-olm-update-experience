@@ -1,21 +1,17 @@
 import { useState } from "react";
 import { Link, useParams } from "react-router";
 import {
+  Alert,
   Button,
   Content,
   DescriptionList,
   DescriptionListDescription,
   DescriptionListGroup,
   DescriptionListTerm,
-  Dropdown,
-  DropdownItem,
-  DropdownList,
   Flex,
   Grid,
   GridItem,
-  Icon,
   Label,
-  MenuToggle,
   Tab,
   Tabs,
   TabTitleText,
@@ -23,14 +19,13 @@ import {
 } from "@patternfly/react-core";
 import { Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
 import { OcsNamedResourceDataView, PlainTableHeader } from "../../components/dataView/OcsPrototypeListTable";
-import CheckCircleIcon from "@patternfly/react-icons/dist/esm/icons/check-circle-icon";
-import ClockIcon from "@patternfly/react-icons/dist/esm/icons/clock-icon";
-import EllipsisVIcon from "@patternfly/react-icons/dist/esm/icons/ellipsis-v-icon";
-import TimesCircleIcon from "@patternfly/react-icons/dist/esm/icons/times-circle-icon";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import FavoriteButton from "../../components/FavoriteButton";
+import DebugPodModal, { type DebugPodTarget } from "./DebugPodModal";
+import PodActionsMenu from "./PodActionsMenu";
+import PodStatusDisplay from "./PodStatusDisplay";
 import { getPodDetail, type PodContainer } from "./podDetailData";
-import { podDetailPath } from "./podListData";
+import { podDetailPath, type PodStatus } from "./podListData";
 
 function containerName(container: PodContainer) {
   return container.name;
@@ -119,48 +114,22 @@ function PodContainersTable({ containers }: { containers: PodContainer[] }) {
   );
 }
 
-function PodStatusLabel({ status }: { status: string }) {
-  switch (status) {
-    case "Running":
-      return (
-        <Flex alignItems={{ default: "alignItemsCenter" }} gap={{ default: "gapSm" }}>
-          <Icon status="success" aria-hidden>
-            <CheckCircleIcon />
-          </Icon>
-          <Label color="green" isCompact>
-            {status}
-          </Label>
-        </Flex>
-      );
-    case "Pending":
-      return (
-        <Flex alignItems={{ default: "alignItemsCenter" }} gap={{ default: "gapSm" }}>
-          <Icon status="warning" aria-hidden>
-            <ClockIcon />
-          </Icon>
-          <Label color="orange" isCompact>
-            {status}
-          </Label>
-        </Flex>
-      );
-    case "Failed":
-      return (
-        <Flex alignItems={{ default: "alignItemsCenter" }} gap={{ default: "gapSm" }}>
-          <Icon status="danger" aria-hidden>
-            <TimesCircleIcon />
-          </Icon>
-          <Label color="red" isCompact>
-            {status}
-          </Label>
-        </Flex>
-      );
-    default:
-      return (
-        <Label color="blue" isCompact>
-          {status}
-        </Label>
-      );
-  }
+function PodStatusLabel({
+  status,
+  podName,
+  onDebug,
+}: {
+  status: string;
+  podName: string;
+  onDebug?: () => void;
+}) {
+  return (
+    <PodStatusDisplay
+      pod={{ name: podName, status: status as PodStatus }}
+      onDebug={onDebug}
+      asLabel
+    />
+  );
 }
 
 export default function PodDetailPage() {
@@ -170,7 +139,7 @@ export default function PodDetailPage() {
   const pod = getPodDetail(decodedNamespace, decodedName);
 
   const [activeTab, setActiveTab] = useState<string>("details");
-  const [actionsOpen, setActionsOpen] = useState(false);
+  const [debugTarget, setDebugTarget] = useState<DebugPodTarget | null>(null);
 
   if (!pod) {
     return (
@@ -220,28 +189,20 @@ export default function PodDetailPage() {
               <Title headingLevel="h1" size="2xl" className="ocs-pod-details__title">
                 {pod.name}
               </Title>
-              <PodStatusLabel status={pod.status} />
+              <PodStatusLabel
+                status={pod.status}
+                podName={pod.name}
+                onDebug={() => setDebugTarget({ namespace: pod.namespace, name: pod.name, pod })}
+              />
             </Flex>
             <Flex gap={{ default: "gapSm" }} alignItems={{ default: "alignItemsCenter" }}>
               <FavoriteButton name={pod.name} path={detailPath} />
-              <Dropdown
-                isOpen={actionsOpen}
-                onOpenChange={setActionsOpen}
-                onSelect={() => setActionsOpen(false)}
-                popperProps={{ position: "right" }}
-                toggle={(toggleRef) => (
-                  <MenuToggle ref={toggleRef} onClick={() => setActionsOpen((o) => !o)} variant="secondary">
-                    Actions
-                  </MenuToggle>
-                )}
-              >
-                <DropdownList>
-                  <DropdownItem itemId="edit">Edit resource</DropdownItem>
-                  <DropdownItem itemId="delete" isDanger>
-                    Delete Pod
-                  </DropdownItem>
-                </DropdownList>
-              </Dropdown>
+              <PodActionsMenu
+                pod={pod}
+                variant="secondary"
+                label="Actions"
+                onDebug={(p) => setDebugTarget({ namespace: p.namespace, name: p.name, pod: p })}
+              />
             </Flex>
           </Flex>
 
@@ -323,7 +284,11 @@ export default function PodDetailPage() {
                       <DescriptionListGroup>
                         <DescriptionListTerm>Status</DescriptionListTerm>
                         <DescriptionListDescription>
-                          <PodStatusLabel status={pod.status} />
+                          <PodStatusLabel
+                            status={pod.status}
+                            podName={pod.name}
+                            onDebug={() => setDebugTarget({ namespace: pod.namespace, name: pod.name, pod })}
+                          />
                         </DescriptionListDescription>
                       </DescriptionListGroup>
                       <DescriptionListGroup>
@@ -393,6 +358,32 @@ export default function PodDetailPage() {
                 </DescriptionList>
               </section>
             </>
+          ) : activeTab === "terminal" ? (
+            <div className="ocs-pod-details__section">
+              {pod.distroless || pod.status === "CrashLoopBackOff" ? (
+                <>
+                  <Alert variant="danger" isInline title="Unable to exec into container">
+                    <code>OCI runtime exec failed: exec failed: unable to start container process: exec:
+                    &quot;sh&quot;: executable file not found in $PATH</code>
+                  </Alert>
+                  <Content component="p" className="pf-v6-u-mt-md">
+                    This workload image has no shell. Use <strong>Debug</strong> to start an ephemeral
+                    support-tools container (equivalent to <code>oc debug</code>).
+                  </Content>
+                  <Button
+                    variant="primary"
+                    className="pf-v6-u-mt-md"
+                    onClick={() => setDebugTarget({ namespace: pod.namespace, name: pod.name, pod })}
+                  >
+                    Debug
+                  </Button>
+                </>
+              ) : (
+                <pre className="ocs-debug-terminal ocs-debug-terminal--session" aria-label="Pod terminal">
+                  {`Connected to ${pod.namespace}/${pod.name}\nsh-5.1# `}
+                </pre>
+              )}
+            </div>
           ) : (
             <div className="ocs-pod-details__section">
               <Content component="p" className="pf-v6-u-color-200">
@@ -406,6 +397,11 @@ export default function PodDetailPage() {
           )}
         </Flex>
       </Breadcrumbs>
+      <DebugPodModal
+        target={debugTarget}
+        isOpen={debugTarget !== null}
+        onClose={() => setDebugTarget(null)}
+      />
     </div>
   );
 }

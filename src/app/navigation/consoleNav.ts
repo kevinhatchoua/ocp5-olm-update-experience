@@ -122,7 +122,7 @@ export const ADMINISTRATION_SUB: SubNavEntry[] = [
   { path: "/administration/dynamic-plugins", label: "Dynamic Plugins" },
 ];
 
-/** GitOps console-plugin surfaces — launched via console mock (HPUX-1943). */
+/** GitOps surfaces (HPUX-1943) — native pages in this prototype. */
 export const GITOPS_SUB: SubNavEntry[] = [
   { path: "/gitops/rollouts", label: "Rollouts" },
   { path: "/gitops/argocd", label: "Argo CD" },

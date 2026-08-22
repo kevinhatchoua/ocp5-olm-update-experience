@@ -1,4 +1,4 @@
-export type PodStatus = "Running" | "Pending" | "Failed" | "Succeeded";
+export type PodStatus = "Running" | "Pending" | "Failed" | "Succeeded" | "CrashLoopBackOff";
 
 export type PodOwner = {
   kind: "ReplicaSet" | "StatefulSet" | "DaemonSet" | "Job" | "CronJob";
@@ -17,9 +17,52 @@ export type PodRecord = {
   memory: string;
   cpu: string;
   created: string;
+  /** Distroless / hardened image — Terminal has no shell; Debug is the path. */
+  distroless?: boolean;
 };
 
 export const PODS: PodRecord[] = [
+  {
+    name: "mysql-5f4c4f898d-2fmrq",
+    namespace: "demo-workloads",
+    status: "CrashLoopBackOff",
+    ready: "0/1",
+    restarts: 12,
+    age: "18m",
+    image: "mysql:8.0",
+    owner: { kind: "ReplicaSet", name: "mysql-5f4c4f898d" },
+    memory: "—",
+    cpu: "—",
+    created: "Aug 21, 2026, 9:12 PM",
+  },
+  {
+    name: "payments-api-6c8d9f7b5-hx4m2",
+    namespace: "demo-workloads",
+    status: "Running",
+    ready: "1/1",
+    restarts: 0,
+    age: "6h",
+    image: "gcr.io/distroless/static:nonroot",
+    owner: { kind: "ReplicaSet", name: "payments-api-6c8d9f7b5" },
+    memory: "28.4 MiB",
+    cpu: "0.008 cores",
+    created: "Aug 21, 2026, 3:22 PM",
+    distroless: true,
+  },
+  {
+    name: "frontend-app-7d5f6b8c4-m2k9p",
+    namespace: "demo-workloads",
+    status: "Running",
+    ready: "1/1",
+    restarts: 1,
+    age: "2d",
+    image: "registry.access.redhat.com/ubi9/ubi-micro:latest",
+    owner: { kind: "ReplicaSet", name: "frontend-app-7d5f6b8c4" },
+    memory: "41.2 MiB",
+    cpu: "0.011 cores",
+    created: "Aug 19, 2026, 10:04 AM",
+    distroless: true,
+  },
   {
     name: "nginx-deployment-7d8c9f6b-4xk2p",
     namespace: "production",

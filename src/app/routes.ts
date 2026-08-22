@@ -41,7 +41,6 @@ import BuildsPage from "./pages/BuildsPage";
 import ObservePage from "./pages/ObservePage";
 import ComputePage from "./pages/ComputePage";
 import UserManagementPage from "./pages/UserManagementPage";
-import SettingsPage from "./pages/SettingsPage";
 import UserPreferencesPage from "./pages/UserPreferencesPage";
 import AlertsPage from "./pages/AlertsPage";
 import ActivityDetailsPage from "./pages/ActivityDetailsPage";
@@ -72,7 +71,11 @@ import OperatorInstalledPage from "./pages/ecosystem/OperatorInstalledPage";
 
 import NodeDetailPage from "./pages/compute/NodeDetailPage";
 import ConsoleStubPage from "./pages/ConsoleStubPage";
-import ConsoleMockLaunchPage from "./pages/ConsoleMockLaunchPage";
+import GitOpsRolloutsPage from "./pages/gitops/GitOpsRolloutsPage";
+import GitOpsRolloutDetailPage from "./pages/gitops/GitOpsRolloutDetailPage";
+import GitOpsArgoCdPage, { GitOpsArgoCdDetailPage } from "./pages/gitops/GitOpsArgoCdPage";
+import GitOpsApplicationsPage, { GitOpsApplicationDetailPage } from "./pages/gitops/GitOpsApplicationsPage";
+import GitOpsApplicationSetsPage, { GitOpsApplicationSetDetailPage } from "./pages/gitops/GitOpsApplicationSetsPage";
 
 const consoleStubRoutes = collectStubPaths().map((fullPath) => ({
   path: fullPath.replace(/^\//, ""),
@@ -117,11 +120,15 @@ export const router = createBrowserRouter([
           { path: "workloads/jobs", Component: JobsPage },
           { path: "workloads/cronjobs", Component: CronJobsPage },
           { path: "workloads/topology", Component: TopologyPage },
-          { path: "gitops", Component: ConsoleMockLaunchPage },
-          { path: "gitops/rollouts", Component: ConsoleMockLaunchPage },
-          { path: "gitops/argocd", Component: ConsoleMockLaunchPage },
-          { path: "gitops/applications", Component: ConsoleMockLaunchPage },
-          { path: "gitops/applicationsets", Component: ConsoleMockLaunchPage },
+          { path: "gitops", loader: () => redirect("/gitops/rollouts") },
+          { path: "gitops/rollouts", Component: GitOpsRolloutsPage },
+          { path: "gitops/argocd", Component: GitOpsArgoCdPage },
+          { path: "gitops/applications", Component: GitOpsApplicationsPage },
+          { path: "gitops/applicationsets", Component: GitOpsApplicationSetsPage },
+          { path: "gitops/ns/:namespace/rollouts/:name", Component: GitOpsRolloutDetailPage },
+          { path: "gitops/ns/:namespace/argocd/:name", Component: GitOpsArgoCdDetailPage },
+          { path: "gitops/ns/:namespace/applications/:name", Component: GitOpsApplicationDetailPage },
+          { path: "gitops/ns/:namespace/applicationsets/:name", Component: GitOpsApplicationSetDetailPage },
           { path: "networking", Component: ServicesPage },
           { path: "networking/topology", Component: NetworkTopologyPage },
           { path: "networking/routes", Component: RoutesPage },
@@ -174,7 +181,7 @@ export const router = createBrowserRouter([
           { path: "administration/custom-resource-definitions", Component: CustomResourceDefinitionsPage },
           { path: "administration/dynamic-plugins", Component: DynamicPluginsPage },
           { path: "user-preferences", Component: UserPreferencesPage },
-          { path: "settings", Component: SettingsPage },
+          { path: "settings", loader: () => redirect("/administration/cluster-settings") },
           { path: "alerts", Component: AlertsPage },
           { path: "activity/:id", Component: ActivityDetailsPage },
           { path: "inventory", Component: ClusterInventoryPage },

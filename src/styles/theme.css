@@ -3882,6 +3882,77 @@ html.dark .ocs-net-topo-panel__canvas {
   white-space: nowrap;
 }
 
+.ocs-prototype-demo-menu {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pf-t--global--spacer--md, 12px);
+  min-width: 22rem;
+  max-width: 28rem;
+}
+
+.ocs-prototype-demo-menu__heading {
+  margin: 0;
+  font-weight: 600;
+}
+
+.ocs-prototype-demo-menu__hint {
+  margin: 0;
+  color: var(--pf-t--global--text--color--subtle, #6a6e73);
+}
+
+.ocs-prototype-demo-menu__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pf-t--global--spacer--sm, 8px);
+}
+
+.ocs-prototype-demo-menu__label {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ocs-pf-theme-controls {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pf-t--global--spacer--md, 12px);
+}
+
+.ocs-pf-theme-controls__section {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pf-t--global--spacer--sm, 8px);
+}
+
+.ocs-pf-theme-controls__label {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ocs-prototype-demo-menu__toggle {
+  margin-inline-start: 4px;
+}
+
+/* Banner is always light chrome; PF MenuToggle inherits dark tokens from html.dark — force readable contrast. */
+.ocs-back-to-prototypes-banner .ocs-prototype-demo-menu__toggle.pf-v6-c-menu-toggle,
+.ocs-back-to-prototypes-banner .ocs-prototype-demo-menu__toggle {
+  color: #151515;
+  background-color: #fff;
+  border-color: #8a8d90;
+  --pf-v6-c-menu-toggle--Color: #151515;
+  --pf-v6-c-menu-toggle--BackgroundColor: #fff;
+  --pf-v6-c-menu-toggle--BorderColor: #8a8d90;
+  --pf-v6-c-menu-toggle--hover--BackgroundColor: #f0f0f0;
+  --pf-v6-c-menu-toggle--expanded--BackgroundColor: #f0f0f0;
+  --pf-v6-c-menu-toggle__toggle-icon--Color: #151515;
+}
+
+.ocs-back-to-prototypes-banner .ocs-prototype-demo-menu__toggle .pf-v6-c-menu-toggle__toggle-icon,
+.ocs-back-to-prototypes-banner .ocs-prototype-demo-menu__toggle .pf-v6-svg-icon {
+  color: #151515;
+}
+
 .dark .ocs-back-to-prototypes-banner {
   background: #f5f5f5;
   color: #151515;

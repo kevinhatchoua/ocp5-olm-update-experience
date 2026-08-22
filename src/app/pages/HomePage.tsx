@@ -225,7 +225,7 @@ function GettingStartedSectionCard({
           {links.map((link) => (
             <SimpleListItem
               key={link.id}
-              component={link.href ? "a" : "button"}
+              component={link.href ? (link.external ? "a" : Link) : "button"}
               componentProps={
                 link.external
                   ? {
@@ -234,12 +234,17 @@ function GettingStartedSectionCard({
                       rel: "noopener noreferrer",
                       "data-test": `item ${link.id}`,
                     }
-                  : {
-                      href: link.href,
-                      "data-test": `item ${link.id}`,
-                    }
+                  : link.href
+                    ? {
+                        to: link.href.startsWith("/settings")
+                          ? "/administration/cluster-settings"
+                          : link.href,
+                        "data-test": `item ${link.id}`,
+                      }
+                    : {
+                        "data-test": `item ${link.id}`,
+                      }
               }
-              href={link.href}
             >
               <>
                 <Content component="p">
@@ -443,7 +448,7 @@ function DetailsCard({ isGlass }: { isGlass: boolean }) {
       <CardHeader
         actions={{
           actions: (
-            <Button variant="link" component={Link} to="/settings" isInline>
+            <Button variant="link" component={Link} to="/administration/cluster-settings" isInline>
               View settings
             </Button>
           ),

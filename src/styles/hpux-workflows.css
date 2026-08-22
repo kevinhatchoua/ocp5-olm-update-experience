@@ -1,0 +1,241 @@
+.ocs-debug-terminal {
+  background: var(--pf-t--global--background--color--secondary--default, #f0f0f0);
+  color: var(--pf-t--global--text--color--regular, #151515);
+  padding: var(--pf-t--global--spacer--md, 16px);
+  border-radius: var(--pf-t--global--border--radius--small, 6px);
+  min-height: 140px;
+  white-space: pre-wrap;
+  font-family: var(--pf-t--global--font--family--mono, ui-monospace, monospace);
+  font-size: 13px;
+}
+
+.ocs-debug-terminal--session {
+  min-height: 220px;
+}
+
+.ocs-pod-status-trigger {
+  background: none;
+  border: 0;
+  padding: 0;
+  cursor: pointer;
+  color: inherit;
+  font: inherit;
+}
+
+.ocs-pod-status-trigger__text {
+  text-decoration: underline;
+  text-decoration-style: dashed;
+  text-underline-offset: 3px;
+}
+
+.ocs-pod-status-popover__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--pf-t--global--spacer--sm, 8px);
+  margin-top: var(--pf-t--global--spacer--sm, 8px);
+}
+
+.ocs-gitops-rollout-detail {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.ocs-gitops-rollout-detail > .pf-v6-c-page__main-section {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.ocs-gitops-rollout-detail__body {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.ocs-gitops-rollout-detail__body.pf-v6-l-flex {
+  flex-wrap: nowrap;
+}
+
+.ocs-gitops-rollout-detail__heading,
+.ocs-gitops-rollout-detail__tabs {
+  flex-shrink: 0;
+}
+
+.ocs-gitops-revisions {
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: var(--pf-t--global--spacer--md, 16px);
+  overflow: hidden;
+}
+
+.ocs-gitops-revisions > .pf-v6-c-title {
+  flex-shrink: 0;
+}
+
+.ocs-gitops-revisions-panel {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+}
+
+.ocs-gitops-revisions-header {
+  flex: 0 0 auto;
+  background: var(--pf-t--global--background--color--secondary--default);
+  border-block-start: 1px solid var(--pf-t--global--border--color--default);
+  border-block-end: 1px solid var(--pf-t--global--border--color--default);
+  border-inline: 0;
+  padding-block: var(--pf-t--global--spacer--md, 16px);
+  padding-inline: var(--pf-t--global--spacer--lg, 24px);
+}
+
+.ocs-gitops-revisions-header .pf-v6-c-toolbar {
+  width: 100%;
+}
+
+.ocs-gitops-revisions-header .pf-v6-c-toolbar__content-section {
+  flex-wrap: wrap;
+  row-gap: var(--pf-t--global--spacer--sm, 8px);
+  column-gap: var(--pf-t--global--spacer--lg, 24px);
+}
+
+.ocs-gitops-revisions-header .pf-v6-c-toolbar__group.pf-m-action-group,
+.ocs-gitops-revisions-header .pf-v6-c-toolbar__group:last-child {
+  gap: var(--pf-t--global--spacer--sm, 8px);
+}
+
+.ocs-gitops-revisions-toolbar {
+  background: transparent;
+  padding: 0;
+}
+
+.ocs-gitops-revisions-toolbar .pf-v6-c-toolbar__content {
+  padding: 0;
+}
+
+.ocs-gitops-revisions-table-wrap {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding-block-start: var(--pf-t--global--spacer--md, 16px);
+  padding-inline: var(--pf-t--global--spacer--md, 16px);
+}
+
+.ocs-gitops-revisions-dataview {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ocs-gitops-revisions-dataview.pf-v6-l-stack {
+  height: 100%;
+  gap: var(--pf-t--global--spacer--md, 16px);
+}
+
+.ocs-gitops-revisions-dataview .ocs-io-dataview-toolbar {
+  padding-block-end: var(--pf-t--global--spacer--sm, 8px);
+}
+
+.ocs-gitops-revisions-dataview.pf-v6-l-stack {
+  height: 100%;
+}
+
+.ocs-gitops-revisions-dataview > .pf-v6-l-stack__item:last-child {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.ocs-gitops-revisions-dataview > .pf-v6-l-stack__item:last-child > .pf-v6-c-page__main-section,
+.ocs-gitops-revisions-dataview .pf-v6-c-page__main-section {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.ocs-gitops-revisions-dataview .pf-v6-c-page__main-section > * {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+}
+
+.ocs-gitops-revisions-dataview .ocs-io-operator-table {
+  min-height: 100%;
+  border: 0;
+}
+
+.ocs-gitops-revisions-dataview .ocs-io-operator-table thead,
+.ocs-gitops-revisions-dataview .ocs-io-operator-table tbody,
+.ocs-gitops-revisions-dataview .ocs-io-operator-table tr > * {
+  border-inline: 0 !important;
+}
+
+.ocs-gitops-revisions-dataview .ocs-io-operator-table thead tr > *,
+.ocs-gitops-revisions-dataview .ocs-io-operator-table tbody tr > * {
+  border-block-end: 0 !important;
+}
+
+.ocs-gitops-revisions-dataview .ocs-io-operator-table thead tr,
+.ocs-gitops-revisions-dataview .ocs-io-operator-table tbody tr {
+  background-image: linear-gradient(
+    to right,
+    transparent 0,
+    transparent var(--pf-t--global--spacer--md, 16px),
+    var(--pf-t--global--border--color--default) var(--pf-t--global--spacer--md, 16px),
+    var(--pf-t--global--border--color--default) calc(100% - var(--pf-t--global--spacer--md, 16px)),
+    transparent calc(100% - var(--pf-t--global--spacer--md, 16px))
+  );
+  background-repeat: no-repeat;
+  background-position: 0 100%;
+  background-size: 100% 1px;
+}
+
+.ocs-gitops-chevron--open {
+  transform: rotate(90deg);
+}
+
+.ocs-gitops-tree-toggle {
+  flex: 0 0 1.75rem;
+  width: 1.75rem;
+  min-width: 1.75rem;
+  padding: 0;
+}
+
+.ocs-gitops-tree-spacer {
+  display: inline-block;
+  flex: 0 0 1.75rem;
+  width: 1.75rem;
+  min-width: 1.75rem;
+}
+
+.ocs-gitops-pod-name {
+  min-width: 0;
+}
+
+.ocs-io-operator-table .ocs-gitops-pod-name-cell,
+.ocs-io-operator-table tr.ocs-gitops-pod-row > td:first-child {
+  padding-inline-start: 3.5rem !important;
+}

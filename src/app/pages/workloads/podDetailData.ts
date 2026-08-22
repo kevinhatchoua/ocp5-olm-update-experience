@@ -47,6 +47,8 @@ export const getPodDetail = (namespace: string, name: string): PodDetail | undef
   }
 
   const containerName = pod.image.split(":")[0].split("/").pop() ?? pod.name;
+  const isCrashLoop = pod.status === "CrashLoopBackOff";
+  const waiting = isCrashLoop ? "CrashLoopBackOff" : pod.status === "Running" ? "Running" : pod.status;
 
   return {
     ...pod,
@@ -70,13 +72,13 @@ export const getPodDetail = (namespace: string, name: string): PodDetail | undef
       {
         name: containerName,
         image: pod.image,
-        state: pod.status === "Running" ? "Running" : pod.status,
+        state: waiting,
         ready: pod.ready.startsWith("1/"),
-        lastState: pod.restarts > 0 ? "Terminated" : "—",
+        lastState: isCrashLoop ? "Terminated (exit 1)" : pod.restarts > 0 ? "Terminated" : "—",
         restarts: pod.restarts,
         started: pod.created,
-        finished: "—",
-        exitCode: "—",
+        finished: isCrashLoop ? "Aug 21, 2026, 9:29 PM" : "—",
+        exitCode: isCrashLoop ? "1" : "—",
       },
     ],
     volumes: ["kube-api-access-abc12", "default-token-xyz89"],

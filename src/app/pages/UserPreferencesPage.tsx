@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   Content,
   Form,
@@ -10,12 +10,7 @@ import {
   SidebarPanel,
   Title,
 } from "@patternfly/react-core";
-import {
-  applyThemeToDocument,
-  readThemePreferences,
-  writeThemePreferences,
-  type ColorTheme,
-} from "@/lib/documentTheme";
+import PatternFlyThemeControls from "../components/PatternFlyThemeControls";
 
 type PrefTab = "general" | "language";
 
@@ -23,29 +18,15 @@ const LAST_VIEWED = "last-viewed";
 
 /**
  * OpenShift-aligned User Preferences (General + Language).
- * Theme changes apply immediately and persist like the real console.
+ * Theme uses PatternFly 6 tiers: Theme, Color scheme, Contrast mode.
  */
 export default function UserPreferencesPage() {
   const [activeTab, setActiveTab] = useState<PrefTab>("general");
-  const [colorTheme, setColorTheme] = useState<ColorTheme>(() => readThemePreferences().colorTheme);
   const [perspective, setPerspective] = useState(LAST_VIEWED);
   const [project, setProject] = useState(LAST_VIEWED);
   const [topology, setTopology] = useState(LAST_VIEWED);
   const [editMethod, setEditMethod] = useState(LAST_VIEWED);
   const [language, setLanguage] = useState("browser-default");
-
-  useEffect(() => {
-    const prefs = readThemePreferences();
-    setColorTheme(prefs.colorTheme);
-  }, []);
-
-  const persistTheme = (nextTheme: ColorTheme) => {
-    setColorTheme(nextTheme);
-    const current = readThemePreferences();
-    const next = { ...current, colorTheme: nextTheme };
-    writeThemePreferences(next);
-    applyThemeToDocument(next);
-  };
 
   return (
     <div className="ocs-app-page-outer">
@@ -94,20 +75,11 @@ export default function UserPreferencesPage() {
         <SidebarContent>
           {activeTab === "general" ? (
             <Form isWidthLimited>
-              <FormGroup label="Theme" fieldId="user-pref-theme">
-                <FormSelect
-                  id="user-pref-theme"
-                  value={colorTheme}
-                  onChange={(_e, value) => persistTheme(value as ColorTheme)}
-                  aria-label="Theme"
-                >
-                  <FormSelectOption value="system" label="System default" />
-                  <FormSelectOption value="light" label="Light" />
-                  <FormSelectOption value="dark" label="Dark" />
-                </FormSelect>
+              <FormGroup label="Appearance" fieldId="user-pref-appearance">
+                <PatternFlyThemeControls idPrefix="user-pref-theme" />
                 <Content component="small" className="pf-v6-u-mt-sm">
-                  The console uses this theme each time you log in. System default follows your operating system
-                  setting.
+                  Theme, color scheme, and contrast mode apply immediately and persist for this prototype.
+                  High contrast and glass are mutually exclusive.
                 </Content>
               </FormGroup>
 

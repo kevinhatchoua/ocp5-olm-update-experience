@@ -1,12 +1,9 @@
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import {
-  Alert,
-  AlertActionLink,
   Button,
   Content,
   Flex,
-  Icon,
   Label,
   Pagination,
   PaginationVariant,
@@ -20,13 +17,9 @@ import {
   DataViewToolbar,
   useDataViewFilters,
 } from "@patternfly/react-data-view";
-import CheckCircleIcon from "@patternfly/react-icons/dist/esm/icons/check-circle-icon";
-import ClockIcon from "@patternfly/react-icons/dist/esm/icons/clock-icon";
-import EllipsisVIcon from "@patternfly/react-icons/dist/esm/icons/ellipsis-v-icon";
 import ListIcon from "@patternfly/react-icons/dist/esm/icons/list-icon";
 import OutlinedClockIcon from "@patternfly/react-icons/dist/esm/icons/outlined-clock-icon";
 import SyncIcon from "@patternfly/react-icons/dist/esm/icons/sync-icon";
-import TimesCircleIcon from "@patternfly/react-icons/dist/esm/icons/times-circle-icon";
 import { Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import FavoriteButton from "../../components/FavoriteButton";
@@ -42,10 +35,10 @@ import {
   useTableSort,
   type SortDirection,
 } from "../../components/dataView/OcsPrototypeListTable";
-import { PODS, podDetailPath, type PodRecord, type PodStatus } from "./podListData";
-import { buildConsoleMockUrl } from "../ConsoleMockLaunchPage";
-
-const DEBUG_POD_MOCK_URL = buildConsoleMockUrl("/k8s/ns/demo-workloads/pods", "hpux-1947-debug-pod");
+import DebugPodModal, { type DebugPodTarget } from "./DebugPodModal";
+import PodActionsMenu from "./PodActionsMenu";
+import PodStatusDisplay from "./PodStatusDisplay";
+import { PODS, podDetailPath, type PodRecord } from "./podListData";
 
 type PodFilters = {
   name: string;
@@ -62,49 +55,6 @@ type SortColumn =
   | "memory"
   | "cpu"
   | "created";
-
-function PodStatusCell({ status }: { status: PodStatus }) {
-  switch (status) {
-    case "Running":
-      return (
-        <Flex alignItems={{ default: "alignItemsCenter" }} gap={{ default: "gapSm" }}>
-          <Icon status="success" aria-hidden>
-            <CheckCircleIcon />
-          </Icon>
-          <Content component="small">{status}</Content>
-        </Flex>
-      );
-    case "Pending":
-      return (
-        <Flex alignItems={{ default: "alignItemsCenter" }} gap={{ default: "gapSm" }}>
-          <Icon status="warning" aria-hidden>
-            <ClockIcon />
-          </Icon>
-          <Content component="small">{status}</Content>
-        </Flex>
-      );
-    case "Failed":
-      return (
-        <Flex alignItems={{ default: "alignItemsCenter" }} gap={{ default: "gapSm" }}>
-          <Icon status="danger" aria-hidden>
-            <TimesCircleIcon />
-          </Icon>
-          <Content component="small">{status}</Content>
-        </Flex>
-      );
-    case "Succeeded":
-      return (
-        <Flex alignItems={{ default: "alignItemsCenter" }} gap={{ default: "gapSm" }}>
-          <Icon status="info" aria-hidden>
-            <CheckCircleIcon />
-          </Icon>
-          <Content component="small">{status}</Content>
-        </Flex>
-      );
-    default:
-      return <Content component="small">{status}</Content>;
-  }
-}
 
 function OwnerKindLabel({ kind }: { kind: PodRecord["owner"]["kind"] }) {
   const abbrev =
@@ -163,10 +113,11 @@ function sortPods(rows: PodRecord[], column: SortColumn, direction: SortDirectio
 
 export default function PodsPage() {
   const navigate = useNavigate();
+  const [debugTarget, setDebugTarget] = useState<DebugPodTarget | null>(null);
   const { filters, onSetFilters, clearAllFilters } = useDataViewFilters<PodFilters>({
     filters: { name: "", namespace: "" },
   });
-  const { sortColumn, sortDirection, toggleSort } = useTableSort<SortColumn>("name");
+  const { sortColumn, sortDirection, toggleSort } = useTableSort<SortColumn>("status");
 
   const filteredPods = useMemo(
     () => PODS.filter((pod) => rowMatchesFilters(pod, filters)),
@@ -208,19 +159,6 @@ export default function PodsPage() {
             </Flex>
             <Button variant="primary">Create Pod</Button>
           </Flex>
-
-          <Alert
-            variant="info"
-            isInline
-            title="Try the Debug Pod prototype"
-            actionLinks={
-              <AlertActionLink component="a" href={DEBUG_POD_MOCK_URL} target="_blank" rel="noreferrer">
-                Open in console mock
-              </AlertActionLink>
-            }
-          >
-            Debug a running pod with the live console-mock prototype (opens in a new tab).
-          </Alert>
 
           <div className="ocs-pods-list__panel">
             <DataView ouiaId="pods-data-view" className={OCS_PROTOTYPE_DATAVIEW_CLASS}>
@@ -416,7 +354,11 @@ export default function PodsPage() {
                           </Flex>
                         </Td>
                         <Td dataLabel="Status">
-                          <PodStatusCell status={pod.status} />
+                          <PodStatusDisplay
+                            pod={pod}
+                            onDebug={() => setDebugTarget({ namespace: pod.namespace, name: pod.name, pod })}
+                            onViewLogs={() => navigate(podDetailPath(pod.namespace, pod.name))}
+                          />
                         </Td>
                         <Td dataLabel="Ready">
                           <Content component="small">{pod.ready}</Content>
@@ -445,11 +387,9 @@ export default function PodsPage() {
                           </Flex>
                         </Td>
                         <Td dataLabel="Actions" isActionCell hasAction>
-                          <Button
-                            variant="plain"
-                            aria-label={`Actions for ${pod.name}`}
-                            icon={<EllipsisVIcon />}
-                            onClick={(e) => e.stopPropagation()}
+                          <PodActionsMenu
+                            pod={pod}
+                            onDebug={(p) => setDebugTarget({ namespace: p.namespace, name: p.name, pod: p })}
                           />
                         </Td>
                       </Tr>
@@ -461,6 +401,11 @@ export default function PodsPage() {
           </div>
         </Flex>
       </Breadcrumbs>
+      <DebugPodModal
+        target={debugTarget}
+        isOpen={debugTarget !== null}
+        onClose={() => setDebugTarget(null)}
+      />
     </div>
   );
 }

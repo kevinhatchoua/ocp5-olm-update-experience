@@ -45,7 +45,6 @@ import UsersIcon from "@patternfly/react-icons/dist/esm/icons/users-icon";
 import RhMicronsCaretDownIcon from "@patternfly/react-icons/dist/esm/icons/rh-microns-caret-down-icon";
 import ImpersonateUserModal from "./ImpersonateUserModal";
 import CopyLoginCommandModal from "./CopyLoginCommandModal";
-import ClusterUpdateDemoBanner from "./ClusterUpdateDemoBanner";
 import BackToPrototypesBanner from "./BackToPrototypesBanner";
 import { MastheadFedoraMark } from "./MastheadFedoraMark";
 import { usePermissions } from "../contexts/PermissionsContext";
@@ -89,7 +88,12 @@ function MastheadIconButton({ label, icon }: { label: string; icon: React.ReactN
 }
 
 function subPathMatches(pathname: string, basePath: string): boolean {
-  return pathname === basePath || pathname.startsWith(`${basePath}/`);
+  if (pathname === basePath || pathname.startsWith(`${basePath}/`)) return true;
+  const gitopsKind = pathname.match(/^\/gitops\/ns\/[^/]+\/(rollouts|argocd|applicationsets|applications)(?:\/|$)/);
+  if (gitopsKind) {
+    return basePath === `/gitops/${gitopsKind[1]}`;
+  }
+  return false;
 }
 
 function subRoutesActive(pathname: string, subItems: { path: string }[]) {
@@ -557,7 +561,6 @@ export default function Layout() {
           style={{ minHeight: "var(--pf-t--global--spacer--0, 0px)" }}
         >
           <BackToPrototypesBanner />
-          <ClusterUpdateDemoBanner />
           <Page
             className={css(sizingStyles.h_100, "ocs-console-page")}
             isManagedSidebar
