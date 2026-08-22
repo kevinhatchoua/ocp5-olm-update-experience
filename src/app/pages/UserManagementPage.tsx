@@ -183,7 +183,7 @@ export default function UserManagementPage() {
             </Alert>
           ) : null}
 
-          <div className="ocs-pods-list__panel app-glass-panel">
+          <div className="ocs-pods-list__panel">
             <DataView ouiaId="user-management-data-view" className={OCS_PROTOTYPE_DATAVIEW_CLASS}>
               <DataViewToolbar
                 ouiaId="user-management-dv-toolbar"

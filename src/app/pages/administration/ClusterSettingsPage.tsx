@@ -1,9 +1,21 @@
 import { useState, useEffect, useMemo } from "react";
 import {
+  Alert,
   Button,
   Content,
+  DescriptionList,
+  DescriptionListDescription,
+  DescriptionListGroup,
+  DescriptionListTerm,
+  Flex,
+  Icon,
+  Label,
   Pagination,
   PaginationVariant,
+  Tab,
+  Tabs,
+  TabTitleText,
+  Title,
 } from "@patternfly/react-core";
 import {
   DataView,
@@ -12,14 +24,28 @@ import {
   useDataViewFilters,
 } from "@patternfly/react-data-view";
 import { Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
-import { CheckCircle, AlertCircle, Clock, ExternalLink, ChevronDown, ChevronUp, Loader2 } from "@/lib/pfIcons";
-import { Link } from "react-router";
+import AngleDownIcon from "@patternfly/react-icons/dist/esm/icons/angle-down-icon";
+import AngleUpIcon from "@patternfly/react-icons/dist/esm/icons/angle-up-icon";
+import CheckCircleIcon from "@patternfly/react-icons/dist/esm/icons/check-circle-icon";
+import ClockIcon from "@patternfly/react-icons/dist/esm/icons/clock-icon";
+import ExternalLinkAltIcon from "@patternfly/react-icons/dist/esm/icons/external-link-alt-icon";
+import ExclamationTriangleIcon from "@patternfly/react-icons/dist/esm/icons/exclamation-triangle-icon";
+import PencilAltIcon from "@patternfly/react-icons/dist/esm/icons/pencil-alt-icon";
+import TimesCircleIcon from "@patternfly/react-icons/dist/esm/icons/times-circle-icon";
+import { Link, useSearchParams } from "react-router";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import FavoriteButton from "../../components/FavoriteButton";
+import { ClusterSettingsUpdatePanel } from "../../components/cluster-update/ClusterSettingsUpdatePanel";
+import { ClusterUpdateInProgressStatus } from "../../components/cluster-update/ClusterUpdateInProgressStatus";
+import {
+  CLUSTER_ID,
+  CLUSTER_SLA_DAYS_REMAINING,
+} from "../../constants/clusterVersionDemo";
 import { IoDataViewFiltersWithMidActions } from "../../components/dataView/IoDataViewFiltersWithMidActions";
 import {
   OCS_PROTOTYPE_DATAVIEW_CLASS,
   OCS_PROTOTYPE_TOOLBAR_CLASS,
+  OcsNamedResourceDataView,
   OcsPrototypeListTable,
   PlainTableHeader,
   SortableTableHeader,
@@ -49,7 +75,7 @@ const CLUSTER_OPERATORS: ClusterOperator[] = [
   { name: "config-operator", version: "5.0.12", available: true, progressing: false, degraded: false, lastTransition: "3d ago" },
   { name: "console", version: "5.0.12", available: true, progressing: false, degraded: false, lastTransition: "1d ago" },
   { name: "dns", version: "5.0.12", available: true, progressing: false, degraded: false, lastTransition: "3d ago" },
-  { name: "etcd", version: "5.0.12", available: true, progressing: false, degraded: true, message: "EtcdMembersDegraded: unhealthy member", lastTransition: "45m ago" },
+  { name: "etcd", version: "5.0.12", available: true, progressing: false, degraded: false, lastTransition: "45m ago" },
   { name: "image-registry", version: "5.0.12", available: true, progressing: false, degraded: false, lastTransition: "3d ago" },
   { name: "ingress", version: "5.0.12", available: true, progressing: false, degraded: false, lastTransition: "3d ago" },
   { name: "insights", version: "5.0.12", available: true, progressing: false, degraded: false, lastTransition: "3d ago" },
@@ -59,7 +85,7 @@ const CLUSTER_OPERATORS: ClusterOperator[] = [
   { name: "kube-storage-version-migrator", version: "5.0.12", available: true, progressing: true, degraded: false, message: "StorageVersionMigration in progress", lastTransition: "15m ago" },
   { name: "machine-api", version: "5.0.12", available: true, progressing: false, degraded: false, lastTransition: "3d ago" },
   { name: "machine-approver", version: "5.0.12", available: true, progressing: false, degraded: false, lastTransition: "3d ago" },
-  { name: "machine-config", version: "5.0.12", available: true, progressing: false, degraded: false, lastTransition: "2d ago" },
+  { name: "machine-config", version: "5.0.12", available: true, progressing: false, degraded: true, message: "MachineConfigControllerFailed: waitForControllerConfigToBeCompleted", lastTransition: "14m ago" },
   { name: "marketplace", version: "5.0.12", available: true, progressing: false, degraded: false, lastTransition: "3d ago" },
   { name: "monitoring", version: "5.0.12", available: true, progressing: false, degraded: false, lastTransition: "1d ago" },
   { name: "network", version: "5.0.12", available: true, progressing: false, degraded: false, lastTransition: "3d ago" },
@@ -100,10 +126,9 @@ const CONFIG_RESOURCES: ConfigResource[] = [
 
 function StatusBadge({ ok, label }: { ok: boolean; label: string }) {
   return (
-    <span className={`inline-flex items-center gap-[4px] text-[12px] font-['Red_Hat_Text:Regular',sans-serif] ${ok ? "text-[#3e8635]" : "text-[#c9190b]"}`}>
-      {ok ? <CheckCircle className="size-[13px]" /> : <AlertCircle className="size-[13px]" />}
+    <Label color={ok ? "green" : "red"} icon={ok ? <CheckCircleIcon /> : <TimesCircleIcon />} isCompact>
       {label}
-    </span>
+    </Label>
   );
 }
 
@@ -140,7 +165,7 @@ function sortClusterOperators(rows: ClusterOperator[], column: ClusterOperatorSo
 function ClusterOperatorsTab() {
   const [expandedOp, setExpandedOp] = useState<string | null>(null);
   const { filters, onSetFilters, clearAllFilters } = useDataViewFilters<ClusterOperatorFilters>({
-    filters: { name: "" },
+    initialFilters: { name: "" },
   });
   const { sortColumn, sortDirection, toggleSort } = useTableSort<ClusterOperatorSortColumn>("name");
 
@@ -161,7 +186,6 @@ function ClusterOperatorsTab() {
   const colSpan = 6;
 
   return (
-    <div className="bg-[rgba(255,255,255,0.5)] dark:bg-[rgba(255,255,255,0.05)] rounded-[16px] shadow-[0px_4px_12px_0px_rgba(0,0,0,0.06)] border border-[rgba(0,0,0,0.1)] dark:border-[rgba(255,255,255,0.1)] mb-[24px] overflow-hidden">
       <DataView ouiaId="cluster-operators-data-view" className={OCS_PROTOTYPE_DATAVIEW_CLASS}>
         <DataViewToolbar
           ouiaId="cluster-operators-dv-toolbar"
@@ -172,8 +196,12 @@ function ClusterOperatorsTab() {
           filters={
             <IoDataViewFiltersWithMidActions<ClusterOperatorFilters>
               values={filters}
-              onChange={(_filterId, partial) => onSetFilters(partial)}
+              onChange={
+                ((_filterId: string, partial: Partial<Record<"name", unknown>>) =>
+                  onSetFilters(partial as Partial<ClusterOperatorFilters>)) as never
+              }
               breakpoint="xl"
+              midContent={null}
             >
               <DataViewTextFilter
                 title="Name"
@@ -250,10 +278,10 @@ function ClusterOperatorsTab() {
                     style={{ cursor: "pointer" }}
                   >
                     <Td dataLabel="Name">
-                      <div className="flex items-center gap-[6px]">
-                        {expandedOp === op.name ? <ChevronUp className="size-[14px] text-[#6a6e73]" /> : <ChevronDown className="size-[14px] text-[#6a6e73]" />}
+                      <Flex alignItems={{ default: "alignItemsCenter" }} gap={{ default: "gapSm" }}>
+                        {expandedOp === op.name ? <AngleUpIcon /> : <AngleDownIcon />}
                         <Content component="small">{op.name}</Content>
-                      </div>
+                      </Flex>
                     </Td>
                     <Td dataLabel="Version">
                       <Content component="small">{op.version}</Content>
@@ -263,9 +291,9 @@ function ClusterOperatorsTab() {
                     </Td>
                     <Td dataLabel="Progressing">
                       {op.progressing ? (
-                        <span className="inline-flex items-center gap-[4px] text-[12px] text-[#0066cc] dark:text-[#4dabf7]">
-                          <Clock className="size-[13px]" /> True
-                        </span>
+                        <Label color="blue" icon={<ClockIcon />} isCompact>
+                          True
+                        </Label>
                       ) : (
                         <Content component="small">False</Content>
                       )}
@@ -282,20 +310,20 @@ function ClusterOperatorsTab() {
                   rows.push(
                     <Tr key={`${op.name}-detail`}>
                       <Td colSpan={colSpan} dataLabel="Details">
-                        <div className="grid grid-cols-2 gap-[16px] text-[13px]">
-                          <div>
-                            <span className="text-[11px] uppercase tracking-wide text-[#6a6e73] dark:text-[#8a8d90] block mb-[4px]">Operator</span>
-                            <Content component="small">{op.name}</Content>
-                          </div>
-                          <div>
-                            <span className="text-[11px] uppercase tracking-wide text-[#6a6e73] dark:text-[#8a8d90] block mb-[4px]">Version</span>
-                            <Content component="small">{op.version}</Content>
-                          </div>
-                          <div className="col-span-2">
-                            <span className="text-[11px] uppercase tracking-wide text-[#6a6e73] dark:text-[#8a8d90] block mb-[4px]">Message</span>
-                            <Content component="small">{op.message || "All is well"}</Content>
-                          </div>
-                        </div>
+                        <DescriptionList isCompact columnModifier={{ default: "2Col" }}>
+                          <DescriptionListGroup>
+                            <DescriptionListTerm>Operator</DescriptionListTerm>
+                            <DescriptionListDescription>{op.name}</DescriptionListDescription>
+                          </DescriptionListGroup>
+                          <DescriptionListGroup>
+                            <DescriptionListTerm>Version</DescriptionListTerm>
+                            <DescriptionListDescription>{op.version}</DescriptionListDescription>
+                          </DescriptionListGroup>
+                          <DescriptionListGroup>
+                            <DescriptionListTerm>Message</DescriptionListTerm>
+                            <DescriptionListDescription>{op.message || "All is well"}</DescriptionListDescription>
+                          </DescriptionListGroup>
+                        </DescriptionList>
                       </Td>
                     </Tr>
                   );
@@ -306,10 +334,8 @@ function ClusterOperatorsTab() {
           </Tbody>
         </OcsPrototypeListTable>
       </DataView>
-    </div>
   );
 }
-
 type ConfigResourceFilters = { name: string; kind: string };
 type ConfigResourceSortColumn = "name" | "kind" | "apiVersion";
 
@@ -338,7 +364,7 @@ function sortConfigResources(rows: ConfigResource[], column: ConfigResourceSortC
 
 function ConfigurationTab() {
   const { filters, onSetFilters, clearAllFilters } = useDataViewFilters<ConfigResourceFilters>({
-    filters: { name: "", kind: "" },
+    initialFilters: { name: "", kind: "" },
   });
   const { sortColumn, sortDirection, toggleSort } = useTableSort<ConfigResourceSortColumn>("kind");
 
@@ -359,7 +385,6 @@ function ConfigurationTab() {
   const colSpan = 4;
 
   return (
-    <div className="bg-[rgba(255,255,255,0.5)] dark:bg-[rgba(255,255,255,0.05)] rounded-[16px] shadow-[0px_4px_12px_0px_rgba(0,0,0,0.06)] border border-[rgba(0,0,0,0.1)] dark:border-[rgba(255,255,255,0.1)] mb-[24px] overflow-hidden">
       <DataView ouiaId="configuration-data-view" className={OCS_PROTOTYPE_DATAVIEW_CLASS}>
         <DataViewToolbar
           ouiaId="configuration-dv-toolbar"
@@ -370,8 +395,12 @@ function ConfigurationTab() {
           filters={
             <IoDataViewFiltersWithMidActions<ConfigResourceFilters>
               values={filters}
-              onChange={(_filterId, partial) => onSetFilters(partial)}
+              onChange={
+                ((_filterId: string, partial: Partial<Record<keyof ConfigResourceFilters, unknown>>) =>
+                  onSetFilters(partial as Partial<ConfigResourceFilters>)) as never
+              }
               breakpoint="xl"
+              midContent={null}
             >
               <DataViewTextFilter
                 title="Name"
@@ -458,7 +487,7 @@ function ConfigurationTab() {
                       href={`https://docs.openshift.com/container-platform/latest/rest_api/config_apis/${r.kind.toLowerCase()}-${r.apiVersion.split("/")[0]}-${r.apiVersion.split("/")[1]}.html`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      icon={<ExternalLink className="size-[11px]" />}
+                      icon={<ExternalLinkAltIcon />}
                     >
                       API Reference
                     </Button>
@@ -469,12 +498,210 @@ function ConfigurationTab() {
           </Tbody>
         </OcsPrototypeListTable>
       </DataView>
-    </div>
+  );
+}
+
+const DESIRED_RELEASE_IMAGE =
+  "registry.ci.openshift.org/ocp/release@sha256:6dbbd6b0fa89c1c0223ae79b32fb3ff1a4fc2f3a96b352bf7fd487cd2023cd0c3ae499bfdd6b6c74297bf93f9bc2ea6b8c5b6dfda8e74297bf93";
+const UPSTREAM_GRAPH_URL = "https://apenshift-release.apps.ci.ci24.p1.openshiftapps.com/graph";
+
+const UPDATE_HISTORY_ROWS = [
+  {
+    version: "5.0.0-ec.6",
+    started: "Aug 18, 2026, 4:12:08 PM",
+    completed: "Aug 18, 2026, 4:41:22 PM",
+  },
+  {
+    version: "5.0.0-ec.6",
+    started: "Aug 18, 2026, 2:03:41 PM",
+    completed: "Aug 18, 2026, 2:31:19 PM",
+  },
+  {
+    version: "5.0.0-ec.6",
+    started: "Aug 18, 2026, 11:18:05 AM",
+    completed: "Aug 18, 2026, 11:46:57 AM",
+  },
+];
+
+function ClusterDetailsList() {
+  return (
+    <DescriptionList aria-label="Cluster details">
+      <DescriptionListGroup>
+        <DescriptionListTerm>Subscription</DescriptionListTerm>
+        <DescriptionListDescription>
+          <Button
+            variant="link"
+            isInline
+            component="a"
+            href="https://console.redhat.com/openshift"
+            target="_blank"
+            rel="noopener noreferrer"
+            icon={<ExternalLinkAltIcon />}
+            iconPosition="end"
+          >
+            OpenShift Cluster Manager
+          </Button>
+        </DescriptionListDescription>
+      </DescriptionListGroup>
+      <DescriptionListGroup>
+        <DescriptionListTerm>Service Level Agreement (SLA)</DescriptionListTerm>
+        <DescriptionListDescription>
+          <Flex direction={{ default: "column" }} gap={{ default: "gapXs" }}>
+            <Content component="p">Self-support, 60 day trial</Content>
+            <Flex gap={{ default: "gapXs" }} alignItems={{ default: "alignItemsCenter" }}>
+              <Icon status="warning">
+                <ExclamationTriangleIcon />
+              </Icon>
+              <Content component="p">{CLUSTER_SLA_DAYS_REMAINING} days remaining</Content>
+            </Flex>
+            <Button
+              variant="link"
+              isInline
+              component="a"
+              href="https://console.redhat.com/openshift/subscriptions"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Manage subscription settings
+            </Button>
+          </Flex>
+        </DescriptionListDescription>
+      </DescriptionListGroup>
+      <DescriptionListGroup>
+        <DescriptionListTerm>Cluster ID</DescriptionListTerm>
+        <DescriptionListDescription>
+          <code>{CLUSTER_ID}</code>
+        </DescriptionListDescription>
+      </DescriptionListGroup>
+      <DescriptionListGroup>
+        <DescriptionListTerm>Desired release image</DescriptionListTerm>
+        <DescriptionListDescription>
+          <code style={{ overflowWrap: "anywhere" }}>{DESIRED_RELEASE_IMAGE}</code>
+        </DescriptionListDescription>
+      </DescriptionListGroup>
+      <DescriptionListGroup>
+        <DescriptionListTerm>Cluster version configuration</DescriptionListTerm>
+        <DescriptionListDescription>
+          <Button variant="link" isInline>
+            CV version
+          </Button>
+        </DescriptionListDescription>
+      </DescriptionListGroup>
+      <DescriptionListGroup>
+        <DescriptionListTerm>Upstream configuration</DescriptionListTerm>
+        <DescriptionListDescription>
+          <Flex gap={{ default: "gapSm" }} alignItems={{ default: "alignItemsCenter" }} flexWrap={{ default: "wrap" }}>
+            <Button
+              variant="link"
+              isInline
+              component="a"
+              href={UPSTREAM_GRAPH_URL}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {UPSTREAM_GRAPH_URL}
+            </Button>
+            <Button variant="plain" aria-label="Edit upstream configuration" icon={<PencilAltIcon />} />
+          </Flex>
+        </DescriptionListDescription>
+      </DescriptionListGroup>
+      <DescriptionListGroup>
+        <DescriptionListTerm>Cluster autoscaler</DescriptionListTerm>
+        <DescriptionListDescription>
+          <Button
+            variant="link"
+            isInline
+            component="a"
+            href="https://docs.openshift.com/container-platform/latest/machine_management/applying-autoscaling.html"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            + Create autoscaler
+          </Button>
+        </DescriptionListDescription>
+      </DescriptionListGroup>
+    </DescriptionList>
+  );
+}
+
+function historyVersion(row: (typeof UPDATE_HISTORY_ROWS)[number]) {
+  return row.version;
+}
+
+function ClusterUpdateHistory() {
+  return (
+    <Flex direction={{ default: "column" }} gap={{ default: "gapSm" }}>
+      <Title headingLevel="h2" size="xl">
+        Update history
+      </Title>
+      <Content component="p">
+        There is a threshold for rendering update data which may cause gaps in the information below.
+      </Content>
+      <OcsNamedResourceDataView
+        ouiaId="cluster-settings-history-data-view"
+        ariaLabel="Update history"
+        itemsLabel="updates"
+        items={UPDATE_HISTORY_ROWS}
+        getName={historyVersion}
+      >
+        {(rows) => (
+          <>
+            <Thead>
+              <Tr>
+                <Th dataLabel="Version">
+                  <PlainTableHeader label="Version" />
+                </Th>
+                <Th dataLabel="State">
+                  <PlainTableHeader label="State" />
+                </Th>
+                <Th dataLabel="Started">
+                  <PlainTableHeader label="Started" />
+                </Th>
+                <Th dataLabel="Completed">
+                  <PlainTableHeader label="Completed" />
+                </Th>
+                <Th dataLabel="Release notes">
+                  <PlainTableHeader label="Release notes" />
+                </Th>
+              </Tr>
+            </Thead>
+            <Tbody>
+              {rows.map((row) => (
+                <Tr key={`${row.version}-${row.started}`}>
+                  <Td dataLabel="Version">{row.version}</Td>
+                  <Td dataLabel="State">Completed</Td>
+                  <Td dataLabel="Started">{row.started}</Td>
+                  <Td dataLabel="Completed">{row.completed}</Td>
+                  <Td dataLabel="Release notes">
+                    <Button
+                      variant="link"
+                      isInline
+                      component="a"
+                      href={`https://docs.openshift.com/container-platform/5.0/release_notes/ocp-${row.version}-release-notes.html`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      icon={<ExternalLinkAltIcon />}
+                      iconPosition="end"
+                    >
+                      View release notes
+                    </Button>
+                  </Td>
+                </Tr>
+              ))}
+            </Tbody>
+          </>
+        )}
+      </OcsNamedResourceDataView>
+    </Flex>
   );
 }
 
 export default function ClusterSettingsPage() {
-  const [activeTab, setActiveTab] = useState<SettingsTab>("details");
+  const [searchParams] = useSearchParams();
+  const initialTab = searchParams.get("tab");
+  const [activeTab, setActiveTab] = useState<SettingsTab>(
+    initialTab === "cluster-operators" || initialTab === "configuration" ? initialTab : "details",
+  );
   const [isUpdateInProgress, setIsUpdateInProgress] = useState(false);
   const [updateVersion, setUpdateVersion] = useState("5.1.10");
 
@@ -486,7 +713,9 @@ export default function ClusterSettingsPage() {
           const data = JSON.parse(stored);
           setIsUpdateInProgress(true);
           setUpdateVersion(data.version || "5.1.10");
-        } catch { setIsUpdateInProgress(false); }
+        } catch {
+          setIsUpdateInProgress(false);
+        }
       } else {
         setIsUpdateInProgress(false);
       }
@@ -504,74 +733,56 @@ export default function ClusterSettingsPage() {
           { label: "Cluster Settings" },
         ]}
       >
+        <Flex direction={{ default: "column" }} gap={{ default: "gapLg" }}>
+          <Flex
+            alignItems={{ default: "alignItemsCenter" }}
+            justifyContent={{ default: "justifyContentSpaceBetween" }}
+            flexWrap={{ default: "wrap" }}
+            gap={{ default: "gapMd" }}
+          >
+            <Title headingLevel="h1" size="2xl" id="main-title">
+              Cluster Settings
+            </Title>
+            <FavoriteButton name="Cluster Settings" path="/administration/cluster-settings" />
+          </Flex>
 
-      <div className="mb-[24px]">
-        <div className="flex items-center justify-between mb-[16px]">
-          <h1 className="font-['Red_Hat_Display_VF:Medium',sans-serif] font-medium leading-[36.4px] text-[#151515] dark:text-white text-[28px]">
-            Cluster Settings
-          </h1>
-          <FavoriteButton name="Cluster Settings" path="/administration/cluster-settings" />
-        </div>
-        <div className="flex gap-[24px] text-[14px] border-b border-[rgba(0,0,0,0.1)] dark:border-[rgba(255,255,255,0.1)]">
-          {([["details", "Details"], ["cluster-operators", "ClusterOperators"], ["configuration", "Configuration"]] as const).map(([key, label]) => (
-            <button key={key} onClick={() => setActiveTab(key)}
-              className={`pb-[12px] bg-transparent border-0 cursor-pointer font-['Red_Hat_Text:Regular',sans-serif] text-[14px] -mb-[1px] transition-colors ${activeTab === key ? "border-b-2 border-[#0066cc] dark:border-[#4dabf7] font-semibold text-[#151515] dark:text-white" : "text-[#4d4d4d] dark:text-[#b0b0b0] hover:text-[#151515] dark:hover:text-white"}`}>
-              {label}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {activeTab === "details" && (
-        <>
-          {isUpdateInProgress && (
-            <div className="flex items-center gap-[12px] bg-[#e7f1fa] dark:bg-[rgba(0,102,204,0.08)] px-[16px] py-[12px] mb-[16px] rounded-[8px] border border-[#0066cc] dark:border-[#4dabf7]">
-              <Loader2 className="size-[18px] text-[#0066cc] dark:text-[#4dabf7] shrink-0 animate-spin" />
-              <p className="text-[#151515] dark:text-white text-[14px] font-['Red_Hat_Text:Regular',sans-serif] flex-1">
-                <span className="font-medium">An update to {updateVersion} is in progress.</span> View the update status on the Cluster Update page.
-              </p>
-              <Link to="/administration/cluster-update/in-progress" state={{ version: updateVersion }} className="flex items-center gap-[4px] text-[#0066cc] dark:text-[#4dabf7] text-[13px] no-underline hover:underline whitespace-nowrap font-['Red_Hat_Text:Regular',sans-serif] font-medium">
-                Review update progress <ExternalLink className="size-[14px]" />
-              </Link>
-            </div>
-          )}
-
-          <div className="bg-[rgba(255,255,255,0.5)] dark:bg-[rgba(255,255,255,0.05)] rounded-[16px] shadow-[0px_4px_12px_0px_rgba(0,0,0,0.06)] p-[24px] border border-[rgba(0,0,0,0.1)] dark:border-[rgba(255,255,255,0.1)] mb-[24px]">
-            <div className="space-y-[20px]">
-              <div>
-                <h3 className="font-['Red_Hat_Display:SemiBold',sans-serif] font-semibold text-[#151515] dark:text-white text-[16px] mb-[8px]">Subscription</h3>
-                <a href="https://console.redhat.com/openshift" target="_blank" rel="noopener noreferrer" className="text-[14px] text-[#0066cc] dark:text-[#4dabf7] hover:underline">OpenShift Cluster Manager</a>
+          <Tabs
+            id="cluster-settings-tabs"
+            aria-label="Cluster settings"
+            activeKey={activeTab}
+            onSelect={(_event, eventKey) => {
+              if (eventKey === "details" || eventKey === "cluster-operators" || eventKey === "configuration") {
+                setActiveTab(eventKey);
+              }
+            }}
+          >
+            <Tab eventKey="details" title={<TabTitleText>Details</TabTitleText>}>
+              <Flex direction={{ default: "column" }} gap={{ default: "gapLg" }} className="pf-v6-u-pt-lg">
+                {isUpdateInProgress ? (
+                  <ClusterUpdateInProgressStatus targetVersion={updateVersion} />
+                ) : (
+                  <ClusterSettingsUpdatePanel
+                    onViewClusterOperators={() => setActiveTab("cluster-operators")}
+                    showAiAssessment
+                    navigateOnPrecheck="/administration/cluster-update"
+                  />
+                )}
+                <ClusterDetailsList />
+                <ClusterUpdateHistory />
+              </Flex>
+            </Tab>
+            <Tab eventKey="cluster-operators" title={<TabTitleText>ClusterOperators</TabTitleText>}>
+              <div className="pf-v6-u-pt-lg">
+                <ClusterOperatorsTab />
               </div>
-              <div>
-                <h3 className="font-['Red_Hat_Display:SemiBold',sans-serif] font-semibold text-[#151515] dark:text-white text-[16px] mb-[8px]">Service Level Agreement (SLA)</h3>
-                <p className="text-[14px] text-[#4d4d4d] dark:text-[#b0b0b0]">Self-support, 60 day trial</p>
-                <p className="text-[14px] text-[#4d4d4d] dark:text-[#b0b0b0]">59 days remaining</p>
-                <a href="https://console.redhat.com/openshift/subscriptions" target="_blank" rel="noopener noreferrer" className="text-[14px] text-[#0066cc] dark:text-[#4dabf7] hover:underline">Manage subscription settings</a>
+            </Tab>
+            <Tab eventKey="configuration" title={<TabTitleText>Configuration</TabTitleText>}>
+              <div className="pf-v6-u-pt-lg">
+                <ConfigurationTab />
               </div>
-              <div>
-                <h3 className="font-['Red_Hat_Display:SemiBold',sans-serif] font-semibold text-[#151515] dark:text-white text-[16px] mb-[8px]">Cluster ID</h3>
-                <p className="text-[14px] text-[#4d4d4d] dark:text-[#b0b0b0] font-mono">b86faa3-b06c-4a82-8fa7-54b80a92d4b2</p>
-              </div>
-              <div>
-                <h3 className="font-['Red_Hat_Display:SemiBold',sans-serif] font-semibold text-[#151515] dark:text-white text-[16px] mb-[8px]">Desired release image</h3>
-                <p className="text-[14px] text-[#4d4d4d] dark:text-[#b0b0b0] font-mono break-all">registry.ci.openshift.org/ocp/release@sha256:6dbbd6b0fa89c1c0223ae79b32fb3ff1a4fc2f3a96b352bf7fd487cd2023cd0c3ae499bfdd6b6c74297bf93f9bc2ea6b8c5b6dfda8e74297bf93</p>
-              </div>
-              <div>
-                <h3 className="font-['Red_Hat_Display:SemiBold',sans-serif] font-semibold text-[#151515] dark:text-white text-[16px] mb-[8px]">Upstream configuration</h3>
-                <a href="https://docs.openshift.com/container-platform/latest/updating/understanding_updates/understanding-update-channels-releases.html" target="_blank" rel="noopener noreferrer" className="text-[14px] text-[#0066cc] dark:text-[#4dabf7] hover:underline">https://apenshift-release.apps.ci.ci24.p1.openshiftapps.com/graph</a>
-              </div>
-              <div>
-                <h3 className="font-['Red_Hat_Display:SemiBold',sans-serif] font-semibold text-[#151515] dark:text-white text-[16px] mb-[8px]">Cluster autoscaler</h3>
-                <a href="https://docs.openshift.com/container-platform/latest/machine_management/applying-autoscaling.html" target="_blank" rel="noopener noreferrer" className="text-[14px] text-[#0066cc] dark:text-[#4dabf7] hover:underline">Create autoscaler</a>
-              </div>
-            </div>
-          </div>
-        </>
-      )}
-
-      {activeTab === "cluster-operators" && <ClusterOperatorsTab />}
-
-      {activeTab === "configuration" && <ConfigurationTab />}
+            </Tab>
+          </Tabs>
+        </Flex>
       </Breadcrumbs>
     </div>
   );

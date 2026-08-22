@@ -5,6 +5,7 @@ import flexStyles from "@patternfly/react-styles/css/utilities/Flex/flex.mjs";
 import sizingStyles from "@patternfly/react-styles/css/utilities/Sizing/sizing.mjs";
 import spacingStyles from "@patternfly/react-styles/css/utilities/Spacing/spacing.mjs";
 import textStyles from "@patternfly/react-styles/css/utilities/Text/text.mjs";
+import { OpenShiftLightspeedIcon } from "./lightspeed/OpenShiftLightspeedIcon";
 import {
   Send,
   ThumbsUp,
@@ -13,7 +14,6 @@ import {
   Bookmark,
   Volume2,
   Paperclip,
-  Bot,
 } from "@/lib/pfIcons";
 import {
   Button,
@@ -31,7 +31,6 @@ import {
   DrawerPanelContent,
   Flex,
   FlexItem,
-  Icon,
   Label,
   TextInput,
   Title,
@@ -326,11 +325,9 @@ export function OlsChatbot({
           >
             <DrawerHead>
               <Flex alignItems={{ default: "alignItemsCenter" }} gap={{ default: "gapSm" }}>
-                <Icon size="lg" status="custom">
-                  <Bot aria-hidden className="text-[var(--pf-t--global--danger-color--100,#c9190b)]" />
-                </Icon>
+                <OpenShiftLightspeedIcon size={32} />
                 <Title headingLevel="h2" size="md">
-                  OpenShift LightSpeed
+                  Red Hat OpenShift Lightspeed
                 </Title>
               </Flex>
               <DrawerActions>

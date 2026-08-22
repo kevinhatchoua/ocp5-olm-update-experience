@@ -21,19 +21,103 @@ import {
   TabTitleText,
   Title,
 } from "@patternfly/react-core";
-import { InnerScrollContainer, Table, Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
-import {
-  OCS_PROTOTYPE_TABLE_CLASS,
-  PlainTableHeader,
-} from "../../components/dataView/OcsPrototypeListTable";
+import { Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
+import { OcsNamedResourceDataView, PlainTableHeader } from "../../components/dataView/OcsPrototypeListTable";
 import CheckCircleIcon from "@patternfly/react-icons/dist/esm/icons/check-circle-icon";
 import ClockIcon from "@patternfly/react-icons/dist/esm/icons/clock-icon";
 import EllipsisVIcon from "@patternfly/react-icons/dist/esm/icons/ellipsis-v-icon";
 import TimesCircleIcon from "@patternfly/react-icons/dist/esm/icons/times-circle-icon";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import FavoriteButton from "../../components/FavoriteButton";
-import { getPodDetail } from "./podDetailData";
+import { getPodDetail, type PodContainer } from "./podDetailData";
 import { podDetailPath } from "./podListData";
+
+function containerName(container: PodContainer) {
+  return container.name;
+}
+
+function PodContainersTable({ containers }: { containers: PodContainer[] }) {
+  return (
+    <OcsNamedResourceDataView
+      ouiaId="pod-containers-data-view"
+      ariaLabel="Containers"
+      itemsLabel="containers"
+      items={containers}
+      getName={containerName}
+    >
+      {(rows) => (
+        <>
+          <Thead>
+            <Tr>
+              <Th dataLabel="Name">
+                <PlainTableHeader label="Name" />
+              </Th>
+              <Th dataLabel="Image">
+                <PlainTableHeader label="Image" />
+              </Th>
+              <Th dataLabel="State">
+                <PlainTableHeader label="State" />
+              </Th>
+              <Th dataLabel="Ready">
+                <PlainTableHeader label="Ready" />
+              </Th>
+              <Th dataLabel="Last State">
+                <PlainTableHeader label="Last State" />
+              </Th>
+              <Th dataLabel="Restarts">
+                <PlainTableHeader label="Restarts" />
+              </Th>
+              <Th dataLabel="Started">
+                <PlainTableHeader label="Started" />
+              </Th>
+              <Th dataLabel="Finished">
+                <PlainTableHeader label="Finished" />
+              </Th>
+              <Th dataLabel="Exit code">
+                <PlainTableHeader label="Exit code" />
+              </Th>
+            </Tr>
+          </Thead>
+          <Tbody>
+            {rows.map((c) => (
+              <Tr key={c.name}>
+                <Td dataLabel="Name">
+                  <Content component="small">{c.name}</Content>
+                </Td>
+                <Td dataLabel="Image">
+                  <Content component="small" className="ocs-pods-list__mono">
+                    {c.image}
+                  </Content>
+                </Td>
+                <Td dataLabel="State">
+                  <Content component="small">{c.state}</Content>
+                </Td>
+                <Td dataLabel="Ready">
+                  <Content component="small">{c.ready ? "True" : "False"}</Content>
+                </Td>
+                <Td dataLabel="Last State">
+                  <Content component="small">{c.lastState}</Content>
+                </Td>
+                <Td dataLabel="Restarts">
+                  <Content component="small">{c.restarts}</Content>
+                </Td>
+                <Td dataLabel="Started">
+                  <Content component="small">{c.started}</Content>
+                </Td>
+                <Td dataLabel="Finished">
+                  <Content component="small">{c.finished}</Content>
+                </Td>
+                <Td dataLabel="Exit code">
+                  <Content component="small">{c.exitCode}</Content>
+                </Td>
+              </Tr>
+            ))}
+          </Tbody>
+        </>
+      )}
+    </OcsNamedResourceDataView>
+  );
+}
 
 function PodStatusLabel({ status }: { status: string }) {
   switch (status) {
@@ -173,7 +257,7 @@ export default function PodDetailPage() {
 
           {activeTab === "details" ? (
             <>
-              <section className="ocs-pod-details__section app-glass-panel" aria-label="Pod details">
+              <section className="ocs-pod-details__section" aria-label="Pod details">
                 <Title headingLevel="h2" size="xl" className="ocs-pod-details__section-title">
                   Pod details
                 </Title>
@@ -288,83 +372,14 @@ export default function PodDetailPage() {
                 </Grid>
               </section>
 
-              <section className="ocs-pod-details__section app-glass-panel" aria-label="Containers">
+              <section className="ocs-pod-details__section" aria-label="Containers">
                 <Title headingLevel="h2" size="xl" className="ocs-pod-details__section-title">
                   Containers
                 </Title>
-                <InnerScrollContainer>
-                  <Table aria-label="Containers" borders variant="compact" className={OCS_PROTOTYPE_TABLE_CLASS}>
-                    <Thead>
-                      <Tr>
-                        <Th dataLabel="Name">
-                          <PlainTableHeader label="Name" />
-                        </Th>
-                        <Th dataLabel="Image">
-                          <PlainTableHeader label="Image" />
-                        </Th>
-                        <Th dataLabel="State">
-                          <PlainTableHeader label="State" />
-                        </Th>
-                        <Th dataLabel="Ready">
-                          <PlainTableHeader label="Ready" />
-                        </Th>
-                        <Th dataLabel="Last State">
-                          <PlainTableHeader label="Last State" />
-                        </Th>
-                        <Th dataLabel="Restarts">
-                          <PlainTableHeader label="Restarts" />
-                        </Th>
-                        <Th dataLabel="Started">
-                          <PlainTableHeader label="Started" />
-                        </Th>
-                        <Th dataLabel="Finished">
-                          <PlainTableHeader label="Finished" />
-                        </Th>
-                        <Th dataLabel="Exit code">
-                          <PlainTableHeader label="Exit code" />
-                        </Th>
-                      </Tr>
-                    </Thead>
-                    <Tbody>
-                      {pod.containers.map((c) => (
-                        <Tr key={c.name}>
-                          <Td dataLabel="Name">
-                            <Content component="small">{c.name}</Content>
-                          </Td>
-                          <Td dataLabel="Image">
-                            <Content component="small" className="ocs-pods-list__mono">
-                              {c.image}
-                            </Content>
-                          </Td>
-                          <Td dataLabel="State">
-                            <Content component="small">{c.state}</Content>
-                          </Td>
-                          <Td dataLabel="Ready">
-                            <Content component="small">{c.ready ? "True" : "False"}</Content>
-                          </Td>
-                          <Td dataLabel="Last State">
-                            <Content component="small">{c.lastState}</Content>
-                          </Td>
-                          <Td dataLabel="Restarts">
-                            <Content component="small">{c.restarts}</Content>
-                          </Td>
-                          <Td dataLabel="Started">
-                            <Content component="small">{c.started}</Content>
-                          </Td>
-                          <Td dataLabel="Finished">
-                            <Content component="small">{c.finished}</Content>
-                          </Td>
-                          <Td dataLabel="Exit code">
-                            <Content component="small">{c.exitCode}</Content>
-                          </Td>
-                        </Tr>
-                      ))}
-                    </Tbody>
-                  </Table>
-                </InnerScrollContainer>
+                <PodContainersTable containers={pod.containers} />
               </section>
 
-              <section className="ocs-pod-details__section app-glass-panel" aria-label="Volumes">
+              <section className="ocs-pod-details__section" aria-label="Volumes">
                 <Title headingLevel="h2" size="xl" className="ocs-pod-details__section-title">
                   Volumes
                 </Title>
@@ -379,7 +394,7 @@ export default function PodDetailPage() {
               </section>
             </>
           ) : (
-            <div className="app-glass-panel ocs-pod-details__section">
+            <div className="ocs-pod-details__section">
               <Content component="p" className="pf-v6-u-color-200">
                 {activeTab.charAt(0).toUpperCase()}
                 {activeTab.slice(1)} view is not available in this prototype.

@@ -380,7 +380,7 @@ spec:
             </div>
           </div>
 
-          <div className="ocs-pods-list__panel app-glass-panel">
+          <div className="ocs-pods-list__panel">
             <Title headingLevel="h2" size="lg" className="pf-v6-u-p-lg pf-v6-u-pb-0">
               Update Records
             </Title>

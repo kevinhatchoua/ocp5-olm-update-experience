@@ -1,4 +1,4 @@
-import { createBrowserRouter } from "react-router";
+import { createBrowserRouter, redirect } from "react-router";
 import { collectStubPaths } from "./navigation/consoleNav";
 import RootLayout from "./components/RootLayout";
 import Layout from "./components/Layout";
@@ -47,9 +47,10 @@ import AlertsPage from "./pages/AlertsPage";
 import ActivityDetailsPage from "./pages/ActivityDetailsPage";
 import ClusterInventoryPage from "./pages/ClusterInventoryPage";
 import ClusterSettingsPage from "./pages/administration/ClusterSettingsPage";
-import ClusterUpdatePlanPage from "./pages/administration/ClusterUpdatePlanPage";
+import ClusterUpdatePage from "./pages/administration/ClusterUpdatePage";
+import AgenticRunsPage from "./pages/administration/AgenticRunsPage";
+import AgenticRunDetailPage from "./pages/administration/AgenticRunDetailPage";
 
-import ClusterUpdateInProgressPage from "./pages/administration/ClusterUpdateInProgressPage";
 import OperatorsLifecyclePage from "./pages/administration/OperatorsLifecyclePage";
 import UpdateCompletePage from "./pages/administration/UpdateCompletePage";
 import UpdateFailedPage from "./pages/administration/UpdateFailedPage";
@@ -153,9 +154,14 @@ export const router = createBrowserRouter([
           { path: "compute", Component: ComputePage },
           { path: "compute/nodes/:nodeName", Component: NodeDetailPage },
           { path: "user-management", Component: UserManagementPage },
-          { path: "administration/cluster-update", Component: ClusterUpdatePlanPage },
+          { path: "agentic-runs", Component: AgenticRunsPage },
+          { path: "agentic-runs/:runId", Component: AgenticRunDetailPage },
+          { path: "administration/cluster-update", Component: ClusterUpdatePage },
           { path: "administration/cluster-update/version/:version", Component: VersionDetailPage },
-          { path: "administration/cluster-update/in-progress", Component: ClusterUpdateInProgressPage },
+          {
+            path: "administration/cluster-update/in-progress",
+            loader: () => redirect("/administration/cluster-update"),
+          },
           { path: "administration/cluster-update/operators", Component: OperatorsLifecyclePage },
           { path: "administration/cluster-update/history", Component: ClusterUpdateHistoryPage },
           { path: "administration/cluster-update/complete", Component: UpdateCompletePage },

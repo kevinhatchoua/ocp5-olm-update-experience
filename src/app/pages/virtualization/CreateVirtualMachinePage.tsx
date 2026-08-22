@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import type { ReactNode } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router";
 import {
@@ -30,7 +30,7 @@ import LinuxIcon from "@patternfly/react-icons/dist/esm/icons/linux-icon";
 import PlusCircleIcon from "@patternfly/react-icons/dist/esm/icons/plus-circle-icon";
 import WindowsIcon from "@patternfly/react-icons/dist/esm/icons/windows-icon";
 import Breadcrumbs from "../../components/Breadcrumbs";
-import { OcsPrototypeListTable } from "../../components/dataView/OcsPrototypeListTable";
+import { OcsNamedResourceDataView, PlainTableHeader } from "../../components/dataView/OcsPrototypeListTable";
 import {
   createVirtualMachine,
   generateVirtualMachineName,
@@ -72,15 +72,9 @@ export default function CreateVirtualMachinePage() {
   const [vmName, setVmName] = useState(() => generateVirtualMachineName());
   const [description, setDescription] = useState("");
   const [startAfterCreate, setStartAfterCreate] = useState(true);
-  const [volumeSearch, setVolumeSearch] = useState("");
 
   const step = WIZARD_STEPS[stepIndex];
   const sizeMeta = COMPUTE_SIZES.find((s) => s.id === computeSize) ?? COMPUTE_SIZES[0];
-
-  const filteredVolumes = useMemo(() => {
-    const q = volumeSearch.trim().toLowerCase();
-    return q ? BOOT_VOLUMES.filter((v) => v.name.toLowerCase().includes(q)) : BOOT_VOLUMES;
-  }, [volumeSearch]);
 
   const goNext = () => setStepIndex((i) => Math.min(i + 1, WIZARD_STEPS.length - 1));
   const goBack = () => setStepIndex((i) => Math.max(i - 1, 0));
@@ -153,9 +147,6 @@ export default function CreateVirtualMachinePage() {
                 onBootSourceChange={setBootSource}
                 selectedVolume={selectedVolume}
                 onSelectVolume={setSelectedVolume}
-                volumeSearch={volumeSearch}
-                onVolumeSearchChange={setVolumeSearch}
-                volumes={filteredVolumes}
               />
             ) : null}
             {step === "Compute resources" ? (
@@ -372,17 +363,11 @@ function StepBootSource({
   onBootSourceChange,
   selectedVolume,
   onSelectVolume,
-  volumeSearch,
-  onVolumeSearchChange,
-  volumes,
 }: {
   bootSource: "volume" | "none";
   onBootSourceChange: (v: "volume" | "none") => void;
   selectedVolume: string;
   onSelectVolume: (name: string) => void;
-  volumeSearch: string;
-  onVolumeSearchChange: (v: string) => void;
-  volumes: typeof BOOT_VOLUMES;
 }) {
   return (
     <>
@@ -401,53 +386,69 @@ function StepBootSource({
           name="boot"
         />
         {bootSource === "volume" ? (
-          <div className="ocs-pods-list__panel app-glass-panel pf-v6-u-ml-lg">
+          <div className="ocs-pods-list__panel pf-v6-u-ml-lg">
             <Flex justifyContent={{ default: "justifyContentSpaceBetween" }} className="pf-v6-u-p-md">
               <Label color="green" isCompact>
                 PR All projects
               </Label>
               <Button variant="secondary">Add volume</Button>
             </Flex>
-            <SearchInput
-              placeholder="Search by name..."
-              value={volumeSearch}
-              onChange={(_e, v) => onVolumeSearchChange(v)}
-              className="pf-v6-u-px-md pf-v6-u-pb-md"
-            />
-            <OcsPrototypeListTable ariaLabel="Boot volumes">
-              <Thead>
-                <Tr>
-                  <Th />
-                  <Th>Volume name</Th>
-                  <Th>Architecture</Th>
-                  <Th>Operating system</Th>
-                  <Th>Storage class</Th>
-                  <Th>Size</Th>
-                  <Th>Description</Th>
-                </Tr>
-              </Thead>
-              <Tbody>
-                {volumes.map((vol) => (
-                  <Tr key={vol.name}>
-                    <Td>
-                      <Radio
-                        isChecked={selectedVolume === vol.name}
-                        onChange={() => onSelectVolume(vol.name)}
-                        aria-label={`Select ${vol.name}`}
-                        id={`vol-${vol.name}`}
-                        name="boot-volume-select"
-                      />
-                    </Td>
-                    <Td>{vol.name}</Td>
-                    <Td>{vol.architecture}</Td>
-                    <Td>{vol.operatingSystem}</Td>
-                    <Td>{vol.storageClass}</Td>
-                    <Td>{vol.size}</Td>
-                    <Td>{vol.description}</Td>
-                  </Tr>
-                ))}
-              </Tbody>
-            </OcsPrototypeListTable>
+            <OcsNamedResourceDataView
+              ouiaId="create-vm-boot-volumes-data-view"
+              ariaLabel="Boot volumes"
+              itemsLabel="volumes"
+              items={BOOT_VOLUMES}
+              getName={(vol) => vol.name}
+            >
+              {(rows) => (
+                <>
+                  <Thead>
+                    <Tr>
+                      <Th />
+                      <Th dataLabel="Volume name">
+                        <PlainTableHeader label="Volume name" />
+                      </Th>
+                      <Th dataLabel="Architecture">
+                        <PlainTableHeader label="Architecture" />
+                      </Th>
+                      <Th dataLabel="Operating system">
+                        <PlainTableHeader label="Operating system" />
+                      </Th>
+                      <Th dataLabel="Storage class">
+                        <PlainTableHeader label="Storage class" />
+                      </Th>
+                      <Th dataLabel="Size">
+                        <PlainTableHeader label="Size" />
+                      </Th>
+                      <Th dataLabel="Description">
+                        <PlainTableHeader label="Description" />
+                      </Th>
+                    </Tr>
+                  </Thead>
+                  <Tbody>
+                    {rows.map((vol) => (
+                      <Tr key={vol.name}>
+                        <Td>
+                          <Radio
+                            isChecked={selectedVolume === vol.name}
+                            onChange={() => onSelectVolume(vol.name)}
+                            aria-label={`Select ${vol.name}`}
+                            id={`vol-${vol.name}`}
+                            name="boot-volume-select"
+                          />
+                        </Td>
+                        <Td dataLabel="Volume name">{vol.name}</Td>
+                        <Td dataLabel="Architecture">{vol.architecture}</Td>
+                        <Td dataLabel="Operating system">{vol.operatingSystem}</Td>
+                        <Td dataLabel="Storage class">{vol.storageClass}</Td>
+                        <Td dataLabel="Size">{vol.size}</Td>
+                        <Td dataLabel="Description">{vol.description}</Td>
+                      </Tr>
+                    ))}
+                  </Tbody>
+                </>
+              )}
+            </OcsNamedResourceDataView>
           </div>
         ) : null}
         <Radio

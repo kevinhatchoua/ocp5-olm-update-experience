@@ -1,14 +1,252 @@
+import {
+  CLUSTER_BLOCKER_MESSAGE,
+  CLUSTER_BLOCKER_SECRET,
+  CLUSTER_CHANNEL,
+  CLUSTER_CURRENT_VERSION,
+  CLUSTER_PATCH_VERSION,
+} from "../constants/clusterVersionDemo";
+
+export function getUpdateStatusResponse(): {
+  content: string;
+  tools: string[];
+  sources: Array<{ title: string; href: string }>;
+} {
+  return {
+    content:
+      `**Summary**\n\n` +
+      `**Root cause analysis** Based on the ClusterVersion data:\n` +
+      `• **Current version:** ${CLUSTER_CURRENT_VERSION}\n` +
+      `• **Target version:** ${CLUSTER_CURRENT_VERSION}\n` +
+      `• **Failure type:** No active ClusterVersion failure. Condition type='Failing' has status='False', so the cluster version is **not failing**.\n\n` +
+      `**Specific error:** No Failing=True message exists on ClusterVersion. The actual upgrade gate is separate: condition type='Upgradeable' has status='False' with message: '**${CLUSTER_BLOCKER_MESSAGE}**'.\n\n` +
+      `**Component analysis**\n` +
+      `• **Failed ClusterOperators:** 1 problematic operator: **machine-config**\n` +
+      `  • Condition type='Available' has status='True' → available\n` +
+      `  • Condition type='Degraded' has status='True' → degraded\n` +
+      `  • Condition type='Progressing' has status='False' → not actively progressing\n` +
+      `• **Operator error details:** machine-config controller logs show repeated errors:\n` +
+      `  • "could not find the requested rhel-10 default stream in the list of OSImageStreams [rhel-9]"\n` +
+      `  • "reading manifest ... in image-registry.openshift-image-registry.svc:5000/openshift-lightspeed/cvo-patched: authentication required"\n` +
+      `  • User-friendly: the machine-config controller is trying to build OS image stream metadata, but the payload lookup is failing due to **registry authentication** and **missing expected RHEL 10 stream metadata**.\n` +
+      `• **Stuck ClusterOperators:** None observed. No ClusterOperator was returned with Progressing=True and an error message.\n` +
+      `• **Affected services:** Upgrade readiness is impacted. Cluster service health is otherwise mostly intact because ClusterVersion is Available=True and machine-config remains Available=True.\n\n` +
+      `**Failed upgrade context**\n` +
+      `• **Target version:** ${CLUSTER_CURRENT_VERSION}\n` +
+      `• **Release information:** No desired release URL was present in ClusterVersion status.desired. Available update metadata exists for **${CLUSTER_PATCH_VERSION}** and **5.1.0**.\n` +
+      `• **Upgrade path:** ${CLUSTER_CURRENT_VERSION} → ${CLUSTER_CURRENT_VERSION} (no version change)\n` +
+      `• **Target availability:** The current target is already installed. In \`availableUpdates\`, only **${CLUSTER_PATCH_VERSION}** and **5.1.0** were listed.\n\n` +
+      `**Historical failure analysis**\n` +
+      `• **Previous attempts:** ClusterVersion history shows **3 completed entries**, all for **${CLUSTER_CURRENT_VERSION}**\n` +
+      `• **Failure pattern:** No failed upgrade attempts are recorded in ClusterVersion history\n` +
+      `• **Last successful upgrade:** ${CLUSTER_CURRENT_VERSION} completed at **2026-08-18T23:12:36Z**\n` +
+      `• **Cluster stability:** Upgrade history does **not** show a failed rollout; the current issue is a **post-upgrade degraded operator / future upgrade blocker**, not a failed version transition\n\n` +
+      `**Update service health**\n` +
+      `• **Service configuration:** Custom upstream graph is configured\n` +
+      `• **Cincinnati status:** condition type \`RetrievedUpdates\` has status \`True\`\n` +
+      `• **Last update check:** **2026-08-18T22:55:44Z**\n` +
+      `• **Available updates:** **${CLUSTER_PATCH_VERSION}** and **5.1.0**\n` +
+      `• **Connectivity issues:** No Cincinnati problems. The **machine-config controller’s payload/OS image stream access** is the source of connectivity/auth issues.\n\n` +
+      `**Failure events timeline (Last hour)**\n` +
+      `• **Event summary:** No clear Warning/Error sequence was found for the upgrade failure.\n` +
+      `• **Timeline of key events:**\n` +
+      `  • machine-config events show repeated **FeatureGatesInitialized**\n` +
+      `  • nodes were marked **NodeDone**\n` +
+      `  • updates completed and nodes were **Uncordon**ed\n` +
+      `• In alerts/logs, the relevant signals are: **ClusterOperatorDegraded(machine-config)** and **TargetDown(machine-config-controller)**\n\n` +
+      `**Investigation steps**\n` +
+      `1. Verify missing parent credentials (\`${CLUSTER_BLOCKER_SECRET}\`).\n` +
+      `2. Inspect machine-config controller logs for **authentication required** and missing rhel-10 stream errors.\n` +
+      `3. Collect cluster diagnostics using \`oc adm must-gather\`.\n\n` +
+      `**Recovery actions (Conservative Approach)**\n` +
+      `• Treat the issue as an **upgrade gate + degraded machine-config reconciliation**, not a failed upgrade.\n` +
+      `• After restoring credentials, monitor \`Upgradeable\` and \`Degraded\`.\n` +
+      `• Escalate to support if the issue persists.\n\n` +
+      `**TL;DR**\n` +
+      `• **Failure type:** No active ClusterVersion failure; actual blocker is **Upgradeable=False** with '**${CLUSTER_BLOCKER_MESSAGE}**'\n` +
+      `• **Data completeness:** **Partial** — ClusterVersion, ClusterOperators, MCPs, alerts, and one critical operator log were retrieved; events were too broad to fully reconstruct a precise warning timeline, and full node output was truncated\n` +
+      `• **Target version:** ${CLUSTER_CURRENT_VERSION}; available updates listed are **${CLUSTER_PATCH_VERSION}** and **5.1.0**\n` +
+      `• **Root cause:** **Moderate confidence:** this is **not a failed upgrade rollout**. The main issues are **upgrade blocked by missing AWS parent credentials secret** and **machine-config operator degraded** with log evidence of **payload registry authentication failure** and **missing rhel-10 OS image stream metadata**\n` +
+      `• **Failed components:** 1 failed/degraded ClusterOperator: **machine-config**\n` +
+      `• **Error messages:**\n` +
+      `  • **${CLUSTER_BLOCKER_MESSAGE}**\n` +
+      `  • **could not find the requested rhel-10 default stream in the list of OSImageStreams [rhel-9]**\n` +
+      `  • **authentication required** when reading the payload manifest from the internal registry\n` +
+      `• **Event summary:** No strong machine-config failure event chain was found in the sampled event results; visible machine-config events were mostly normal completion events.\n` +
+      `• **Alert status:** Relevant active alerts: **ClusterOperatorDegraded(machine-config)** and **TargetDown(machine-config-controller)**.\n` +
+      `• **Historical pattern:** **No recurring failed upgrade** pattern in ClusterVersion history; all recorded attempts completed.\n` +
+      `• **Last success:** **${CLUSTER_CURRENT_VERSION}** completed successfully at **2026-08-18T23:12:36Z**.\n` +
+      `• **Update service:** Custom upstream is working; \`RetrievedUpdates=True\`.\n` +
+      `• **Node issues:** No NotReady node was confirmed in retrieved data; MCP readiness suggests **6/6 nodes updated/ready**.\n` +
+      `• **Infrastructure problems:** No broad infrastructure outage was proven; issue is localized to upgrade gating and machine-config reconciliation.\n` +
+      `• **MCP Issues:** **0** degraded MachineConfigPools; master and worker pools both show Updated=True, Updating=False, Degraded=False.\n` +
+      `• **Escalation:** Contact Red Hat support if restoring \`${CLUSTER_BLOCKER_SECRET}\` does not clear \`Upgradeable=False\` or if machine-config remains degraded with the same payload/OSImageStream errors.\n` +
+      `• **Recovery time:** Likely **short** once credentials and payload access issues are corrected; longer if the release payload metadata is inconsistent.\n` +
+      `• **Next steps:** Restore/verify \`${CLUSTER_BLOCKER_SECRET}\`, then recheck ClusterVersion \`Upgradeable\` and machine-config \`Degraded\`; if machine-config still logs payload auth or missing \`rhel-10\` stream errors, gather must-gather data and escalate`,
+    tools: ["pods_log", "events_list", "resources_list", "search_openshift_docs"],
+    sources: [
+      {
+        title: "Scalability and performance - OpenShift Container Platform",
+        href: "https://docs.openshift.com/container-platform/4.22/scalability_and_performance/index.html",
+      },
+      {
+        title: "Updating clusters - OpenShift Container Platform",
+        href: "https://docs.openshift.com/container-platform/4.22/updating/index.html",
+      },
+      {
+        title: "Gathering data about your cluster",
+        href: "https://docs.openshift.com/container-platform/4.22/support/gathering-cluster-data.html",
+      },
+      {
+        title: "Troubleshooting Operator issues",
+        href: "https://docs.openshift.com/container-platform/4.22/support/troubleshooting/troubleshooting-operator-issues.html",
+      },
+      {
+        title: "Machine Config Operator",
+        href: "https://docs.openshift.com/container-platform/4.22/post_installation_configuration/machine-configuration-tasks.html",
+      },
+    ],
+  };
+}
+
+export function getClusterSettingsPrecheckResponse(
+  targetVersion = CLUSTER_PATCH_VERSION,
+  targetChannel = CLUSTER_CHANNEL,
+): {
+  content: string;
+  suggestions: string[];
+} {
+  return {
+    content:
+      `**Pre-flight AI Validation for Upgrade to OCP ${targetVersion} (${targetChannel})**\n\n` +
+      `**Mode:** ValidationMode — this assessment does **not** start a cluster update.\n\n` +
+      `**Current version:** ${CLUSTER_CURRENT_VERSION} · **Channel:** ${targetChannel}\n` +
+      `**Target version:** ${targetVersion}\n\n` +
+      `**Cincinnati health:** Custom upstream configured; healthy update retrieval.\n` +
+      `**Upgrade blocked:** Yes\n` +
+      `**Upgrade blockers:** Parent credentials secret must be restored prior to upgrade: \`${CLUSTER_BLOCKER_SECRET}\`.\n` +
+      `**ClusterVersion:** Upgradeable=False · ReleaseAccepted=False · RetrievedUpdates=True\n` +
+      `**Unhealthy ClusterOperators:** console (Unmanaged), machine-config (Degraded)\n` +
+      `**Degraded MCPs:** 0 · **NotReady nodes:** 0 · **Resource pressure:** None\n` +
+      `**Active alerts:** ClusterNotUpgradeable, ClusterOperatorDegraded\n\n` +
+      `**Recommendation:** Blocked — resolve issues before Approve & Start Update.\n\n` +
+      `**Next steps:**\n` +
+      `1. Restore \`${CLUSTER_BLOCKER_SECRET}\`.\n` +
+      `2. Re-check Upgradeable and ReleaseAccepted.\n` +
+      `3. Use **Learn more with AI** or **Apply Recommended Remediation** from the pre-flight summary.\n\n` +
+      `_Always review AI-generated content prior to use. Cluster status.phase remains Ready — not Updating._`,
+    suggestions: [
+      "How do I restore aws-creds?",
+      "Apply recommended remediation",
+      "Why is 5.1 blocked?",
+      "Open Cluster Update",
+    ],
+  };
+}
+
+export function getPreflightRemediationResponse(): {
+  content: string;
+  suggestions: string[];
+} {
+  return {
+    content:
+      `**LightSpeed diagnostic breakdown**\n\n` +
+      `**Blocker:** \`${CLUSTER_BLOCKER_SECRET}\` missing → ClusterVersion Upgradeable=False.\n\n` +
+      `**Impact:** Pre-flight for the selected target remains failed until credentials are restored. No update has been started.\n\n` +
+      `**Recommended remediation playbook:**\n` +
+      `1. \`oc get secret aws-creds -n kube-system\`\n` +
+      `2. Restore from installer credentials or cloud-credential operator.\n` +
+      `3. Watch \`oc get clusterversion\` until Upgradeable=True.\n` +
+      `4. Re-run **Run Pre-Flight Check** on Cluster Update.\n\n` +
+      `Use **Apply Recommended Remediation** to simulate the automated fix script in this prototype.`,
+    suggestions: ["Apply recommended remediation", "Re-run pre-flight", "Open Cluster Update"],
+  };
+}
+
+export function getApplyRemediationResponse(): {
+  content: string;
+  suggestions: string[];
+} {
+  return {
+    content:
+      `**Applying recommended remediation (prototype)**\n\n` +
+      `• Verified playbook target: restore \`${CLUSTER_BLOCKER_SECRET}\`\n` +
+      `• Simulated secret restore… done\n` +
+      `• Rechecking ClusterVersion conditions… Upgradeable still gated until you re-run pre-flight\n\n` +
+      `**Next:** Return to **Plan & pre-flight**, confirm target version, and run pre-flight again before Approve & Start Update.`,
+    suggestions: ["Open Cluster Update", "Re-run pre-flight", "Update status"],
+  };
+}
+
 // Comprehensive AI response handler for OpenShift LightSpeed
 export function getAIResponse(userInput: string, currentPath?: string): { 
   content: string; 
   action?: any; 
   actions?: any[]; 
-  suggestions?: string[] 
+  suggestions?: string[];
+  tools?: string[];
+  sources?: Array<{ title: string; href: string }>;
 } {
   const lowerInput = userInput.toLowerCase();
   const path = (currentPath || '').toLowerCase();
+
+  const asksUpdatePrecheck =
+    lowerInput.includes("update cluster") ||
+    lowerInput.includes("precheck") ||
+    lowerInput.includes("pre-check") ||
+    lowerInput.includes("update status") ||
+    lowerInput.includes("upgrade blocked") ||
+    lowerInput.includes("clusternotupgradeable");
+
+  if (
+    asksUpdatePrecheck &&
+    (path.includes("/cluster-settings") || path.includes("/cluster-update") || path === "/" || path === "")
+  ) {
+    const report = getUpdateStatusResponse();
+    return {
+      content: report.content,
+      tools: report.tools,
+      sources: report.sources,
+      suggestions: ["How do I restore aws-creds?", "Why is 5.1 blocked?", "Open Cluster Update"],
+    };
+  }
   
-  // ========== CONTEXT-AWARE RESPONSES ==========
+  if (
+    lowerInput.includes("restore") &&
+    (lowerInput.includes("aws-creds") || lowerInput.includes("credentials secret"))
+  ) {
+    return {
+      content:
+        `**Restore parent credentials**\n\n` +
+        `The blocker is \`${CLUSTER_BLOCKER_SECRET}\`. Until that secret is restored, ClusterVersion stays Upgradeable=False and 5.1 remains blocked.\n\n` +
+        `**Typical path (AWS):**\n` +
+        `1. Confirm the secret is missing or empty: \`oc get secret aws-creds -n kube-system\`\n` +
+        `2. Restore it from your installer credentials or cloud-credential operator.\n` +
+        `3. Re-check ClusterVersion conditions, then use **Update status** on Cluster Settings.\n\n` +
+        `Patch ${CLUSTER_PATCH_VERSION} may still be listed, but **Release not accepted** until payload verification succeeds.\n\n` +
+        `_I cannot restore the secret from this chat. This is a guidance-only step._`,
+      suggestions: ["Update status", "Open Cluster Update", "Why is 5.1 blocked?"],
+    };
+  }
+
+  if (lowerInput.includes("5.1 blocked") || lowerInput.includes("why is 5.1")) {
+    return {
+      content:
+        `**Why 5.1 is blocked**\n\n` +
+        `Your cluster can continue to install **5.0** patches. The minor update to **5.1** is blocked because ClusterVersion is not Upgradeable: ${CLUSTER_BLOCKER_MESSAGE}\n\n` +
+        `The Overview **ClusterNotUpgradeable** insight and Cluster Settings **AI assessment** are the same condition.`,
+      suggestions: ["How do I restore aws-creds?", "Can I still install 5.0.1?", "Update status"],
+    };
+  }
+
+  if (lowerInput.includes("5.0.1") || lowerInput.includes("install 5.0")) {
+    return {
+      content:
+        `**Patch ${CLUSTER_PATCH_VERSION}**\n\n` +
+        `5.0 patches remain in scope while 5.1 is blocked. On Cluster Settings, **Select a version** lists ${CLUSTER_PATCH_VERSION} as recommended.\n\n` +
+        `Current status is still **Release not accepted** until payload verification succeeds. Use **Precheck your cluster with AI** before you start an update — updates are irreversible.`,
+      suggestions: ["Update status", "Open Cluster Update", "How do I restore aws-creds?"],
+    };
+  }
   // Respond dynamically based on current page + user query
   
   // --- OBSERVE PAGE ---

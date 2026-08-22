@@ -151,7 +151,7 @@ export default function ComputePage() {
             </Flex>
           </Flex>
 
-          <div className="ocs-pods-list__panel app-glass-panel">
+          <div className="ocs-pods-list__panel">
             <DataView ouiaId="nodes-data-view" className={OCS_PROTOTYPE_DATAVIEW_CLASS}>
               <DataViewToolbar
                 ouiaId="nodes-dv-toolbar"

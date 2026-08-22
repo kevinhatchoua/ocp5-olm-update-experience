@@ -153,7 +153,7 @@ export default function DaemonSetsPage() {
             <Button variant="primary">Create DaemonSet</Button>
           </Flex>
 
-          <div className="ocs-pods-list__panel app-glass-panel">
+          <div className="ocs-pods-list__panel">
             <DataView ouiaId="daemonsets-data-view" className={OCS_PROTOTYPE_DATAVIEW_CLASS}>
               <DataViewToolbar
                 ouiaId="daemonsets-dv-toolbar"

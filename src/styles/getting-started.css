@@ -1,0 +1,94 @@
+/* Mirrors console-shared GettingStartedExpandableGrid + GettingStartedCard */
+
+:root {
+  --co-global--palette--blue-400: var(--pf-t--global--icon--color--brand--default);
+  --co-global--palette--purple-600: var(--pf-t--global--icon--color--status--info--default);
+  --co-global--palette--orange-400: var(--pf-t--global--icon--color--status--warning--default);
+}
+
+.ocs-getting-started-expandable-grid {
+  --min-column-width: 220px;
+}
+
+.ocs-getting-started-expandable-grid .pf-v6-c-card__title-text {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pf-t--global--spacer--xs);
+  flex-wrap: nowrap;
+}
+
+/*
+ * Use flex (not CSS grid). Grid + Flex grow descendants inflated the Card
+ * min-content height to ~2× the visible content in this prototype layout.
+ */
+.ocs-getting-started-expandable-grid__content.pf-v6-c-card__body {
+  display: flex !important;
+  flex-wrap: wrap;
+  align-items: stretch;
+  padding: 0 !important;
+}
+
+.ocs-getting-started-expandable-grid__content.pf-v6-c-card__body > .pf-v6-l-flex.pf-m-grow.pf-m-column {
+  flex: 1 1 var(--min-column-width);
+  min-width: var(--min-column-width);
+  padding-top: calc(var(--pf-v6-c-card--first-child--PaddingBlockStart, 1rem) * 0.5);
+  padding-bottom: calc(var(--pf-v6-c-card--child--PaddingBlockEnd, 1rem) * 0.5);
+  padding-left: var(--pf-v6-c-card--child--PaddingInlineStart, 1rem);
+  padding-right: var(--pf-v6-c-card--child--PaddingInlineEnd, 1rem);
+  row-gap: var(--pf-t--global--spacer--sm);
+}
+
+.ocs-getting-started-expandable-grid__content.pf-v6-c-card__body
+  > .pf-v6-l-flex.pf-m-grow.pf-m-column:not(:last-child) {
+  border-right: var(--pf-t--global--border--width--divider--default, 1px) solid
+    var(--pf-t--global--border--color--default);
+}
+
+.ocs-getting-started-card__title-icon {
+  margin-right: var(--pf-t--global--spacer--sm);
+}
+
+.ocs-getting-started-card .pf-v6-c-title {
+  margin-block-end: 0;
+}
+
+.ocs-getting-started-card .pf-v6-c-content--small {
+  margin-block: 0;
+}
+
+.ocs-getting-started-card__list > ul {
+  list-style-type: none;
+  margin: 0;
+  padding: 0;
+}
+
+.ocs-getting-started-card__list .pf-v6-c-simple-list__item-link {
+  color: var(--pf-t--global--text--color--regular);
+  padding-block: var(--pf-t--global--spacer--xs);
+  padding-inline: 0;
+}
+
+.ocs-getting-started-card__list p {
+  margin-bottom: 0 !important;
+}
+
+.ocs-getting-started-card a > svg,
+.ocs-getting-started-card button > svg {
+  margin-left: var(--pf-t--global--spacer--sm);
+}
+
+.ocs-getting-started-card__more-link {
+  text-decoration-line: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 0.25rem;
+}
+
+/* Full-width Overview tabs underline */
+.ocs-overview-tabs.pf-v6-c-tabs {
+  width: 100%;
+  border-block-end: 1px solid var(--pf-t--global--border--color--default);
+}
+
+.ocs-overview-tabs.pf-v6-c-tabs::before {
+  border-block-end-width: 0;
+}

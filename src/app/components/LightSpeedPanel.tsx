@@ -1,60 +1,95 @@
 import { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
-import { X, Send, ThumbsUp, ThumbsDown, Copy, Bookmark, Volume2, Paperclip, Bot } from "@/lib/pfIcons";
+import { Copy, ThumbsDown, ThumbsUp, Trash2 } from "@/lib/pfIcons";
+import CommentIcon from "@patternfly/react-icons/dist/esm/icons/comment-icon";
+import AngleLeftIcon from "@patternfly/react-icons/dist/esm/icons/angle-left-icon";
+import AngleRightIcon from "@patternfly/react-icons/dist/esm/icons/angle-right-icon";
+import CheckIcon from "@patternfly/react-icons/dist/esm/icons/check-icon";
+import CodeIcon from "@patternfly/react-icons/dist/esm/icons/code-icon";
+import CompressIcon from "@patternfly/react-icons/dist/esm/icons/compress-icon";
+import ExpandIcon from "@patternfly/react-icons/dist/esm/icons/expand-icon";
+import ExternalLinkAltIcon from "@patternfly/react-icons/dist/esm/icons/external-link-alt-icon";
+import MinusIcon from "@patternfly/react-icons/dist/esm/icons/minus-icon";
+import PaperPlaneIcon from "@patternfly/react-icons/dist/esm/icons/paper-plane-icon";
+import PlusIcon from "@patternfly/react-icons/dist/esm/icons/plus-icon";
+import SquareIcon from "@patternfly/react-icons/dist/esm/icons/outlined-square-icon";
+import WrenchIcon from "@patternfly/react-icons/dist/esm/icons/wrench-icon";
+import {
+  Button,
+  Dropdown,
+  DropdownItem,
+  DropdownList,
+  Label,
+  MenuToggle,
+} from "@patternfly/react-core";
 import { useChat } from "../contexts/ChatContext";
 import { useNavigate, useLocation } from "react-router";
-import { getAIResponse } from "./LightSpeedPanelResponses";
-import { LightspeedHeaderNotice, LightspeedAiMessageFooter } from "./lightspeed/LightspeedLegalCopy";
+import {
+  getAIResponse,
+  getApplyRemediationResponse,
+  getClusterSettingsPrecheckResponse,
+  getPreflightRemediationResponse,
+  getUpdateStatusResponse,
+} from "./LightSpeedPanelResponses";
+import {
+  LightspeedHeaderNotice,
+  LightspeedWelcomeNotice,
+  LightspeedComposerFooter,
+  OLS_WELCOME_HEADLINE,
+  OLS_WELCOME_CAUTION,
+} from "./lightspeed/LightspeedLegalCopy";
+import { OpenShiftLightspeedIcon } from "./lightspeed/OpenShiftLightspeedIcon";
 
-interface Message {
-  id: string;
-  type?: 'user' | 'assistant' | 'ai';
-  sender?: 'user' | 'ai';
-  content?: string;
-  text?: string;
-  timestamp: Date;
-  suggestions?: string[];
-  loading?: boolean;
-  action?: {
-    label: string;
-    type: 'pre-check' | 'update' | 'cancel';
-    callback: () => void;
-  };
-  actions?: Array<{
-    label: string;
-    onClick: () => void;
-  }>;
-}
+type ChatMode = "ask" | "troubleshooting";
+
+const CHAT_MODES: Record<
+  ChatMode,
+  { label: string; description: string; placeholder: string; icon: typeof CommentIcon }
+> = {
+  ask: {
+    label: "Ask",
+    description: "Expert guidance and clear answers on OpenShift topics",
+    placeholder: "Ask about deployments, best practices, or cluster tasks…",
+    icon: CommentIcon,
+  },
+  troubleshooting: {
+    label: "Troubleshooting",
+    description: "Diagnose issues and get step-by-step remediation",
+    placeholder: "Describe the issue, error, or unexpected behavior…",
+    icon: WrenchIcon,
+  },
+};
 
 interface LightSpeedPanelProps {
   isOpen: boolean;
   onClose: () => void;
-  /** Viewport Y (px) for top edge; panel uses `bottom: 0` so height never tracks main content scroll height. */
   dockTop?: number | null;
   context?: string;
-  onLaunchPreCheck?: () => void;
-  onStartUpdate?: () => void;
-  preloadedMessages?: Message[];
-  autoScroll?: boolean;
-  externalMessages?: Message[];
 }
 
-export default function LightSpeedPanel({
-  isOpen,
-  onClose,
-  dockTop = null,
-  context,
-}: LightSpeedPanelProps) {
-  const { messages: globalMessages, addMessage, replaceMessage, context: globalContext, setContext } = useChat();
+export default function LightSpeedPanel({ isOpen, onClose, dockTop = null }: LightSpeedPanelProps) {
+  const { messages, addMessage, clearMessages, context: chatContext, setContext } = useChat();
   const navigate = useNavigate();
   const location = useLocation();
   const messagesScrollRef = useRef<HTMLDivElement>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
 
-  const [input, setInput] = useState('');
+  const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [lastContextPath, setLastContextPath] = useState('');
-  const [hasInitialGreeting, setHasInitialGreeting] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
+  const [sourceIndex, setSourceIndex] = useState(0);
+  const [showWelcomeAlert, setShowWelcomeAlert] = useState(true);
+  const [chatMode, setChatMode] = useState<ChatMode>("ask");
+  const [isModeOpen, setIsModeOpen] = useState(false);
+
+  const activeMode = CHAT_MODES[chatMode];
+  const ModeIcon = activeMode.icon;
+
+  const handleMinimize = () => {
+    setShowWelcomeAlert(false);
+    setIsModeOpen(false);
+    onClose();
+  };
 
   const getTypingDelay = (content: string): number => {
     const length = content.length;
@@ -65,327 +100,359 @@ export default function LightSpeedPanel({
     return 2800 + Math.random() * 700;
   };
 
-  const messages = globalMessages;
-
   useEffect(() => {
     const el = messagesScrollRef.current;
     if (!el) return;
-    /** Do not use scrollIntoView — it can scroll the page behind a fixed/portaled panel. */
-    el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+    el.scrollTo({ top: el.scrollHeight, behavior: "smooth" });
   }, [messages, isTyping]);
 
   useEffect(() => {
-    if (!isOpen) {
-      setLastContextPath('');
-      setHasInitialGreeting(false);
-    }
-  }, [isOpen]);
-
-  useEffect(() => {
     if (isOpen && inputRef.current) {
-      setTimeout(() => inputRef.current?.focus(), 300);
+      window.setTimeout(() => inputRef.current?.focus(), 300);
     }
   }, [isOpen]);
 
   useEffect(() => {
-    if (isOpen && !hasInitialGreeting && context) {
-      setContext(context);
-      let contextMessage = '';
-      let suggestions: string[] = [];
+    if (!isOpen || !chatContext) return undefined;
 
-      if (location.pathname === '/' || location.pathname === '') {
-        contextMessage = "Hi Kevin! I can see you're on the **Dashboard**. Your cluster looks healthy overall!\n\n**Quick Overview:**\n• **2 alerts** need attention (1 warning about retrieval updates, 1 info about service level)\n• Cluster utilization is normal across CPU, Memory, and Filesystem\n• **Control Plane** and **Operators** are running smoothly\n\n**What would you like me to help with?**";
-        suggestions = ['Explain the retrieval updates alert', 'Show cluster health status', 'Check for cluster updates', 'Which operators need updates?'];
-      } else if (location.pathname.includes('/preflight-results')) {
-        contextMessage = "**Great news!** All pre-checks passed successfully.\n\n**What I found:**\n• All 8 checks completed without critical issues\n• Cluster health is optimal for update\n• All operators are compatible with OpenShift 4.22.0\n• Estimated update time: 2 hours 12 minutes\n\n**Recommended Next Steps:**\n1. **Start the cluster update** - Your cluster is ready to proceed\n2. **Review operator updates** - 1 operator (Ansible Automation Platform) has an update available\n3. **Check API migrations** - 1 API requires permission verification";
-        suggestions = ["Start the cluster update", "How do I update the Ansible Automation Platform operator?", "What API changes should I be aware of?"];
-      } else if (location.pathname.includes('/preflight-failed')) {
-        contextMessage = "**Pre-checks found issues that need attention.**\n\nI've analyzed the failures and can guide you through fixing each one.";
-        suggestions = ["Show me step-by-step remediation", "Help me fix the storage issue", "What's causing the failures?", "Can I proceed despite the warnings?"];
-      } else if (location.pathname.includes('/ecosystem/installed-operators') || location.pathname.includes('/administration/installed-operators')) {
-        contextMessage = "I can see you're on **Installed Operators** (catalog / OLM operators). This aligns with the **consolidated AI** direction: catalog readiness is judged together with **platform operators** on Cluster Update—one holistic pre-check and status story.\n\n**Current Status:**\n• **5 operators** installed and healthy\n• **4 updates** available\n• **2 operators** require updates before cluster update\n\n**What would you like to know?**";
-        suggestions = ["Holistic pre-check from AI Assessment", "Which operators need updates?", "How do I update all operators?"];
-      } else if (location.pathname.includes('/cluster-update/in-progress')) {
-        contextMessage = "**Cluster update in progress!**\n\nYour cluster is currently updating to OpenShift 4.22.0. I'm monitoring the progress.\n\n**Current Status:**\n• Control plane nodes: Updating (1 of 3 complete)\n• Worker nodes: Waiting\n• Estimated time remaining: ~1 hour 45 minutes";
-        suggestions = ["What's happening right now?", "How long will this take?", "What if something goes wrong?"];
-      } else if (location.pathname.includes('/cluster-update/complete')) {
-        contextMessage = "**Congratulations!** Your cluster update to OpenShift 4.22.0 completed successfully!\n\n**Update Summary:**\n• All nodes updated without issues\n• Control plane is healthy\n• All workloads are running\n• No operator conflicts detected";
-        suggestions = ["Show me what changed", "Which operators still need updates?", "How do I verify everything works?"];
-      } else if (location.pathname.includes('/cluster-update')) {
-        contextMessage = "I can see you're planning a **cluster update**. The consolidated AI experience treats **platform operators** and **Software Catalog (OLM) operators** as one readiness story—pre-checks and status updates cover both.\n\n**I can help with:**\n• Holistic pre-checks (cluster + catalog)\n• Explaining risks and compatibility across both layers\n• Guiding through the update process\n• Troubleshooting any issues\n\nWhat would you like to know?";
-        suggestions = ['Assess readiness with Lightspeed', 'Platform vs catalog blockers?', 'How long will it take?'];
-      } else if (location.pathname.includes('/administration')) {
-        contextMessage = "I can help with **cluster administration** tasks like namespaces, resources, settings, and more. What do you need help with?";
-        suggestions = ['Show cluster settings', 'Check for updates', 'Manage operators'];
-      } else if (location.pathname.includes('/workloads')) {
-        contextMessage = "I can see you're managing **Workloads**. You have a healthy mix of Pods, Deployments, and StatefulSets running!\n\n**Quick Stats:**\n• Most workloads are running smoothly\n• A few restarts detected\n• 1 pod in pending state";
-        suggestions = ['Why is a pod pending?', 'Explain pod restarts', 'How do I scale a deployment?'];
-      } else if (location.pathname.includes('/observe')) {
-        contextMessage = "I'm here to help you **monitor and observe** your cluster! I can analyze metrics, explain alerts, and suggest optimizations.";
-        suggestions = ['Explain the critical alerts', 'Why is CPU usage high?', 'Optimize resource usage'];
-      }
+    let report: { content: string; tools?: string[]; sources?: Array<{ title: string; href: string }>; suggestions?: string[] } | null =
+      null;
 
-      if (contextMessage) {
-        const lastMessage = messages[messages.length - 1];
-        const isDefaultGreeting = lastMessage?.content?.includes("I'm OpenShift LightSpeed");
-        if (isDefaultGreeting) {
-          replaceMessage('1', { type: 'ai', content: contextMessage, suggestions: suggestions.length > 0 ? suggestions : undefined });
-        }
-      }
-      setLastContextPath(location.pathname);
-      setHasInitialGreeting(true);
+    if (chatContext === "ols-update-status") {
+      report = getUpdateStatusResponse();
+    } else if (chatContext === "ols-preflight" || chatContext.startsWith("ols-preflight:")) {
+      const parts = chatContext.split(":");
+      const version = parts[1] || undefined;
+      const channel = parts[2] || undefined;
+      report = getClusterSettingsPrecheckResponse(version, channel);
+    } else if (chatContext === "ols-preflight-remediation") {
+      report = getPreflightRemediationResponse();
+    } else if (chatContext === "ols-preflight-apply-remediation") {
+      report = getApplyRemediationResponse();
     }
-  }, [isOpen, context, location.pathname]);
 
-  useEffect(() => {
-    if (isOpen && hasInitialGreeting && lastContextPath && location.pathname !== lastContextPath) {
-      let pageContext = '';
-      let suggestions: string[] = [];
-      if (location.pathname === '/' || location.pathname === '') {
-        pageContext = "I see you're back on the **Dashboard**. Let me know if you need help!";
-        suggestions = ['Show cluster health status', 'Check for cluster updates'];
-      } else if (location.pathname.includes('/cluster-update/in-progress')) {
-        pageContext = "You're now viewing the **cluster update progress**. I'm monitoring it closely!";
-        suggestions = ["What's happening right now?", "How long will this take?"];
-      } else if (location.pathname.includes('/cluster-update')) {
-        pageContext = "You're now on the **Cluster Update** page. Ready to help!";
-        suggestions = ['Assess readiness', 'What are the risks?'];
-      } else if (location.pathname.includes('/ecosystem/installed-operators')) {
-        pageContext = "Now viewing **Installed Operators**. Pre-checks here tie back to **platform + catalog** readiness on Cluster Update.";
-        suggestions = ['Which operators need updates?', 'Open holistic pre-check'];
-      } else if (location.pathname.includes('/administration')) {
-        pageContext = "You're in **Administration**. How can I help?";
-        suggestions = ['Show cluster settings', 'Check for updates'];
-      }
-      if (pageContext) {
-        setTimeout(() => { addMessage({ type: 'ai', content: pageContext, suggestions: suggestions.length > 0 ? suggestions : undefined }); }, 300);
-      }
-      setLastContextPath(location.pathname);
-    }
-  }, [location.pathname, isOpen, hasInitialGreeting, lastContextPath]);
+    if (!report) return undefined;
+
+    setIsTyping(true);
+    setSourceIndex(0);
+    const delay = getTypingDelay(report.content);
+    let cancelled = false;
+    const payload = report;
+    const timer = window.setTimeout(() => {
+      if (cancelled) return;
+      addMessage({
+        type: "ai",
+        content: payload.content,
+        tools: payload.tools,
+        sources: payload.sources,
+        suggestions: payload.suggestions,
+      });
+      setIsTyping(false);
+      setContext("");
+    }, delay);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [isOpen, chatContext]);
 
   const formatText = (text: string) => {
     const parts = text.split(/(\*\*[^*]+\*\*|`[^`]+`)/g);
     return parts.map((part, index) => {
-      if (part.startsWith('**') && part.endsWith('**')) {
-        return <strong key={index} className="font-semibold text-[#151515] dark:text-[#f5f5f5]">{part.slice(2, -2)}</strong>;
-      } else if (part.startsWith('`') && part.endsWith('`')) {
-        return <code key={index} className="bg-[#f0f0f0] dark:bg-[rgba(255,255,255,0.1)] px-[5px] py-[1px] rounded-[3px] text-[12px] font-['Red_Hat_Mono:Regular',monospace] text-[#151515] dark:text-[#f0f0f0]">{part.slice(1, -1)}</code>;
+      if (part.startsWith("**") && part.endsWith("**")) {
+        return <strong key={index}>{part.slice(2, -2)}</strong>;
+      }
+      if (part.startsWith("`") && part.endsWith("`")) {
+        return (
+          <code key={index} className="ols-inline-code">
+            {part.slice(1, -1)}
+          </code>
+        );
       }
       return part;
     });
   };
 
-  const handleSendMessage = async () => {
-    if (!input.trim()) return;
-    addMessage({ type: 'user', content: input });
+  const handleSendMessage = () => {
+    if (!input.trim() || isTyping) return;
+    addMessage({ type: "user", content: input });
     const userQuery = input;
-    setInput('');
+    setInput("");
     setIsTyping(true);
     const response = getAIResponse(userQuery, location.pathname);
     const delay = getTypingDelay(response.content);
-    setTimeout(() => {
-      addMessage({ type: 'ai', content: response.content, actions: response.actions, suggestions: response.suggestions });
+    window.setTimeout(() => {
+      addMessage({
+        type: "ai",
+        content: response.content,
+        suggestions: response.suggestions,
+        tools: response.tools,
+        sources: response.sources,
+      });
       setIsTyping(false);
     }, delay);
   };
 
   const handleSuggestionClick = (suggestion: string) => {
     const lowerSuggestion = suggestion.toLowerCase();
-    addMessage({ type: 'user', content: suggestion });
-    if (lowerSuggestion.includes('run pre-check') || lowerSuggestion.includes('assess readiness')) {
-      navigate('/administration/cluster-update/in-progress', { state: { aiMode: true } });
+    addMessage({ type: "user", content: suggestion });
+    if (lowerSuggestion.includes("open cluster update")) {
+      navigate("/administration/cluster-update");
       return;
     }
-    if (lowerSuggestion.includes('start') && lowerSuggestion.includes('cluster') && lowerSuggestion.includes('update')) {
-      if (location.pathname.includes('/preflight-results')) { navigate('/administration/cluster-update/in-progress'); }
-      else {
-        const msg = "Great! Let's get your cluster updated to 4.22.0.\n\nFirst, let me run the pre-checks to make sure everything's ready.";
-        setIsTyping(true);
-        setTimeout(() => { addMessage({ type: 'ai', content: msg, suggestions: ["Assess readiness now"] }); setIsTyping(false); }, getTypingDelay(msg));
-      }
+    if (lowerSuggestion.includes("apply recommended remediation")) {
+      setContext("ols-preflight-apply-remediation");
       return;
     }
-    if (lowerSuggestion.includes('operator') && lowerSuggestion.includes('update')) {
-      navigate('/administration/installed-operators');
-      const msg = "Taking you to the Installed Operators page where you can manage updates!";
-      setIsTyping(true);
-      setTimeout(() => { addMessage({ type: 'ai', content: msg }); setIsTyping(false); }, getTypingDelay(msg));
+    if (lowerSuggestion.includes("re-run pre-flight") || lowerSuggestion.includes("re-run preflight")) {
+      setContext(`ols-preflight`);
+      navigate("/administration/cluster-update");
+      return;
+    }
+    if (lowerSuggestion.includes("update status")) {
+      setContext("ols-update-status");
       return;
     }
     setIsTyping(true);
     const response = getAIResponse(suggestion, location.pathname);
     const delay = getTypingDelay(response.content);
-    setTimeout(() => {
-      addMessage({ type: 'ai', content: response.content, actions: response.actions, suggestions: response.suggestions });
+    window.setTimeout(() => {
+      addMessage({
+        type: "ai",
+        content: response.content,
+        suggestions: response.suggestions,
+        tools: response.tools,
+        sources: response.sources,
+      });
       setIsTyping(false);
     }, delay);
   };
 
-  const formatTimestamp = (date: Date) => date.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+  const lastAiWithSources = [...messages].reverse().find((message) => message.type === "ai" && message.sources?.length);
+  const activeSource = lastAiWithSources?.sources?.[sourceIndex];
 
   if (!isOpen) return null;
 
-  /** Portaled to `document.body` with `position: fixed` — not a child of `#root` / main, so it does not scroll with page content. */
   const panel = (
     <div
-      className="flex flex-col min-h-0 overflow-hidden"
-      style={{
-        position: "fixed",
-        top: dockTop ?? 0,
-        right: 0,
-        bottom: 0,
-        width: 420,
-        zIndex: 500,
-        pointerEvents: "auto",
-        overscrollBehavior: "contain",
-      }}
+      className={`ols-panel ${isExpanded ? "ols-panel--expanded" : ""}`}
+      style={{ top: dockTop ?? 0 }}
     >
-      <div className="flex flex-col h-full app-glass-panel app-glass-panel--edge-right overflow-hidden">
-
-        {/* ═══ HEADER ═══ */}
-        <div className="flex items-center justify-between px-[20px] py-[14px] border-b border-[#e0e0e0] dark:border-[rgba(255,255,255,0.1)]">
-          <div className="flex items-center gap-[10px]">
-            <div className="size-[36px] rounded-full bg-[#f5f5f5] dark:bg-[rgba(255,255,255,0.08)] flex items-center justify-center shrink-0">
-              <Bot className="size-[20px] text-[#ee0000]" aria-hidden />
-            </div>
-            <span className="font-['Red_Hat_Display:SemiBold',sans-serif] font-semibold text-[#151515] dark:text-[#f5f5f5] text-[15px]">
-              OpenShift LightSpeed
-            </span>
+      <div className="ols-panel__inner">
+        <header className="ols-panel__header">
+          <div className="ols-panel__title">
+            <OpenShiftLightspeedIcon size={32} />
+            <span>Red Hat OpenShift Lightspeed</span>
           </div>
-          <button onClick={onClose}
-            className="p-[6px] hover:bg-[#f0f0f0] dark:hover:bg-[rgba(255,255,255,0.08)] rounded-[6px] bg-transparent border-0 cursor-pointer transition-colors"
-            title="Close">
-            <X className="size-[18px] text-[#6a6e73] dark:text-[#e0e0e0]" />
-          </button>
-        </div>
+          <div className="ols-panel__header-actions">
+            <Button variant="plain" aria-label="Clear conversation" icon={<Trash2 />} onClick={() => clearMessages()} />
+            <Button
+              variant="plain"
+              aria-label="Copy last response"
+              icon={<Copy />}
+              onClick={() => {
+                const last = [...messages].reverse().find((message) => message.type === "ai");
+                if (last?.content) navigator.clipboard?.writeText(last.content);
+              }}
+            />
+            <Button
+              variant="plain"
+              aria-label={isExpanded ? "Collapse panel" : "Expand panel"}
+              icon={isExpanded ? <CompressIcon /> : <ExpandIcon />}
+              onClick={() => setIsExpanded((value) => !value)}
+            />
+            <Button variant="plain" aria-label="Minimize OpenShift Lightspeed" icon={<MinusIcon />} onClick={handleMinimize} />
+          </div>
+        </header>
 
-        <LightspeedHeaderNotice />
+        <div ref={messagesScrollRef} className="ols-panel__body" role="log" aria-live="polite">
+          <div className="ols-welcome">
+            <OpenShiftLightspeedIcon size={72} className="ols-welcome__logo" />
+            <p>{OLS_WELCOME_HEADLINE}</p>
+            <p>{OLS_WELCOME_CAUTION}</p>
+          </div>
+          {showWelcomeAlert ? <LightspeedWelcomeNotice /> : null}
+          <LightspeedHeaderNotice />
 
-        {/* ═══ MESSAGES ═══ */}
-        <div
-          ref={messagesScrollRef}
-          className="flex-1 overflow-y-auto px-[20px] py-[16px] min-h-0"
-          style={{ overscrollBehavior: "contain" }}
-          role="log"
-          aria-live="polite"
-        >
-          {messages.map((message) => (
-            <div key={message.id} className="mb-[20px]">
-              {message.type === 'user' ? (
-                /* ── User message ── */
-                <div>
-                  <div className="flex items-center gap-[8px] mb-[6px]">
-                    <div className="size-[28px] rounded-full bg-[#e0e0e0] flex items-center justify-center shrink-0">
-                      <span className="text-[12px] text-[#6a6e73] font-semibold">K</span>
-                    </div>
-                    <span className="text-[13px] text-[#151515] dark:text-[#f0f0f0] font-['Red_Hat_Text:Regular',sans-serif] font-medium">User</span>
-                    <span className="text-[13px] text-[#8a8d90] dark:text-[#b0b0b0] font-['Red_Hat_Text:Regular',sans-serif]">{formatTimestamp(message.timestamp)}</span>
-                  </div>
-                  <div className="ml-[36px]">
-                    <div className="inline-block bg-[#0066cc] text-white dark:text-white !text-white rounded-[20px] px-[16px] py-[10px] max-w-[90%] [&_p]:!text-white">
-                      <p className="text-[14px] leading-[20px] font-['Red_Hat_Text:Regular',sans-serif] text-white">{message.content}</p>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                /* ── Bot message ── */
-                <div>
-                  <div className="flex items-center gap-[6px] mb-[6px]">
-                    <span className="text-[13px] text-[#151515] dark:text-[#f0f0f0] font-['Red_Hat_Text:Regular',sans-serif] font-medium">OpenShift LightSpeed</span>
-                    <span className="text-[11px] font-semibold text-[#6a6e73] dark:text-[#d0d0d0] bg-[#f0f0f0] dark:bg-[rgba(255,255,255,0.12)] rounded-[4px] px-[6px] py-[1px] uppercase tracking-wider font-['Red_Hat_Text:Regular',sans-serif]">AI</span>
-                    <span className="text-[13px] text-[#8a8d90] dark:text-[#b0b0b0] font-['Red_Hat_Text:Regular',sans-serif]">{formatTimestamp(message.timestamp)}</span>
-                  </div>
-                  <div className="text-[14px] text-[#333] dark:text-[#e8e8e8] leading-[22px] font-['Red_Hat_Text:Regular',sans-serif] whitespace-pre-wrap">
-                    {formatText(message.content || '')}
-                  </div>
-                  <div className="ml-0 max-w-full">
-                    <LightspeedAiMessageFooter />
-                  </div>
-
-                  {/* Suggestion action buttons */}
-                  {message.suggestions && message.suggestions.length > 0 && (
-                    <div className="flex flex-wrap gap-[8px] mt-[12px]">
-                      {message.suggestions.map((suggestion, idx) => (
-                        <button
-                          key={`${message.id}-s-${idx}`}
-                          onClick={() => handleSuggestionClick(suggestion)}
-                          className={`text-[13px] px-[16px] py-[8px] rounded-[20px] cursor-pointer transition-colors font-['Red_Hat_Text:Regular',sans-serif] font-medium ${
-                            idx === 0
-                              ? "bg-[#0066cc] text-white dark:text-white !text-white border-0 hover:bg-[#004d99] [&_svg]:text-white"
-                              : "bg-white dark:bg-[#292929] !text-[var(--pf-color-blue-50)] text-[var(--pf-color-blue-50)] border border-[var(--pf-color-blue-50)] hover:bg-[#e7f1fa] hover:!text-[var(--pf-color-blue-50)] dark:hover:bg-[rgba(0,102,204,0.12)] [&_svg]:text-[var(--pf-color-blue-50)]"
-                          }`}>
-                          {suggestion}
-                        </button>
-                      ))}
-                    </div>
-                  )}
-
-                  {/* Message actions row */}
-                  <div className="flex items-center gap-[4px] mt-[12px]">
-                    <button className="p-[6px] hover:bg-[#f0f0f0] dark:hover:bg-[rgba(255,255,255,0.08)] rounded-[6px] bg-transparent border-0 cursor-pointer transition-colors" title="Good response">
-                      <ThumbsUp className="size-[16px] text-[#b0b0b0] dark:text-[#d0d0d0]" />
-                    </button>
-                    <button className="p-[6px] hover:bg-[#f0f0f0] dark:hover:bg-[rgba(255,255,255,0.08)] rounded-[6px] bg-transparent border-0 cursor-pointer transition-colors" title="Bad response">
-                      <ThumbsDown className="size-[16px] text-[#b0b0b0] dark:text-[#d0d0d0]" />
-                    </button>
-                    <button className="p-[6px] hover:bg-[#f0f0f0] dark:hover:bg-[rgba(255,255,255,0.08)] rounded-[6px] bg-transparent border-0 cursor-pointer transition-colors" title="Copy"
-                      onClick={() => navigator.clipboard?.writeText(message.content || '')}>
-                      <Copy className="size-[16px] text-[#b0b0b0] dark:text-[#d0d0d0]" />
-                    </button>
-                    <button className="p-[6px] hover:bg-[#f0f0f0] dark:hover:bg-[rgba(255,255,255,0.08)] rounded-[6px] bg-transparent border-0 cursor-pointer transition-colors" title="Bookmark">
-                      <Bookmark className="size-[16px] text-[#b0b0b0] dark:text-[#d0d0d0]" />
-                    </button>
-                    <button className="p-[6px] hover:bg-[#f0f0f0] dark:hover:bg-[rgba(255,255,255,0.08)] rounded-[6px] bg-transparent border-0 cursor-pointer transition-colors" title="Listen">
-                      <Volume2 className="size-[16px] text-[#b0b0b0] dark:text-[#d0d0d0]" />
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-
-          {/* Typing indicator */}
-          {isTyping && (
-            <div className="mb-[20px]">
-              <div className="flex items-center gap-[6px] mb-[6px]">
-                <span className="text-[13px] text-[#151515] dark:text-[#f0f0f0] font-['Red_Hat_Text:Regular',sans-serif] font-medium">OpenShift LightSpeed</span>
-                <span className="text-[11px] font-semibold text-[#6a6e73] dark:text-[#d0d0d0] bg-[#f0f0f0] dark:bg-[rgba(255,255,255,0.12)] rounded-[4px] px-[6px] py-[1px] uppercase tracking-wider font-['Red_Hat_Text:Regular',sans-serif]">AI</span>
+          {messages.map((message) =>
+            message.type === "user" ? (
+              <div key={message.id} className="ols-msg ols-msg--user">
+                <p>{message.content}</p>
               </div>
-              <div className="flex gap-[5px] items-center h-[22px]">
-                <div className="size-[7px] bg-[#b0b0b0] rounded-full animate-bounce" style={{ animationDelay: '0ms', animationDuration: '1.2s' }} />
-                <div className="size-[7px] bg-[#b0b0b0] rounded-full animate-bounce" style={{ animationDelay: '200ms', animationDuration: '1.2s' }} />
-                <div className="size-[7px] bg-[#b0b0b0] rounded-full animate-bounce" style={{ animationDelay: '400ms', animationDuration: '1.2s' }} />
+            ) : (
+              <div key={message.id} className="ols-msg ols-msg--ai">
+                <div className="ols-msg__meta">
+                  <OpenShiftLightspeedIcon size={28} />
+                  <span>OpenShift Lightspeed</span>
+                  <Label isCompact>AI</Label>
+                </div>
+                <div className="ols-msg__body">{formatText(message.content || "")}</div>
+                {message.tools && message.tools.length > 0 ? (
+                  <div className="ols-tools">
+                    {message.tools.map((tool) => (
+                      <span key={tool} className="ols-tool-chip">
+                        <CodeIcon /> {tool}
+                      </span>
+                    ))}
+                    <Button variant="link" isInline>
+                      10 more
+                    </Button>
+                  </div>
+                ) : null}
+                {message.sources && message.sources.length > 0 && activeSource && lastAiWithSources?.id === message.id ? (
+                  <div className="ols-sources">
+                    <p className="ols-sources__heading">{message.sources.length} sources</p>
+                    <div className="ols-sources__card">
+                      <a href={activeSource.href} target="_blank" rel="noopener noreferrer">
+                        {activeSource.title}
+                        <ExternalLinkAltIcon />
+                      </a>
+                      <div className="ols-sources__nav">
+                        <Button
+                          variant="plain"
+                          aria-label="Previous source"
+                          icon={<AngleLeftIcon />}
+                          onClick={() =>
+                            setSourceIndex((index) =>
+                              index === 0 ? message.sources!.length - 1 : index - 1
+                            )
+                          }
+                        />
+                        <span>
+                          {sourceIndex + 1}/{message.sources.length}
+                        </span>
+                        <Button
+                          variant="plain"
+                          aria-label="Next source"
+                          icon={<AngleRightIcon />}
+                          onClick={() =>
+                            setSourceIndex((index) => (index + 1) % message.sources!.length)
+                          }
+                        />
+                      </div>
+                    </div>
+                  </div>
+                ) : null}
+                {message.suggestions && message.suggestions.length > 0 ? (
+                  <div className="ols-suggestions">
+                    {message.suggestions.map((suggestion) => (
+                      <Button key={suggestion} variant="secondary" onClick={() => handleSuggestionClick(suggestion)}>
+                        {suggestion}
+                      </Button>
+                    ))}
+                  </div>
+                ) : null}
+                <div className="ols-msg__actions">
+                  <Button variant="plain" aria-label="Good response" icon={<ThumbsUp />} />
+                  <Button variant="plain" aria-label="Bad response" icon={<ThumbsDown />} />
+                  <Button
+                    variant="plain"
+                    aria-label="Copy"
+                    icon={<Copy />}
+                    onClick={() => navigator.clipboard?.writeText(message.content || "")}
+                  />
+                </div>
               </div>
-            </div>
+            )
           )}
 
+          {isTyping ? (
+            <div className="ols-msg ols-msg--ai">
+              <div className="ols-msg__meta">
+                <OpenShiftLightspeedIcon size={28} />
+                <span>OpenShift Lightspeed</span>
+                <Label isCompact>AI</Label>
+              </div>
+              <div className="ols-typing" aria-label="OpenShift Lightspeed is responding">
+                <span />
+                <span />
+              </div>
+            </div>
+          ) : null}
         </div>
 
-        {/* ═══ FOOTER ═══ */}
-        <div className="border-t border-[#e0e0e0] dark:border-[rgba(255,255,255,0.1)] bg-transparent px-[16px] py-[12px]">
-          <div className="flex items-center gap-[8px]">
-            <input
-              ref={inputRef}
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSendMessage(); } }}
-              placeholder="Send a message..."
-              className="flex-1 bg-transparent border-0 outline-none text-[14px] text-[#151515] dark:text-[#f0f0f0] font-['Red_Hat_Text:Regular',sans-serif] placeholder:text-[#b0b0b0] dark:placeholder:text-[#8a8d90] py-[4px]"
-            />
-            <button className="p-[6px] hover:bg-[#f0f0f0] dark:hover:bg-[rgba(255,255,255,0.08)] rounded-[6px] bg-transparent border-0 cursor-pointer transition-colors" title="Attach file">
-              <Paperclip className="size-[18px] text-[#6a6e73] dark:text-[#d0d0d0]" />
-            </button>
-            <button
-              onClick={handleSendMessage}
-              disabled={!input.trim()}
-              className="p-[6px] bg-transparent border-0 cursor-pointer transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
-              title="Send">
-              <Send className="size-[18px] text-[#0066cc]" />
-            </button>
+        <div className="ols-composer">
+          <textarea
+            ref={inputRef}
+            value={input}
+            onChange={(event) => setInput(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter" && !event.shiftKey) {
+                event.preventDefault();
+                handleSendMessage();
+              }
+            }}
+            placeholder={activeMode.placeholder}
+            aria-label={activeMode.placeholder}
+            rows={3}
+          />
+          <div className="ols-composer__toolbar">
+            <div className="ols-composer__start">
+              <Button variant="plain" aria-label="Add attachment" icon={<PlusIcon />} />
+              <Dropdown
+                isOpen={isModeOpen}
+                onOpenChange={(open) => setIsModeOpen(open)}
+                onSelect={(_event, value) => {
+                  if (value === "ask" || value === "troubleshooting") {
+                    setChatMode(value);
+                  }
+                  setIsModeOpen(false);
+                }}
+                toggle={(toggleRef) => (
+                  <MenuToggle
+                    ref={toggleRef}
+                    className="ols-ask-toggle"
+                    onClick={() => setIsModeOpen((open) => !open)}
+                    isExpanded={isModeOpen}
+                    aria-label="Chat mode"
+                  >
+                    <ModeIcon />
+                    <span>{activeMode.label}</span>
+                  </MenuToggle>
+                )}
+              >
+                <DropdownList className="ols-ask-menu">
+                  {(Object.keys(CHAT_MODES) as ChatMode[]).map((mode) => {
+                    const option = CHAT_MODES[mode];
+                    const Icon = option.icon;
+                    return (
+                      <DropdownItem
+                        key={mode}
+                        value={mode}
+                        icon={<Icon />}
+                        description={option.description}
+                        isSelected={chatMode === mode}
+                      >
+                        <span style={{ display: "inline-flex", alignItems: "center", gap: "0.5rem" }}>
+                          {option.label}
+                          {chatMode === mode ? <CheckIcon /> : null}
+                        </span>
+                      </DropdownItem>                    );
+                  })}
+                </DropdownList>
+              </Dropdown>
+            </div>
+            {isTyping ? (
+              <Button
+                variant="plain"
+                aria-label="Stop generating"
+                className="ols-composer__send ols-composer__send--stop"
+                icon={<SquareIcon />}
+                onClick={() => setIsTyping(false)}
+              />
+            ) : (
+              <Button
+                variant="plain"
+                aria-label="Send"
+                className="ols-composer__send"
+                icon={<PaperPlaneIcon />}
+                onClick={handleSendMessage}
+                isDisabled={!input.trim()}
+              />
+            )}
           </div>
         </div>
+        <LightspeedComposerFooter />
       </div>
     </div>
   );

@@ -219,7 +219,7 @@ export default function SoftwareLifecycleManagementPage() {
               </p>
             </div>
 
-            <div className="ocs-pods-list__panel app-glass-panel">
+            <div className="ocs-pods-list__panel">
               <DataView ouiaId="operator-updates-data-view" className={OCS_PROTOTYPE_DATAVIEW_CLASS}>
                 <DataViewToolbar
                   ouiaId="operator-updates-dv-toolbar"

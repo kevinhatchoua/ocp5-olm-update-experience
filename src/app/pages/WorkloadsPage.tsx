@@ -248,7 +248,7 @@ export default function WorkloadsPage() {
             </Button>
           </Flex>
 
-          <div className="ocs-pods-list__panel app-glass-panel">
+          <div className="ocs-pods-list__panel">
             <DataView ouiaId="workloads-data-view" className={OCS_PROTOTYPE_DATAVIEW_CLASS}>
               <DataViewToolbar
                 ouiaId="workloads-dv-toolbar"

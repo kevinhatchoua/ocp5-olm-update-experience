@@ -276,7 +276,7 @@ function VirtualMachinesListTab({ projectFilter }: { projectFilter: string }) {
   }
 
   return (
-    <div className="ocs-pods-list__panel app-glass-panel">
+    <div className="ocs-pods-list__panel">
       <DataView ouiaId="vms-data-view" className={OCS_PROTOTYPE_DATAVIEW_CLASS}>
         <DataViewToolbar
           ouiaId="vms-dv-toolbar"

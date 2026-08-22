@@ -100,6 +100,10 @@ export const COMPUTE_SUB: SubNavEntry[] = [
   { path: "/compute/machineconfigpools", label: "MachineConfigPools" },
 ];
 
+export const AGENTIC_RUNS_SUB: SubNavEntry[] = [
+  { path: "/agentic-runs", label: "Agentic runs" },
+];
+
 export const USER_MANAGEMENT_SUB: SubNavEntry[] = [
   { path: "/user-management", label: "Users" },
   { path: "/user-management/groups", label: "Groups" },
@@ -139,6 +143,7 @@ export function collectStubPaths(): string[] {
     OBSERVE_SUB,
     VIRTUALIZATION_SUB,
     COMPUTE_SUB,
+    AGENTIC_RUNS_SUB,
     USER_MANAGEMENT_SUB,
     ADMINISTRATION_SUB,
   ];
@@ -182,6 +187,7 @@ export function collectStubPaths(): string[] {
     "/builds",
     "/observe",
     "/compute",
+    "/agentic-runs",
     "/user-management",
     "/administration/cluster-update",
     "/administration/cluster-settings",

@@ -379,7 +379,7 @@ export default function OperatorsLifecyclePage() {
             </Alert>
           ) : null}
 
-          <div className="ocs-pods-list__panel app-glass-panel">
+          <div className="ocs-pods-list__panel">
             <Flex
               alignItems={{ default: "alignItemsCenter" }}
               justifyContent={{ default: "justifyContentSpaceBetween" }}

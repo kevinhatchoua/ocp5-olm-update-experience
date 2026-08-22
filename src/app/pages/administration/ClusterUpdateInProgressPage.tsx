@@ -3,18 +3,14 @@ import { useNavigate, useLocation } from "react-router";
 import {
   Alert,
   Button,
-  Card,
-  CardBody,
-  CardHeader,
-  CardTitle,
   Content,
   Flex,
   Icon,
-  PageSection,
   Title,
 } from "@patternfly/react-core";
 import EllipsisVIcon from "@patternfly/react-icons/dist/esm/icons/ellipsis-v-icon";
-import { InnerScrollContainer, Table, Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
+import { Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
+import { OcsNamedResourceDataView, PlainTableHeader } from "../../components/dataView/OcsPrototypeListTable";
 import { CheckCircle, Loader2, Clock, Sparkles } from "@/lib/pfIcons";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import AgentExecutionLogsPanel, {
@@ -36,6 +32,14 @@ interface WorkerPoolModel {
   pool: string;
   baseVersion: string;
   compatibility: "compatible" | "incompatible";
+}
+
+function poolName(pool: { pool: string }) {
+  return pool.pool;
+}
+
+function namedRow(row: { name: string }) {
+  return row.name;
 }
 
 const OPERATORS_BASE: OperatorRowModel[] = [
@@ -210,36 +214,41 @@ export default function ClusterUpdateInProgressPage() {
         <ProgressSection label="Worker nodes" percentage={wnPct} />
       </div>
 
-      <Card className="mb-[var(--pf-t--global--spacer--lg)]">
-        <CardHeader>
-          <CardTitle>
-            <Title headingLevel="h2" size="lg">
+      <section className="ocs-pod-details__section">
+            <Title headingLevel="h2" size="lg" className="ocs-pod-details__section-title">
               Worker nodes on this cluster
             </Title>
-          </CardTitle>
-        </CardHeader>
-        <CardBody style={{ padding: 0 }}>
-          <PageSection aria-label="Worker nodes on this cluster during update" padding={{ default: "noPadding" }}>
-            <InnerScrollContainer>
-              <Table
-                aria-label="Worker nodes on this cluster"
-                borders
-                variant="compact"
-                className="ocs-io-operator-table"
-              >
+
+          <OcsNamedResourceDataView
+            ouiaId="in-progress-workers-data-view"
+            ariaLabel="Worker nodes on this cluster"
+            itemsLabel="worker pools"
+            items={workerRows}
+            getName={poolName}
+          >
+            {(rows) => (
+              <>
                 <Thead>
                   <Tr>
-                    <Th dataLabel="Pool">Pool</Th>
-                    <Th dataLabel="Status">Status</Th>
-                    <Th dataLabel="Version">Version</Th>
-                    <Th dataLabel="Cluster compatibility">Cluster compatibility</Th>
+                    <Th dataLabel="Pool">
+                      <PlainTableHeader label="Pool" />
+                    </Th>
+                    <Th dataLabel="Status">
+                      <PlainTableHeader label="Status" />
+                    </Th>
+                    <Th dataLabel="Version">
+                      <PlainTableHeader label="Version" />
+                    </Th>
+                    <Th dataLabel="Cluster compatibility">
+                      <PlainTableHeader label="Cluster compatibility" />
+                    </Th>
                     <Th modifier="fitContent" dataLabel="Actions">
-                      Actions
+                      <PlainTableHeader label="Actions" />
                     </Th>
                   </Tr>
                 </Thead>
                 <Tbody>
-                  {workerRows.map((pool) => (
+                  {rows.map((pool) => (
                     <Tr key={pool.pool}>
                       <Td dataLabel="Pool">
                         <Content component="span" style={{ fontWeight: 600 }}>
@@ -302,42 +311,46 @@ export default function ClusterUpdateInProgressPage() {
                     </Tr>
                   ))}
                 </Tbody>
-              </Table>
-            </InnerScrollContainer>
-          </PageSection>
-        </CardBody>
-      </Card>
+              </>
+            )}
+          </OcsNamedResourceDataView>
+      </section>
 
-      <Card className="mb-[var(--pf-t--global--spacer--lg)]">
-        <CardHeader>
-          <CardTitle>
-            <Title headingLevel="h2" size="lg">
+      <section className="ocs-pod-details__section">
+            <Title headingLevel="h2" size="lg" className="ocs-pod-details__section-title">
               Cluster operators
             </Title>
-          </CardTitle>
-        </CardHeader>
-        <CardBody style={{ padding: 0 }}>
-          <PageSection aria-label="Cluster operators during update" padding={{ default: "noPadding" }}>
-            <InnerScrollContainer>
-              <Table
-                aria-label="Cluster operators"
-                borders
-                variant="compact"
-                className="ocs-io-operator-table"
-              >
+
+          <OcsNamedResourceDataView
+            ouiaId="in-progress-cluster-operators-data-view"
+            ariaLabel="Cluster operators"
+            itemsLabel="cluster operators"
+            items={clusterOperatorRows}
+            getName={namedRow}
+          >
+            {(rows) => (
+              <>
                 <Thead>
                   <Tr>
-                    <Th dataLabel="Name">Name</Th>
-                    <Th dataLabel="Status">Status</Th>
-                    <Th dataLabel="Version">Version</Th>
-                    <Th dataLabel="Cluster compatibility">Cluster compatibility</Th>
+                    <Th dataLabel="Name">
+                      <PlainTableHeader label="Name" />
+                    </Th>
+                    <Th dataLabel="Status">
+                      <PlainTableHeader label="Status" />
+                    </Th>
+                    <Th dataLabel="Version">
+                      <PlainTableHeader label="Version" />
+                    </Th>
+                    <Th dataLabel="Cluster compatibility">
+                      <PlainTableHeader label="Cluster compatibility" />
+                    </Th>
                     <Th modifier="fitContent" dataLabel="Actions">
-                      Actions
+                      <PlainTableHeader label="Actions" />
                     </Th>
                   </Tr>
                 </Thead>
                 <Tbody>
-                  {clusterOperatorRows.map((row) => (
+                  {rows.map((row) => (
                     <Tr key={row.name}>
                       <Td dataLabel="Name">
                         <Content component="span" style={{ fontWeight: 600 }}>
@@ -394,43 +407,49 @@ export default function ClusterUpdateInProgressPage() {
                     </Tr>
                   ))}
                 </Tbody>
-              </Table>
-            </InnerScrollContainer>
-          </PageSection>
-        </CardBody>
-      </Card>
+              </>
+            )}
+          </OcsNamedResourceDataView>
+      </section>
 
-      <Card className="mb-[var(--pf-t--global--spacer--lg)]">
-        <CardHeader>
-          <CardTitle>
-            <Title headingLevel="h2" size="lg">
+      <section className="ocs-pod-details__section">
+            <Title headingLevel="h2" size="lg" className="ocs-pod-details__section-title">
               Installed operators
             </Title>
-          </CardTitle>
-        </CardHeader>
-        <CardBody style={{ padding: 0 }}>
-          <PageSection aria-label="Installed operators during update" padding={{ default: "noPadding" }}>
-            <InnerScrollContainer>
-              <Table
-                aria-label="Installed operators"
-                borders
-                variant="compact"
-                className="ocs-io-operator-table"
-              >
+
+          <OcsNamedResourceDataView
+            ouiaId="in-progress-installed-operators-data-view"
+            ariaLabel="Installed operators"
+            itemsLabel="operators"
+            items={operatorRows}
+            getName={namedRow}
+          >
+            {(rows) => (
+              <>
                 <Thead>
                   <Tr>
-                    <Th dataLabel="Name">Name</Th>
-                    <Th dataLabel="Status">Status</Th>
-                    <Th dataLabel="Version">Version</Th>
-                    <Th dataLabel="Cluster compatibility">Cluster compatibility</Th>
-                    <Th dataLabel="Last updated">Last updated</Th>
+                    <Th dataLabel="Name">
+                      <PlainTableHeader label="Name" />
+                    </Th>
+                    <Th dataLabel="Status">
+                      <PlainTableHeader label="Status" />
+                    </Th>
+                    <Th dataLabel="Version">
+                      <PlainTableHeader label="Version" />
+                    </Th>
+                    <Th dataLabel="Cluster compatibility">
+                      <PlainTableHeader label="Cluster compatibility" />
+                    </Th>
+                    <Th dataLabel="Last updated">
+                      <PlainTableHeader label="Last updated" />
+                    </Th>
                     <Th modifier="fitContent" dataLabel="Actions">
-                      Actions
+                      <PlainTableHeader label="Actions" />
                     </Th>
                   </Tr>
                 </Thead>
                 <Tbody>
-                  {operatorRows.map((op) => (
+                  {rows.map((op) => (
                     <Tr key={op.name}>
                       <Td dataLabel="Name">
                         <Content component="span" style={{ fontWeight: 600 }}>
@@ -494,11 +513,10 @@ export default function ClusterUpdateInProgressPage() {
                     </Tr>
                   ))}
                 </Tbody>
-              </Table>
-            </InnerScrollContainer>
-          </PageSection>
-        </CardBody>
-      </Card>
+              </>
+            )}
+          </OcsNamedResourceDataView>
+      </section>
 
       </Breadcrumbs>
 

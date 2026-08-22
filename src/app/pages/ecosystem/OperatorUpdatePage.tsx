@@ -1,8 +1,7 @@
 import { useState } from "react";
 import { useParams, Link, useNavigate, useLocation } from "react-router";
-import { PageSection } from "@patternfly/react-core";
-import { DataView } from "@patternfly/react-data-view";
-import { InnerScrollContainer, Table, Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
+import { Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
+import { OcsNamedResourceDataView, PlainTableHeader } from "../../components/dataView/OcsPrototypeListTable";
 import { Info, ExternalLink, AlertTriangle, CheckCircle } from "@/lib/pfIcons";
 import Breadcrumbs from "../../components/Breadcrumbs";
 
@@ -287,24 +286,30 @@ export default function OperatorUpdatePage() {
               <h3 className="font-['Red_Hat_Display:SemiBold',sans-serif] font-semibold text-[18px] text-[#151515] dark:text-white mb-[16px]">
                 Related Operators
               </h3>
-              <DataView ouiaId="operator-update-related-operators-dv" className="ocs-io-dataview">
-                <PageSection aria-label="Related operators" padding={{ default: "noPadding" }}>
-                  <InnerScrollContainer>
-                    <Table
-                      aria-label="Related operators"
-                      borders
-                      variant="compact"
-                      className="ocs-io-operator-table"
-                    >
+              <OcsNamedResourceDataView
+                ouiaId="operator-update-related-operators-dv"
+                ariaLabel="Related operators"
+                itemsLabel="operators"
+                items={operator.relatedOperators}
+                getName={(relatedOp) => relatedOp.name}
+              >
+                {(rows) => (
+                  <>
                       <Thead>
                         <Tr>
-                          <Th dataLabel="Name">Name</Th>
-                          <Th dataLabel="Status">Status</Th>
-                          <Th dataLabel="Version">Version</Th>
+                          <Th dataLabel="Name">
+                            <PlainTableHeader label="Name" />
+                          </Th>
+                          <Th dataLabel="Status">
+                            <PlainTableHeader label="Status" />
+                          </Th>
+                          <Th dataLabel="Version">
+                            <PlainTableHeader label="Version" />
+                          </Th>
                         </Tr>
                       </Thead>
                       <Tbody>
-                        {operator.relatedOperators.map((relatedOp, index) => (
+                        {rows.map((relatedOp, index) => (
                           <Tr key={index}>
                             <Td dataLabel="Name">
                               <Link
@@ -339,10 +344,9 @@ export default function OperatorUpdatePage() {
                           </Tr>
                         ))}
                       </Tbody>
-                    </Table>
-                  </InnerScrollContainer>
-                </PageSection>
-              </DataView>
+                  </>
+                )}
+              </OcsNamedResourceDataView>
             </div>
           </div>
 

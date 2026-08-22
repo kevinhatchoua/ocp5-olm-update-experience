@@ -214,7 +214,7 @@ export default function StoragePage() {
             </Button>
           </Flex>
 
-          <div className="ocs-pods-list__panel app-glass-panel">
+          <div className="ocs-pods-list__panel">
             <DataView ouiaId="storage-data-view" className={OCS_PROTOTYPE_DATAVIEW_CLASS}>
               <DataViewToolbar
                 ouiaId="storage-dv-toolbar"

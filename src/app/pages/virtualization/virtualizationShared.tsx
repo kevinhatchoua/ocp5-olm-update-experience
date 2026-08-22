@@ -186,7 +186,7 @@ export function VirtualizationEmptyState({
   actionTo: string;
 }) {
   return (
-    <div className="ocs-virt-empty app-glass-panel">
+    <div className="ocs-virt-empty">
       <Flex
         direction={{ default: "column" }}
         alignItems={{ default: "alignItemsCenter" }}
@@ -237,7 +237,7 @@ export function VirtResourceTableShell({
 }) {
   return (
     <VirtualizationPageShell title={title} path={path} createLabel={createLabel}>
-      <div className="ocs-pods-list__panel app-glass-panel">{children}</div>
+      <div className="ocs-pods-list__panel">{children}</div>
     </VirtualizationPageShell>
   );
 }

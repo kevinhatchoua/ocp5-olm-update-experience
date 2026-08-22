@@ -10,8 +10,16 @@ import {
   ModalHeader,
   Spinner,
 } from "@patternfly/react-core";
-import { InnerScrollContainer, Table, Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
+import { Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
+import {
+  OcsNamedResourceDataView,
+  PlainTableHeader,
+} from "../../components/dataView/OcsPrototypeListTable";
 import type { TopologyWorkerCatalogEntry } from "./networkTopologyData";
+
+function workerName(worker: TopologyWorkerCatalogEntry) {
+  return worker.shortName;
+}
 
 type OpenWorkerNodeModalProps = {
   isOpen: boolean;
@@ -94,76 +102,92 @@ export function OpenWorkerNodeModal({
             <Content component="p">Loading cluster worker nodes…</Content>
           </Flex>
         ) : (
-          <InnerScrollContainer>
-            <Table aria-label="Cluster worker nodes" variant="compact">
-              <Thead>
-                <Tr>
-                  <Th
-                    screenReaderText="Select worker node"
-                    select={{
-                      onSelect: (_event, isSelected) => toggleAll(isSelected),
-                      isSelected: allWorkersSelected,
-                    }}
-                  />
-                  <Th>Name</Th>
-                  <Th>Hostname</Th>
-                  <Th>Status</Th>
-                  <Th>Topology</Th>
-                  <Th screenReaderText="Actions" />
-                </Tr>
-              </Thead>
-              <Tbody>
-                {workers.map((worker) => {
-                  const onTopology = revealedSet.has(worker.id);
-                  const isSelected = selectedIds.includes(worker.id);
-                  return (
-                    <Tr key={worker.id}>
-                      <Td
-                        select={{
-                          onSelect: (_event, isChecked) => toggleWorker(worker.id, Boolean(isChecked)),
-                          isSelected,
-                          rowIndex: 0,
-                        }}
-                      />
-                      <Td dataLabel="Name">{worker.shortName}</Td>
-                      <Td dataLabel="Hostname">
-                        <Content component="small">{worker.hostname}</Content>
-                      </Td>
-                      <Td dataLabel="Status">
-                        <Label color={worker.ready ? "green" : "orange"} isCompact>
-                          {worker.ready ? "Ready" : "Not ready"}
-                        </Label>
-                      </Td>
-                      <Td dataLabel="Topology">
-                        {onTopology ? (
-                          <Label color="blue" isCompact>
-                            On canvas
+          <OcsNamedResourceDataView
+            ouiaId="open-worker-node-data-view"
+            ariaLabel="Cluster worker nodes"
+            itemsLabel="worker nodes"
+            items={workers}
+            getName={workerName}
+          >
+            {(rows) => (
+              <>
+                <Thead>
+                  <Tr>
+                    <Th
+                      screenReaderText="Select worker node"
+                      select={{
+                        onSelect: (_event, isSelected) => toggleAll(isSelected),
+                        isSelected: allWorkersSelected,
+                      }}
+                    />
+                    <Th dataLabel="Name">
+                      <PlainTableHeader label="Name" />
+                    </Th>
+                    <Th dataLabel="Hostname">
+                      <PlainTableHeader label="Hostname" />
+                    </Th>
+                    <Th dataLabel="Status">
+                      <PlainTableHeader label="Status" />
+                    </Th>
+                    <Th dataLabel="Topology">
+                      <PlainTableHeader label="Topology" />
+                    </Th>
+                    <Th screenReaderText="Actions" />
+                  </Tr>
+                </Thead>
+                <Tbody>
+                  {rows.map((worker) => {
+                    const onTopology = revealedSet.has(worker.id);
+                    const isSelected = selectedIds.includes(worker.id);
+                    return (
+                      <Tr key={worker.id}>
+                        <Td
+                          select={{
+                            onSelect: (_event, isChecked) => toggleWorker(worker.id, Boolean(isChecked)),
+                            isSelected,
+                            rowIndex: 0,
+                          }}
+                        />
+                        <Td dataLabel="Name">{worker.shortName}</Td>
+                        <Td dataLabel="Hostname">
+                          <Content component="small">{worker.hostname}</Content>
+                        </Td>
+                        <Td dataLabel="Status">
+                          <Label color={worker.ready ? "green" : "orange"} isCompact>
+                            {worker.ready ? "Ready" : "Not ready"}
                           </Label>
-                        ) : (
-                          <Content component="small" className="ocs-net-topo-sidepanel__hint">
-                            Not added
-                          </Content>
-                        )}
-                      </Td>
-                      <Td dataLabel="Actions" isActionCell>
-                        {onTopology && onRequestRemoveWorker ? (
-                          <Button
-                            variant="link"
-                            isDanger
-                            isInline
-                            onClick={() => onRequestRemoveWorker(worker)}
-                            aria-label={`Remove ${worker.shortName} from topology`}
-                          >
-                            Remove
-                          </Button>
-                        ) : null}
-                      </Td>
-                    </Tr>
-                  );
-                })}
-              </Tbody>
-            </Table>
-          </InnerScrollContainer>
+                        </Td>
+                        <Td dataLabel="Topology">
+                          {onTopology ? (
+                            <Label color="blue" isCompact>
+                              On canvas
+                            </Label>
+                          ) : (
+                            <Content component="small" className="ocs-net-topo-sidepanel__hint">
+                              Not added
+                            </Content>
+                          )}
+                        </Td>
+                        <Td dataLabel="Actions" isActionCell>
+                          {onTopology && onRequestRemoveWorker ? (
+                            <Button
+                              variant="link"
+                              isDanger
+                              isInline
+                              onClick={() => onRequestRemoveWorker(worker)}
+                              aria-label={`Remove ${worker.shortName} from topology`}
+                            >
+                              Remove
+                            </Button>
+                          ) : null}
+                        </Td>
+                      </Tr>
+                    );
+                  })}
+                </Tbody>
+              </>
+            )}
+          </OcsNamedResourceDataView>
         )}
       </ModalBody>
       <ModalFooter>

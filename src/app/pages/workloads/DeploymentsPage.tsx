@@ -135,7 +135,7 @@ export default function DeploymentsPage() {
             <Button variant="primary">Create Deployment</Button>
           </Flex>
 
-          <div className="ocs-pods-list__panel app-glass-panel">
+          <div className="ocs-pods-list__panel">
             <DataView ouiaId="deployments-data-view" className={OCS_PROTOTYPE_DATAVIEW_CLASS}>
               <DataViewToolbar
                 ouiaId="deployments-dv-toolbar"

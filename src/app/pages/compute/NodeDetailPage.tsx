@@ -247,7 +247,7 @@ export default function NodeDetailPage() {
             </Flex>
           </Flex>
 
-          <div className="ocs-node-details__panel app-glass-panel">
+          <div className="ocs-node-details__panel">
             <div className="ocs-node-details__columns">
               <div className="ocs-node-details__column">
                 <NodeDetailsDescriptionList node={node} />

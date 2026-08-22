@@ -127,7 +127,7 @@ export default function CustomResourceDefinitionsPage() {
             CustomResourceDefinitions extend the Kubernetes API to support custom resource types.
           </Content>
 
-          <div className="ocs-pods-list__panel app-glass-panel">
+          <div className="ocs-pods-list__panel">
             <DataView ouiaId="crds-data-view" className={OCS_PROTOTYPE_DATAVIEW_CLASS}>
               <DataViewToolbar
                 ouiaId="crds-dv-toolbar"

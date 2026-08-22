@@ -117,7 +117,7 @@ export default function UdnDetailPage() {
           </Tabs>
 
           {activeTab === "details" ? (
-            <section className="ocs-node-details__panel app-glass-panel" aria-label="UserDefinedNetwork details">
+            <section className="ocs-node-details__panel" aria-label="UserDefinedNetwork details">
               <Title headingLevel="h2" size="xl" className="ocs-pod-details__section-title">
                 UserDefinedNetwork details
               </Title>
@@ -159,7 +159,7 @@ export default function UdnDetailPage() {
           ) : null}
 
           {activeTab === "yaml" ? (
-            <section className="ocs-node-details__panel app-glass-panel" aria-label="YAML">
+            <section className="ocs-node-details__panel" aria-label="YAML">
               <pre className="ocs-net-yaml">{udnYaml(udn)}</pre>
             </section>
           ) : null}

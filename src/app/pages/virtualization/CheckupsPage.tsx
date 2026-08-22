@@ -1,4 +1,5 @@
-import { Content, Flex } from "@patternfly/react-core";
+import { Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
+import { OcsNamedResourceDataView, PlainTableHeader } from "../../components/dataView/OcsPrototypeListTable";
 import { VirtResourceTableShell } from "./virtualizationShared";
 
 const CHECKUPS = [
@@ -6,21 +7,43 @@ const CHECKUPS = [
   { name: "kubevirt-storage", description: "Validate storage access for VMs" },
 ];
 
+function checkupName(row: (typeof CHECKUPS)[number]) {
+  return row.name;
+}
+
 export default function CheckupsPage() {
   return (
     <VirtResourceTableShell title="Checkups" path="/virtualization/checkups">
-      <Flex direction={{ default: "column" }} gap={{ default: "gapMd" }} className="pf-v6-u-p-lg">
-        {CHECKUPS.map((c) => (
-          <div key={c.name} className="ocs-virt-checkup-row">
-            <Content component="h3" className="pf-v6-u-font-weight-bold">
-              {c.name}
-            </Content>
-            <Content component="p" className="pf-v6-u-color-200">
-              {c.description}
-            </Content>
-          </div>
-        ))}
-      </Flex>
+      <OcsNamedResourceDataView
+        ouiaId="checkups-data-view"
+        ariaLabel="Checkups"
+        itemsLabel="checkups"
+        items={CHECKUPS}
+        getName={checkupName}
+      >
+        {(rows) => (
+          <>
+            <Thead>
+              <Tr>
+                <Th dataLabel="Name">
+                  <PlainTableHeader label="Name" />
+                </Th>
+                <Th dataLabel="Description">
+                  <PlainTableHeader label="Description" />
+                </Th>
+              </Tr>
+            </Thead>
+            <Tbody>
+              {rows.map((row) => (
+                <Tr key={row.name}>
+                  <Td dataLabel="Name">{row.name}</Td>
+                  <Td dataLabel="Description">{row.description}</Td>
+                </Tr>
+              ))}
+            </Tbody>
+          </>
+        )}
+      </OcsNamedResourceDataView>
     </VirtResourceTableShell>
   );
 }

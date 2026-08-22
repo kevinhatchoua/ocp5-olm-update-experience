@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState, type ReactNode } from "react";
 import { useNavigate } from "react-router";
 import {
   Button,
@@ -22,11 +22,12 @@ import AngleDownIcon from "@patternfly/react-icons/dist/esm/icons/angle-down-ico
 import AngleRightIcon from "@patternfly/react-icons/dist/esm/icons/angle-right-icon";
 import EllipsisVIcon from "@patternfly/react-icons/dist/esm/icons/ellipsis-v-icon";
 import ExternalLinkAltIcon from "@patternfly/react-icons/dist/esm/icons/external-link-alt-icon";
-import { Tbody, Td, Th, Thead, Tr, Table } from "@patternfly/react-table";
+import { Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
 import { IoDataViewFiltersWithMidActions } from "../../components/dataView/IoDataViewFiltersWithMidActions";
 import {
   OCS_PROTOTYPE_DATAVIEW_CLASS,
   OCS_PROTOTYPE_TOOLBAR_CLASS,
+  OcsNamedResourceDataView,
   OcsPrototypeListTable,
   PlainTableHeader,
   SortableTableHeader,
@@ -87,14 +88,36 @@ type NodeNetworkTableListProps = {
   onResourceDeleted?: (resourceId: string) => void;
 };
 
-function groupInterfacesByType(row: NodeNetworkStateRow) {
+function groupInterfaceList(interfaces: NodeNetworkStateRow["interfaces"]) {
   const buckets = new Map<NodeNetworkInterfaceType, NodeNetworkStateRow["interfaces"]>();
-  row.interfaces.forEach((iface) => {
+  interfaces.forEach((iface) => {
     const list = buckets.get(iface.type) ?? [];
     list.push(iface);
     buckets.set(iface.type, list);
   });
   return buckets;
+}
+
+function NodeInterfacesExpandTable({
+  hostname,
+  interfaces,
+  children,
+}: {
+  hostname: string;
+  interfaces: NodeNetworkStateRow["interfaces"];
+  children: (rows: NodeNetworkStateRow["interfaces"]) => ReactNode;
+}) {
+  return (
+    <OcsNamedResourceDataView
+      ouiaId={`nns-interfaces-${hostname}`}
+      ariaLabel={`Interfaces for ${hostname}`}
+      itemsLabel="interfaces"
+      items={interfaces}
+      getName={(iface) => iface.name}
+    >
+      {children}
+    </OcsNamedResourceDataView>
+  );
 }
 
 function rowMatchesFilters(row: NodeNetworkStateRow, filters: NnsListFilters): boolean {
@@ -285,7 +308,6 @@ export default function NodeNetworkTableList({
                 const group = groupById(groups, row.id);
                 const isExpanded = expandedNodeIds.has(row.id);
                 const isGroupSelected = selectedGroupId === row.id;
-                const grouped = groupInterfacesByType(row);
                 const nodeMenuKey = `node-${row.id}`;
                 return (
                   <Fragment key={row.id}>
@@ -353,7 +375,11 @@ export default function NodeNetworkTableList({
                       <Tr isExpanded>
                         <Td />
                         <Td colSpan={3} className="ocs-node-network-table__details-cell">
-                          <Table variant="compact" borders={false} aria-label={`Interfaces for ${row.hostname}`}>
+                          <NodeInterfacesExpandTable hostname={row.hostname} interfaces={row.interfaces}>
+                            {(ifaceRows) => {
+                              const groupedIfaces = groupInterfaceList(ifaceRows);
+                              return (
+                                <>
                             <Thead>
                               <Tr>
                                 <Th>Name</Th>
@@ -367,7 +393,7 @@ export default function NodeNetworkTableList({
                               </Tr>
                             </Thead>
                             <Tbody>
-                              {[...grouped.entries()].map(([type, interfaces]) => (
+                              {[...groupedIfaces.entries()].map(([type, interfaces]) => (
                                 <Fragment key={`${row.id}-${type}`}>
                                   <Tr className="ocs-node-network-table__type-row">
                                     <Td colSpan={8}>
@@ -453,7 +479,10 @@ export default function NodeNetworkTableList({
                                 </Fragment>
                               ))}
                             </Tbody>
-                          </Table>
+                                </>
+                              );
+                            }}
+                          </NodeInterfacesExpandTable>
                         </Td>
                       </Tr>
                     ) : null}

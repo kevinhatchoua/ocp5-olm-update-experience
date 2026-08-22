@@ -1,0 +1,23 @@
+---
+description: Prototype resource tables must use DataView like Installed Operators and Pods
+globs: src/app/**/*.tsx
+alwaysApply: false
+---
+
+# DataView tables (prototype standard)
+
+Every resource table uses PatternFly DataView, not a bare `Table` or a table inside a Card.
+
+## Required composition
+
+- `OcsNamedResourceDataView` (name filter + pagination) **or** `DataView` + `DataViewToolbar` + `OcsPrototypeListTable`
+- Classes: `OCS_PROTOTYPE_DATAVIEW_CLASS`, `OCS_PROTOTYPE_TOOLBAR_CLASS`, `ocs-io-operator-table`
+- Headers: `SortableTableHeader` / `PlainTableHeader`
+- Filters: `IoDataViewFiltersWithMidActions` + `DataViewTextFilter` (and extra filters as needed)
+- No wrapping Card / `app-glass-panel` around list tables
+
+## Reference
+
+- Installed Operators: `src/app/pages/ecosystem/InstalledOperatorsPage.tsx`
+- Pods: `src/app/pages/workloads/PodsPage.tsx`
+- Shared helpers: `src/app/components/dataView/OcsPrototypeListTable.tsx`

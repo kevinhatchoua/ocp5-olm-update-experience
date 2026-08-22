@@ -14,7 +14,7 @@ export default function ClusterUpdateDemoBanner() {
   const { pathname } = useLocation();
   const { demoVariant, setDemoVariant, performClusterUpdateDemoReset } = useClusterUpdateDemoVariant();
 
-  if (!pathname.startsWith("/administration/cluster-update")) {
+  if (!pathname.startsWith("/administration/cluster-update/")) {
     return null;
   }
 

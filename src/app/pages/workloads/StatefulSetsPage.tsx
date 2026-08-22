@@ -134,7 +134,7 @@ export default function StatefulSetsPage() {
             <Button variant="primary">Create StatefulSet</Button>
           </Flex>
 
-          <div className="ocs-pods-list__panel app-glass-panel">
+          <div className="ocs-pods-list__panel">
             <DataView ouiaId="statefulsets-data-view" className={OCS_PROTOTYPE_DATAVIEW_CLASS}>
               <DataViewToolbar
                 ouiaId="statefulsets-dv-toolbar"

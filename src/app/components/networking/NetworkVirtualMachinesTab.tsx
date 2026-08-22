@@ -15,7 +15,6 @@ import {
   ModalBody,
   ModalFooter,
   ModalHeader,
-  PageSection,
   Pagination,
   PaginationVariant,
 } from "@patternfly/react-core";
@@ -28,7 +27,7 @@ import {
 import EllipsisVIcon from "@patternfly/react-icons/dist/esm/icons/ellipsis-v-icon";
 import ExclamationTriangleIcon from "@patternfly/react-icons/dist/esm/icons/exclamation-triangle-icon";
 import PlusCircleIcon from "@patternfly/react-icons/dist/esm/icons/plus-circle-icon";
-import { Tbody, Td, Th, Thead, Tr, InnerScrollContainer, Table } from "@patternfly/react-table";
+import { Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
 import { IoDataViewFiltersWithMidActions } from "../dataView/IoDataViewFiltersWithMidActions";
 import {
   OCS_PROTOTYPE_DATAVIEW_CLASS,
@@ -143,7 +142,7 @@ export function NetworkVirtualMachinesTab({
   if (attached.length === 0) {
     return (
       <>
-        <div className="ocs-nodes-list__table-wrap app-glass-panel ocs-networking-empty">
+        <div className="ocs-nodes-list__table-wrap ocs-networking-empty">
           <Flex
             direction={{ default: "column" }}
             alignItems={{ default: "alignItemsCenter" }}
@@ -193,7 +192,7 @@ export function NetworkVirtualMachinesTab({
             Add virtual machines
           </Button>
         </div>
-        <div className="ocs-pods-list__panel app-glass-panel">
+        <div className="ocs-pods-list__panel">
           <DataView ouiaId="net-vms-data-view" className={OCS_PROTOTYPE_DATAVIEW_CLASS}>
             <DataViewToolbar
               ouiaId="net-vms-dv-toolbar"
@@ -539,14 +538,7 @@ function AddVirtualMachinesModal({
               />
             }
           />
-          <PageSection aria-label="Available virtual machines" padding={{ default: "noPadding" }}>
-            <InnerScrollContainer>
-              <Table
-                aria-label="Available virtual machines"
-                borders
-                variant="compact"
-                className="ocs-io-operator-table"
-              >
+          <OcsPrototypeListTable ariaLabel="Available virtual machines">
                 <Thead>
                   <Tr>
                     <Th modifier="fitContent" dataLabel="Select">
@@ -641,9 +633,7 @@ function AddVirtualMachinesModal({
                     })
                   )}
                 </Tbody>
-              </Table>
-            </InnerScrollContainer>
-          </PageSection>
+              </OcsPrototypeListTable>
         </DataView>
       </ModalBody>
       <ModalFooter>

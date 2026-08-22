@@ -195,7 +195,7 @@ export default function JobsPage() {
             <Button variant="primary">Create Job</Button>
           </Flex>
 
-          <div className="ocs-pods-list__panel app-glass-panel">
+          <div className="ocs-pods-list__panel">
             <DataView ouiaId="jobs-data-view" className={OCS_PROTOTYPE_DATAVIEW_CLASS}>
               <DataViewToolbar
                 ouiaId="jobs-dv-toolbar"

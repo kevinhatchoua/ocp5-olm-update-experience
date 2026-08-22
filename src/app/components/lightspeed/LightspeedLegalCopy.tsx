@@ -1,11 +1,35 @@
 import type { ReactNode } from "react";
 import { Alert, Content, Flex, Title } from "@patternfly/react-core";
+import InfoCircleIcon from "@patternfly/react-icons/dist/esm/icons/info-circle-icon";
+import ExternalLinkAltIcon from "@patternfly/react-icons/dist/esm/icons/external-link-alt-icon";
 import { css } from "@patternfly/react-styles";
 import textStyles from "@patternfly/react-styles/css/utilities/Text/text.mjs";
 import { Sparkles } from "@/lib/pfIcons";
 
 export const LIGHTSPEED_AI_RESPONSE_FOOTER =
-  "Always check AI/LLM generated responses for accuracy prior to use.";
+  "Always review AI generated content prior to use.";
+
+export const OLS_WELCOME_HEADLINE =
+  "Explore deeper insights, engage in meaningful discussions, and unlock new possibilities with Red Hat OpenShift Lightspeed.";
+
+export const OLS_WELCOME_CAUTION =
+  "Answers are provided by generative AI technology, please use appropriate caution when following recommendations.";
+
+export const OLS_IMPORTANT_BODY =
+  "OpenShift Lightspeed uses AI technology to help answer your questions. Do not include personal information or other sensitive information in your input. Interactions may be used to improve Red Hat's products or services.";
+
+export const OLS_WELCOME_ALERT_TITLE = "Welcome to OpenShift Lightspeed!";
+
+export const OLS_WELCOME_ALERT_BODY =
+  "OpenShift Lightspeed is now available to help you with your OpenShift questions and tasks. Try asking about deployments, troubleshooting, best practices, or any other OpenShift-related topics. This notice will disappear once you minimize the chat.";
+
+export const OLS_FEEDBACK_PREFIX = "For questions or feedback about OpenShift Lightspeed, ";
+export const OLS_FEEDBACK_LINK_LABEL = "email the Red Hat team";
+export const OLS_FEEDBACK_HREF = "mailto:openshift-lightspeed@redhat.com";
+
+/** Agentic run details — autonomous Lightspeed features (JuLim implemented copy). */
+export const LIGHTSPEED_AUTONOMOUS_FEATURES_DISCLAIMER =
+  "The autonomous features of OpenShift Lightspeed use AI technology to generate output. Always review AI-generated content prior to use.";
 
 /** PM / legal — AI privacy notice for cluster update AI surfaces (exact approved copy). */
 export const CLUSTER_UPDATE_AI_IMPORTANT_TITLE = "Important";
@@ -69,14 +93,45 @@ export function ClusterUpdateAiImportantPrivacyPanelNotice() {
   );
 }
 
+export function LightspeedWelcomeNotice() {
+  return (
+    <Alert
+      isInline
+      variant="custom"
+      customIcon={<InfoCircleIcon />}
+      title={OLS_WELCOME_ALERT_TITLE}
+      className="ols-panel-alert ols-welcome-alert"
+    >
+      {OLS_WELCOME_ALERT_BODY}
+    </Alert>
+  );
+}
+
 export function LightspeedHeaderNotice() {
   return (
-    <div
-      className={`ols-legal-header-notice ${css(textStyles.fontSizeSm)}`}
-      role="region"
-      aria-label="Important notice about AI features and privacy"
+    <Alert
+      isInline
+      variant="custom"
+      customIcon={<InfoCircleIcon />}
+      title="Important"
+      className="ols-panel-alert ols-important-alert"
     >
-      <ClusterUpdateAiPrivacyDisclaimerBody />
+      {OLS_IMPORTANT_BODY}
+    </Alert>
+  );
+}
+
+export function LightspeedComposerFooter() {
+  return (
+    <div className="ols-panel-legal">
+      <p>{LIGHTSPEED_AI_RESPONSE_FOOTER}</p>
+      <p>
+        {OLS_FEEDBACK_PREFIX}
+        <a href={OLS_FEEDBACK_HREF} className="ols-panel-legal__link">
+          {OLS_FEEDBACK_LINK_LABEL}
+          <ExternalLinkAltIcon className="ols-panel-legal__ext" />
+        </a>
+      </p>
     </div>
   );
 }

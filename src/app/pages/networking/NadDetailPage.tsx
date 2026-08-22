@@ -116,7 +116,7 @@ export default function NadDetailPage() {
           </Tabs>
 
           {activeTab === "details" ? (
-            <section className="ocs-node-details__panel app-glass-panel" aria-label="NetworkAttachmentDefinition details">
+            <section className="ocs-node-details__panel" aria-label="NetworkAttachmentDefinition details">
               <Title headingLevel="h2" size="xl" className="ocs-pod-details__section-title">
                 NetworkAttachmentDefinition details
               </Title>
@@ -154,7 +154,7 @@ export default function NadDetailPage() {
           ) : null}
 
           {activeTab === "yaml" ? (
-            <section className="ocs-node-details__panel app-glass-panel" aria-label="YAML">
+            <section className="ocs-node-details__panel" aria-label="YAML">
               <pre className="ocs-net-yaml">{nadYaml(nad)}</pre>
             </section>
           ) : null}

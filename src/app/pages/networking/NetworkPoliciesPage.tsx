@@ -30,7 +30,7 @@ export default function NetworkPoliciesPage() {
           learnMoreLabel="Learn more about NetworkPolicy"
         />
       ) : (
-        <div className="ocs-nodes-list__table-wrap app-glass-panel ocs-networking-empty">
+        <div className="ocs-nodes-list__table-wrap ocs-networking-empty">
           <Flex
             direction={{ default: "column" }}
             alignItems={{ default: "alignItemsCenter" }}

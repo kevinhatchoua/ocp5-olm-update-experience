@@ -2,9 +2,6 @@ import { useState } from "react";
 import { Link, useParams } from "react-router";
 import {
   Button,
-  Card,
-  CardBody,
-  CardTitle,
   Content,
   DescriptionList,
   DescriptionListDescription,
@@ -25,7 +22,8 @@ import {
   TabTitleText,
   Title,
 } from "@patternfly/react-core";
-import { InnerScrollContainer, Table, Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
+import { Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
+import { OcsNamedResourceDataView, PlainTableHeader } from "../../components/dataView/OcsPrototypeListTable";
 import ExclamationCircleIcon from "@patternfly/react-icons/dist/esm/icons/exclamation-circle-icon";
 import OutlinedStopCircleIcon from "@patternfly/react-icons/dist/esm/icons/outlined-stop-circle-icon";
 import PauseIcon from "@patternfly/react-icons/dist/esm/icons/pause-icon";
@@ -35,8 +33,7 @@ import ExternalLinkAltIcon from "@patternfly/react-icons/dist/esm/icons/external
 import Breadcrumbs from "../../components/Breadcrumbs";
 import FavoriteButton from "../../components/FavoriteButton";
 import { VMNetworkResourceLink } from "../../components/networking/VMNetworkResourceLink";
-import { OCS_PROTOTYPE_TABLE_CLASS } from "../../components/dataView/OcsPrototypeListTable";
-import { getVirtualMachine, vmDetailPath } from "../networking/networkingMockData";
+import { getVirtualMachine, vmDetailPath, type VmNetworkInterface } from "../networking/networkingMockData";
 import { VIRT_CRUMB } from "./virtualizationMockData";
 import { VirtualizationProjectLayout } from "./virtualizationShared";
 
@@ -147,7 +144,7 @@ export default function VirtualMachineDetailPage() {
             {activeTab === "overview" ? (
               <Grid hasGutter>
                 <GridItem md={8}>
-                  <section className="ocs-node-details__panel app-glass-panel pf-v6-u-mb-md">
+                  <section className="ocs-node-details__panel pf-v6-u-mb-md">
                     <Title headingLevel="h2" size="lg" className="pf-v6-u-mb-md">
                       Details
                     </Title>
@@ -222,7 +219,7 @@ export default function VirtualMachineDetailPage() {
                       </GridItem>
                     </Grid>
                   </section>
-                  <section className="ocs-node-details__panel app-glass-panel pf-v6-u-mb-md">
+                  <section className="ocs-node-details__panel pf-v6-u-mb-md">
                     <Flex justifyContent={{ default: "justifyContentSpaceBetween" }} className="pf-v6-u-mb-md">
                       <Title headingLevel="h2" size="lg">
                         VNC console
@@ -236,7 +233,7 @@ export default function VirtualMachineDetailPage() {
                       <Content component="span">Connecting</Content>
                     </Flex>
                   </section>
-                  <section className="ocs-node-details__panel app-glass-panel">
+                  <section className="ocs-node-details__panel">
                     <Title headingLevel="h2" size="lg" className="pf-v6-u-mb-md">
                       Utilization
                     </Title>
@@ -265,41 +262,14 @@ export default function VirtualMachineDetailPage() {
                   <Tab eventKey="storage" title={<TabTitleText>Storage</TabTitleText>} />
                 </Tabs>
                 {configTab === "network" ? (
-                  <div className="ocs-pods-list__panel app-glass-panel pf-v6-u-flex-fill">
+                  <div className="ocs-pods-list__panel pf-v6-u-flex-fill">
                     <Title headingLevel="h2" size="lg" className="pf-v6-u-p-md">
                       Network interfaces
                     </Title>
-                    <InnerScrollContainer>
-                      <Table aria-label="Network interfaces" className={OCS_PROTOTYPE_TABLE_CLASS}>
-                        <Thead>
-                          <Tr>
-                            <Th>Name</Th>
-                            <Th>Model</Th>
-                            <Th>Network</Th>
-                            <Th>State</Th>
-                            <Th>Type</Th>
-                            <Th>MAC address</Th>
-                          </Tr>
-                        </Thead>
-                        <Tbody>
-                          {vm.interfaces.map((iface) => (
-                            <Tr key={iface.name}>
-                              <Td dataLabel="Name">{iface.name}</Td>
-                              <Td dataLabel="Model">{iface.model}</Td>
-                              <Td dataLabel="Network">
-                                <VMNetworkResourceLink network={iface.network} />
-                              </Td>
-                              <Td dataLabel="State">{iface.state}</Td>
-                              <Td dataLabel="Type">{iface.type}</Td>
-                              <Td dataLabel="MAC address">{iface.macAddress}</Td>
-                            </Tr>
-                          ))}
-                        </Tbody>
-                      </Table>
-                    </InnerScrollContainer>
+                    <VmNetworkInterfacesTable interfaces={vm.interfaces} />
                   </div>
                 ) : (
-                  <section className="ocs-node-details__panel app-glass-panel pf-v6-u-flex-fill">
+                  <section className="ocs-node-details__panel pf-v6-u-flex-fill">
                     <Content component="p" className="pf-v6-u-color-200">
                       {configTab === "details" ? "Configuration details prototype stub." : "Storage configuration prototype stub."}
                     </Content>
@@ -309,7 +279,7 @@ export default function VirtualMachineDetailPage() {
             ) : null}
 
             {activeTab !== "overview" && activeTab !== "configuration" ? (
-              <section className="ocs-node-details__panel app-glass-panel">
+              <section className="ocs-node-details__panel">
                 <Content component="p" className="pf-v6-u-color-200">
                   {activeTab} tab prototype stub.
                 </Content>
@@ -324,18 +294,19 @@ export default function VirtualMachineDetailPage() {
 
 function VmSidePanel({ vm }: { vm: NonNullable<ReturnType<typeof getVirtualMachine>> }) {
   return (
-    <Flex direction={{ default: "column" }} gap={{ default: "gapMd" }}>
-      <Card isCompact isPlain className="app-glass-panel">
-        <CardTitle>Alerts (0)</CardTitle>
-        <CardBody>
+    <Flex direction={{ default: "column" }} gap={{ default: "gapLg" }}>
+      <section aria-label="Alerts">
+        <Title headingLevel="h2" size="lg" className="ocs-pod-details__section-title">
+          Alerts (0)
+        </Title>
           <Content component="p" className="pf-v6-u-color-200">
             No alerts
           </Content>
-        </CardBody>
-      </Card>
-      <Card isCompact isPlain className="app-glass-panel">
-        <CardTitle>General</CardTitle>
-        <CardBody>
+      </section>
+      <section aria-label="General">
+        <Title headingLevel="h2" size="lg" className="ocs-pod-details__section-title">
+          General
+        </Title>
           <DescriptionList isCompact>
             <DescriptionListGroup>
               <DescriptionListTerm>Namespace</DescriptionListTerm>
@@ -373,26 +344,24 @@ function VmSidePanel({ vm }: { vm: NonNullable<ReturnType<typeof getVirtualMachi
               <DescriptionListDescription>No owner</DescriptionListDescription>
             </DescriptionListGroup>
           </DescriptionList>
-        </CardBody>
-      </Card>
-      <Card isCompact isPlain className="app-glass-panel">
-        <CardTitle>
-          <Flex justifyContent={{ default: "justifyContentSpaceBetween" }}>
+      </section>
+      <section aria-label="Snapshots">
+        <Flex justifyContent={{ default: "justifyContentSpaceBetween" }} className="ocs-pod-details__section-title">
+          <Title headingLevel="h2" size="lg">
             Snapshots (0)
+          </Title>
             <Button variant="link" isInline>
               Take snapshot
             </Button>
-          </Flex>
-        </CardTitle>
-        <CardBody>
+        </Flex>
           <Content component="p" className="pf-v6-u-color-200">
             No snapshots found
           </Content>
-        </CardBody>
-      </Card>
-      <Card isCompact isPlain className="app-glass-panel ocs-vm-network-card">
-        <CardTitle>Network ({vm.interfaces.length})</CardTitle>
-        <CardBody>
+      </section>
+      <section aria-label="Network">
+        <Title headingLevel="h2" size="lg" className="ocs-pod-details__section-title">
+          Network ({vm.interfaces.length})
+        </Title>
           {vm.interfaces.map((iface) => (
             <Flex
               key={iface.name}
@@ -408,8 +377,64 @@ function VmSidePanel({ vm }: { vm: NonNullable<ReturnType<typeof getVirtualMachi
           <Content component="p" className="pf-v6-u-mt-md pf-v6-u-color-200 pf-v6-u-font-size-sm">
             Internal FQDN: {vm.name}.headless.{vm.namespace}…
           </Content>
-        </CardBody>
-      </Card>
+      </section>
     </Flex>
+  );
+}
+
+function interfaceName(iface: VmNetworkInterface) {
+  return iface.name;
+}
+
+function VmNetworkInterfacesTable({ interfaces }: { interfaces: VmNetworkInterface[] }) {
+  return (
+    <OcsNamedResourceDataView
+      ouiaId="vm-network-interfaces-data-view"
+      ariaLabel="Network interfaces"
+      itemsLabel="interfaces"
+      items={interfaces}
+      getName={interfaceName}
+    >
+      {(rows) => (
+        <>
+          <Thead>
+            <Tr>
+              <Th dataLabel="Name">
+                <PlainTableHeader label="Name" />
+              </Th>
+              <Th dataLabel="Model">
+                <PlainTableHeader label="Model" />
+              </Th>
+              <Th dataLabel="Network">
+                <PlainTableHeader label="Network" />
+              </Th>
+              <Th dataLabel="State">
+                <PlainTableHeader label="State" />
+              </Th>
+              <Th dataLabel="Type">
+                <PlainTableHeader label="Type" />
+              </Th>
+              <Th dataLabel="MAC address">
+                <PlainTableHeader label="MAC address" />
+              </Th>
+            </Tr>
+          </Thead>
+          <Tbody>
+            {rows.map((iface) => (
+              <Tr key={iface.name}>
+                <Td dataLabel="Name">{iface.name}</Td>
+                <Td dataLabel="Model">{iface.model}</Td>
+                <Td dataLabel="Network">
+                  <VMNetworkResourceLink network={iface.network} />
+                </Td>
+                <Td dataLabel="State">{iface.state}</Td>
+                <Td dataLabel="Type">{iface.type}</Td>
+                <Td dataLabel="MAC address">{iface.macAddress}</Td>
+              </Tr>
+            ))}
+          </Tbody>
+        </>
+      )}
+    </OcsNamedResourceDataView>
   );
 }

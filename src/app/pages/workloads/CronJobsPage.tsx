@@ -143,7 +143,7 @@ export default function CronJobsPage() {
             <Button variant="primary">Create CronJob</Button>
           </Flex>
 
-          <div className="ocs-pods-list__panel app-glass-panel">
+          <div className="ocs-pods-list__panel">
             <DataView ouiaId="cronjobs-data-view" className={OCS_PROTOTYPE_DATAVIEW_CLASS}>
               <DataViewToolbar
                 ouiaId="cronjobs-dv-toolbar"

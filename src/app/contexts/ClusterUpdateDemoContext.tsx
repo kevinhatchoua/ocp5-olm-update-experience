@@ -9,6 +9,8 @@ import {
 } from "react";
 import { useNavigate } from "react-router";
 import type { ClusterUpdateDemoVariant } from "../components/AiAssessmentSection";
+import { clearClusterUpdateStarted, CLUSTER_PATCH_VERSION } from "../constants/clusterVersionDemo";
+import { writePreflightPhase } from "../lib/clusterUpdateWorkflow";
 
 export const CLUSTER_UPDATE_DEMO_VARIANT_KEY = "ocp5-cluster-update-demo-variant";
 
@@ -31,6 +33,8 @@ type ClusterUpdateDemoContextValue = {
   clusterUpdateDemoResetEpoch: number;
   /** Clears in-progress flag, bumps epoch, navigates to Cluster Update plan. Always available (masthead). */
   performClusterUpdateDemoReset: () => void;
+  /** Seeds a demo in-progress update (prototype banner switch). */
+  startClusterUpdateDemo: (version?: string) => void;
 };
 
 const ClusterUpdateDemoContext = createContext<ClusterUpdateDemoContextValue | null>(null);
@@ -77,14 +81,33 @@ export function ClusterUpdateDemoProvider({ children }: { children: ReactNode })
   const performClusterUpdateDemoReset = useCallback(() => {
     try {
       localStorage.removeItem("clusterUpdateInProgress");
-      sessionStorage.setItem(CLUSTER_UPDATE_DEMO_VARIANT_KEY, "agent-only");
+      sessionStorage.removeItem("ocs-demo-update-target-version");
+      sessionStorage.removeItem("ocs-demo-update-target-channel");
+      sessionStorage.removeItem("ocs-demo-preflight-phase");
     } catch {
       /* ignore */
     }
-    setDemoVariantState("agent-only");
+    clearClusterUpdateStarted();
+    writePreflightPhase("idle");
     setClusterUpdateDemoResetEpoch((n) => n + 1);
     navigate("/administration/cluster-update", { replace: true });
   }, [navigate]);
+
+  const startClusterUpdateDemo = useCallback(
+    (version = CLUSTER_PATCH_VERSION) => {
+      try {
+        localStorage.setItem(
+          "clusterUpdateInProgress",
+          JSON.stringify({ version, startedAt: Date.now() }),
+        );
+      } catch {
+        /* ignore */
+      }
+      setClusterUpdateDemoResetEpoch((n) => n + 1);
+      navigate("/administration/cluster-update", { replace: true });
+    },
+    [navigate],
+  );
 
   const value = useMemo(
     () => ({
@@ -92,8 +115,15 @@ export function ClusterUpdateDemoProvider({ children }: { children: ReactNode })
       setDemoVariant,
       clusterUpdateDemoResetEpoch,
       performClusterUpdateDemoReset,
+      startClusterUpdateDemo,
     }),
-    [demoVariant, setDemoVariant, clusterUpdateDemoResetEpoch, performClusterUpdateDemoReset]
+    [
+      demoVariant,
+      setDemoVariant,
+      clusterUpdateDemoResetEpoch,
+      performClusterUpdateDemoReset,
+      startClusterUpdateDemo,
+    ],
   );
 
   return <ClusterUpdateDemoContext.Provider value={value}>{children}</ClusterUpdateDemoContext.Provider>;

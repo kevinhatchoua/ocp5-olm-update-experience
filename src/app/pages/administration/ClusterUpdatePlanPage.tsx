@@ -68,7 +68,7 @@ import {
   useDataViewFilters,
 } from "@patternfly/react-data-view";
 import EllipsisVIcon from "@patternfly/react-icons/dist/esm/icons/ellipsis-v-icon";
-import { InnerScrollContainer, Table, Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
+import { Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
 import { usePatternFlyGlassActive } from "@/lib/usePatternFlyGlassActive";
 import {
   AiExperienceIcon,
@@ -102,6 +102,7 @@ import { IoDataViewFiltersWithMidActions } from "../../components/dataView/IoDat
 import {
   OCS_PROTOTYPE_DATAVIEW_CLASS,
   OCS_PROTOTYPE_TOOLBAR_CLASS,
+  OcsNamedResourceDataView,
   OcsPrototypeListTable,
   PlainTableHeader,
   SortableTableHeader,
@@ -114,6 +115,8 @@ import { AiAssessmentSection } from "../../components/AiAssessmentSection";
 import { OlsChatbot } from "../../components/OlsChatbot";
 import { AiGeneratedPlanMarker, AI_GENERATED_PLAN_HEADING } from "../../components/lightspeed/LightspeedLegalCopy";
 import { useClusterUpdateDemoVariant } from "../../contexts/ClusterUpdateDemoContext";
+import { UpdatesPlanAnalysisCard } from "../../components/cluster-update/UpdatesPlanAnalysisCard";
+import { CLUSTER_CURRENT_VERSION } from "../../constants/clusterVersionDemo";
 
 /** Disclosure (displaySize lg) — strip secondary panel chrome inside glass surfaces; see cluster-update-layout.css */
 function clusterExpandablePlainClass(isGlass: boolean): string | undefined {
@@ -493,13 +496,18 @@ export default function ClusterUpdatePlanPage() {
           alignItems={{ default: "alignItemsCenter" }}
           justifyContent={{ default: "justifyContentSpaceBetween" }}
         >
-          <h1 id="main-title">Cluster Update</h1>
+          <Flex gap={{ default: "gapMd" }} alignItems={{ default: "alignItemsCenter" }}>
+            <h1 id="main-title">Cluster Update</h1>
+            <Label color="orange" isCompact>
+              Tech preview
+            </Label>
+          </Flex>
           <FavoriteButton name="Cluster Update" path="/administration/cluster-update" />
         </Flex>
         <p>
-          Review available versions, assess operator compatibility, and plan how this cluster moves to newer OpenShift
-          releases. Use <strong>Update plan</strong> to prepare or start an update, <strong>Active update plans</strong>{" "}
-          for in-flight work, and <strong>Update history</strong> for completed runs.
+          Review available versions, assess operator compatibility, and plan your update to newer OpenShift
+          releases. Use <strong>Updates plan</strong> to prepare or start an update and{" "}
+          <strong>Active update plans</strong> for in-flight work.
         </p>
       </Content>
 
@@ -513,8 +521,13 @@ export default function ClusterUpdatePlanPage() {
           }
         }}
       >
-        <Tab eventKey="update-plan" title={<TabTitleText>Update plan</TabTitleText>}>
+        <Tab eventKey="update-plan" title={<TabTitleText>Updates plan</TabTitleText>}>
           <Flex direction={{ default: "column" }} gap={{ default: "gapLg" }}>
+          <UpdatesPlanAnalysisCard
+            onUpdate={(version) => {
+              navigate("/administration/cluster-update/in-progress", { state: { version } });
+            }}
+          />
           {/* Update Method — hidden in agent-only demo variant */}
           {demoVariant === "manual-and-agent" && (
             <Card
@@ -1892,6 +1905,126 @@ const AGENT_OPERATORS: AgentOperator[] = [
   { name: "Camel K Operator", current: "2.1.0", required: null, compatible: true, action: "up-to-date" },
 ];
 
+function agentOperatorName(op: AgentOperator) {
+  return op.name;
+}
+
+function OperatorCompatibilityTable({ targetVersion }: { targetVersion: string }) {
+  return (
+    <OcsNamedResourceDataView
+      ouiaId="operator-compat-data-view"
+      ariaLabel="Operator compatibility with target version"
+      itemsLabel="operators"
+      items={AGENT_OPERATORS}
+      getName={agentOperatorName}
+    >
+      {(rows) => (
+        <>
+          <Thead>
+            <Tr>
+              <Th dataLabel="Operator">
+                <PlainTableHeader label="Operator" />
+              </Th>
+              <Th dataLabel="Current">
+                <PlainTableHeader label="Current" />
+              </Th>
+              <Th dataLabel="Required version">
+                <PlainTableHeader label="Required version" />
+              </Th>
+              <Th dataLabel="Compatibility">
+                <PlainTableHeader label={`OCP ${targetVersion} compat.`} />
+              </Th>
+              <Th dataLabel="Action needed">
+                <PlainTableHeader label="Action needed" />
+              </Th>
+            </Tr>
+          </Thead>
+          <Tbody>
+            {rows.map((op) => (
+              <Tr key={op.name}>
+                <Td dataLabel="Operator">
+                  <Flex gap={{ default: "gapSm" }} alignItems={{ default: "alignItemsCenter" }}>
+                    {!op.compatible ? (
+                      <span
+                        aria-hidden
+                        style={{ color: "var(--pf-t--global--danger-color--100)", fontSize: "var(--pf-t--global--FontSize--xs)" }}
+                      >
+                        ●
+                      </span>
+                    ) : null}
+                    <span>{op.name}</span>
+                  </Flex>
+                </Td>
+                <Td dataLabel="Current">
+                  <code
+                    style={{
+                      fontFamily: "var(--pf-t--global--FontFamily--mono)",
+                      color: "var(--pf-t--global--text--Color--200)",
+                    }}
+                  >
+                    {op.current}
+                  </code>
+                </Td>
+                <Td dataLabel="Required version">
+                  {op.required ? (
+                    <code
+                      style={{
+                        fontFamily: "var(--pf-t--global--FontFamily--mono)",
+                        fontWeight: 600,
+                        color: op.compatible
+                          ? "var(--pf-t--global--text--Color--100)"
+                          : "var(--pf-t--global--danger-color--100)",
+                      }}
+                    >
+                      {op.required}
+                    </code>
+                  ) : (
+                    <span style={{ color: "var(--pf-t--global--text--Color--200)" }}>–</span>
+                  )}
+                </Td>
+                <Td dataLabel="Compatibility">
+                  {op.compatible ? (
+                    <Flex gap={{ default: "gapSm" }} alignItems={{ default: "alignItemsCenter" }} flexWrap={{ default: "nowrap" }}>
+                      <Icon status="success" iconSize="sm">
+                        <CheckCircle />
+                      </Icon>
+                      <span style={{ fontSize: "var(--pf-t--global--FontSize--sm)" }}>Compatible</span>
+                    </Flex>
+                  ) : (
+                    <Flex gap={{ default: "gapSm" }} alignItems={{ default: "alignItemsCenter" }} flexWrap={{ default: "nowrap" }}>
+                      <Icon status="warning" iconSize="sm">
+                        <AlertTriangle />
+                      </Icon>
+                      <span style={{ fontSize: "var(--pf-t--global--FontSize--sm)" }}>
+                        Incompatible at {op.incompatibleAt}
+                      </span>
+                    </Flex>
+                  )}
+                </Td>
+                <Td dataLabel="Action needed">
+                  {op.action === "required" ? (
+                    <Label color="orange" variant="outline" isCompact>
+                      Update required before OCP update
+                    </Label>
+                  ) : op.action === "optional" ? (
+                    <Label color="green" variant="outline" isCompact>
+                      Update available (optional)
+                    </Label>
+                  ) : (
+                    <span style={{ fontSize: "var(--pf-t--global--FontSize--sm)", color: "var(--pf-t--global--text--Color--200)" }}>
+                      Up to date
+                    </span>
+                  )}
+                </Td>
+              </Tr>
+            ))}
+          </Tbody>
+        </>
+      )}
+    </OcsNamedResourceDataView>
+  );
+}
+
 type PlanStepStatus = "done" | "warning" | "pending";
 interface PlanStep {
   label: string;
@@ -1958,7 +2091,7 @@ function flattenChannelVersionOptions(groups: VersionGroup[]): string[] {
 }
 
 /** Matches the agent-only demo storyline (cluster on 5.0.x, target chosen from channel). */
-const AGENT_CLUSTER_CURRENT_VERSION = "5.0.0";
+const AGENT_CLUSTER_CURRENT_VERSION = CLUSTER_CURRENT_VERSION;
 
 const DEFAULT_AGENT_MAINTENANCE_WINDOW = "Apr 15, 2026 · 2:00 AM EST";
 
@@ -2501,114 +2634,7 @@ function UpdateAgentTab({
                         ? `${planProfile.compatRequired} operators must be updated before updating to ${targetVersion}`
                         : `All operators meet requirements for OpenShift ${targetVersion}`}
                     </Content>
-                    <Table aria-label="Operator compatibility with target version" variant="compact" borders>
-                          <Thead>
-                            <Tr>
-                              <Th dataLabel="Operator">Operator</Th>
-                              <Th dataLabel="Current">Current</Th>
-                              <Th dataLabel="Required version">Required version</Th>
-                              <Th dataLabel="Compatibility">OCP {targetVersion} compat.</Th>
-                              <Th dataLabel="Action needed">Action needed</Th>
-                            </Tr>
-                          </Thead>
-                          <Tbody>
-                            {AGENT_OPERATORS.map((op) => (
-                              <Tr key={op.name}>
-                                <Td dataLabel="Operator">
-                                  <Flex gap={{ default: "gapSm" }} alignItems={{ default: "alignItemsCenter" }}>
-                                    {!op.compatible ? (
-                                      <Content
-                                        component="span"
-                                        aria-hidden
-                                        style={{ color: "var(--pf-t--global--danger-color--100)", fontSize: "var(--pf-t--global--FontSize--xs)" }}
-                                      >
-                                        ●
-                                      </Content>
-                                    ) : null}
-                                    <Content
-                                      component="span"
-                                      style={{
-                                        fontWeight: 600,
-                                        color: op.compatible
-                                          ? "var(--pf-t--global--text--Color--100)"
-                                          : "var(--pf-t--global--danger-color--100)",
-                                      }}
-                                    >
-                                      {op.name}
-                                    </Content>
-                                  </Flex>
-                                </Td>
-                                <Td dataLabel="Current">
-                                  <Content
-                                    component="code"
-                                    style={{
-                                      fontFamily: "var(--pf-t--global--FontFamily--mono)",
-                                      color: "var(--pf-t--global--text--Color--200)",
-                                    }}
-                                  >
-                                    {op.current}
-                                  </Content>
-                                </Td>
-                                <Td dataLabel="Required version">
-                                  {op.required ? (
-                                    <Content
-                                      component="code"
-                                      style={{
-                                        fontFamily: "var(--pf-t--global--FontFamily--mono)",
-                                        fontWeight: 600,
-                                        color: op.compatible
-                                          ? "var(--pf-t--global--text--Color--100)"
-                                          : "var(--pf-t--global--danger-color--100)",
-                                      }}
-                                    >
-                                      {op.required}
-                                    </Content>
-                                  ) : (
-                                    <Content component="span" style={{ color: "var(--pf-t--global--text--Color--200)" }}>
-                                      –
-                                    </Content>
-                                  )}
-                                </Td>
-                                <Td dataLabel="Compatibility">
-                                  {op.compatible ? (
-                                    <Flex gap={{ default: "gapSm" }} alignItems={{ default: "alignItemsCenter" }} flexWrap={{ default: "nowrap" }}>
-                                      <Icon status="success" iconSize="sm">
-                                        <CheckCircle />
-                                      </Icon>
-                                      <Content component="span" style={{ fontSize: "var(--pf-t--global--FontSize--sm)" }}>
-                                        Compatible
-                                      </Content>
-                                    </Flex>
-                                  ) : (
-                                    <Flex gap={{ default: "gapSm" }} alignItems={{ default: "alignItemsCenter" }} flexWrap={{ default: "nowrap" }}>
-                                      <Icon status="warning" iconSize="sm">
-                                        <AlertTriangle />
-                                      </Icon>
-                                      <Content component="span" style={{ fontSize: "var(--pf-t--global--FontSize--sm)" }}>
-                                        Incompatible at {op.incompatibleAt}
-                                      </Content>
-                                    </Flex>
-                                  )}
-                                </Td>
-                                <Td dataLabel="Action needed">
-                                  {op.action === "required" ? (
-                                    <Label color="orange" variant="outline" isCompact>
-                                      Update required before OCP update
-                                    </Label>
-                                  ) : op.action === "optional" ? (
-                                    <Label color="green" variant="outline" isCompact>
-                                      Update available (optional)
-                                    </Label>
-                                  ) : (
-                                    <Content component="span" style={{ fontSize: "var(--pf-t--global--FontSize--sm)", color: "var(--pf-t--global--text--Color--200)" }}>
-                                      Up to date
-                                    </Content>
-                                  )}
-                                </Td>
-                              </Tr>
-                            ))}
-                          </Tbody>
-                        </Table>
+                    <OperatorCompatibilityTable targetVersion={targetVersion} />
                   </Flex>
                 )}
               </Flex>
@@ -3252,19 +3278,36 @@ function WorkerNodesSection({ targetClusterVersion }: { targetClusterVersion: st
               </Alert>
             )}
 
-            <InnerScrollContainer>
-              <Table aria-label="Worker node pools" variant="compact">
+            <OcsNamedResourceDataView
+              ouiaId="cluster-update-worker-pools-data-view"
+              ariaLabel="Worker node pools"
+              itemsLabel="pools"
+              items={workerPools}
+              getName={(pool) => pool.pool}
+            >
+              {(rows) => (
+                <>
                 <Thead>
                   <Tr>
-                    <Th>Pool</Th>
-                    <Th>Status</Th>
-                    <Th>Version</Th>
-                    <Th>Nodes</Th>
-                    <Th>Cluster compatibility</Th>
+                    <Th dataLabel="Pool">
+                      <PlainTableHeader label="Pool" />
+                    </Th>
+                    <Th dataLabel="Status">
+                      <PlainTableHeader label="Status" />
+                    </Th>
+                    <Th dataLabel="Version">
+                      <PlainTableHeader label="Version" />
+                    </Th>
+                    <Th dataLabel="Nodes">
+                      <PlainTableHeader label="Nodes" />
+                    </Th>
+                    <Th dataLabel="Cluster compatibility">
+                      <PlainTableHeader label="Cluster compatibility" />
+                    </Th>
                   </Tr>
                 </Thead>
                 <Tbody>
-                  {workerPools.map((pool) => (
+                  {rows.map((pool) => (
                     <Tr key={pool.pool}>
                       <Td dataLabel="Pool">
                         <Content component="p">
@@ -3318,8 +3361,9 @@ function WorkerNodesSection({ targetClusterVersion }: { targetClusterVersion: st
                     </Tr>
                   ))}
                 </Tbody>
-              </Table>
-            </InnerScrollContainer>
+                </>
+              )}
+            </OcsNamedResourceDataView>
 
             <Switch
               id="cluster-update-all-worker-nodes"
@@ -3625,15 +3669,22 @@ function InstalledOperatorsSection({ selectedVersion, operators, navigate }: { s
               </Alert>
             )}
 
-            <InnerScrollContainer>
-              <Table aria-label="Operators on this cluster" variant="compact">
+            <OcsNamedResourceDataView
+              ouiaId="cluster-update-installed-operators-data-view"
+              ariaLabel="Operators on this cluster"
+              itemsLabel="operators"
+              items={filtered}
+              getName={(op) => op.name}
+            >
+              {(rows) => (
+                <>
                 <Thead>
                   <Tr>
                     <Th dataLabel="Select all rows">
                       <Checkbox
                         id="cluster-update-select-all-operators-header"
                         isChecked={
-                          filtered.length > 0 && selectedOperators.length === filtered.length
+                          rows.length > 0 && selectedOperators.length === filtered.length
                             ? true
                             : selectedOperators.length > 0
                               ? null
@@ -3643,26 +3694,42 @@ function InstalledOperatorsSection({ selectedVersion, operators, navigate }: { s
                         aria-label="Select all in view"
                       />
                     </Th>
-                    <Th>Operator</Th>
-                    <Th>Version</Th>
-                    <Th>Cluster compatibility</Th>
-                    <Th>Update plan</Th>
-                    <Th>Support</Th>
-                    <Th>Status</Th>
-                    <Th>Last updated</Th>
-                    <Th>Managed namespaces</Th>
+                    <Th dataLabel="Operator">
+                      <PlainTableHeader label="Operator" />
+                    </Th>
+                    <Th dataLabel="Version">
+                      <PlainTableHeader label="Version" />
+                    </Th>
+                    <Th dataLabel="Cluster compatibility">
+                      <PlainTableHeader label="Cluster compatibility" />
+                    </Th>
+                    <Th dataLabel="Update plan">
+                      <PlainTableHeader label="Update plan" />
+                    </Th>
+                    <Th dataLabel="Support">
+                      <PlainTableHeader label="Support" />
+                    </Th>
+                    <Th dataLabel="Status">
+                      <PlainTableHeader label="Status" />
+                    </Th>
+                    <Th dataLabel="Last updated">
+                      <PlainTableHeader label="Last updated" />
+                    </Th>
+                    <Th dataLabel="Managed namespaces">
+                      <PlainTableHeader label="Managed namespaces" />
+                    </Th>
                     <Th screenReaderText="Actions" />
                   </Tr>
                 </Thead>
                 <Tbody>
-                  {filtered.length === 0 ? (
+                  {rows.length === 0 ? (
                     <Tr>
                       <Td colSpan={10}>
                         <Content component="p">No operators match your filter.</Content>
                       </Td>
                     </Tr>
                   ) : (
-                    filtered.map((op) => (
+                    rows.map((op) => (
                       <Tr key={op.name}>
                         <Td dataLabel="Select row">
                           <Checkbox
@@ -3814,8 +3881,9 @@ function InstalledOperatorsSection({ selectedVersion, operators, navigate }: { s
                     ))
                   )}
                 </Tbody>
-              </Table>
-            </InnerScrollContainer>
+                </>
+              )}
+            </OcsNamedResourceDataView>
 
             <Switch
               id="cluster-update-all-operators"

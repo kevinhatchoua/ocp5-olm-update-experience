@@ -82,7 +82,7 @@ export function NetworkingEmptyState({
   learnMoreLabel?: string;
 }) {
   return (
-    <div className="ocs-nodes-list__table-wrap app-glass-panel ocs-networking-empty">
+    <div className="ocs-nodes-list__table-wrap ocs-networking-empty">
       <Flex
         direction={{ default: "column" }}
         alignItems={{ default: "alignItemsCenter" }}
@@ -120,5 +120,5 @@ export function NetworkingEmptyState({
 }
 
 export function NetworkingTablePanel({ children }: { children: ReactNode }) {
-  return <div className="ocs-pods-list__panel app-glass-panel">{children}</div>;
+  return <div className="ocs-pods-list__panel">{children}</div>;
 }

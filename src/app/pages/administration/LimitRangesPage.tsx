@@ -137,7 +137,7 @@ export default function LimitRangesPage() {
           LimitRanges define minimum, maximum, and default values for compute resources in a namespace.
         </Content>
 
-        <div className="ocs-pods-list__panel app-glass-panel">
+        <div className="ocs-pods-list__panel">
           <DataView ouiaId="limit-ranges-data-view" className={OCS_PROTOTYPE_DATAVIEW_CLASS}>
             <DataViewToolbar
               ouiaId="limit-ranges-dv-toolbar"

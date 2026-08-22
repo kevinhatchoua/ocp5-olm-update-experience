@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link, useNavigate } from "react-router";
-import { PageSection } from "@patternfly/react-core";
-import { DataView } from "@patternfly/react-data-view";
-import { InnerScrollContainer, Table, Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
+import { Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
+import { OcsNamedResourceDataView, PlainTableHeader } from "../../components/dataView/OcsPrototypeListTable";
 import Breadcrumbs from "../../components/Breadcrumbs";
 
 export default function OperatorInstallingPage() {
@@ -158,25 +157,33 @@ export default function OperatorInstallingPage() {
             <h3 className="font-['Red_Hat_Display:SemiBold',sans-serif] font-semibold text-[18px] text-[#151515] dark:text-white mb-[16px]">
               Status overview
             </h3>
-            <DataView ouiaId="operator-installing-status-dv" className="ocs-io-dataview">
-              <PageSection aria-label="Installation resources" padding={{ default: "noPadding" }}>
-                <InnerScrollContainer>
-                  <Table
-                    aria-label="Installation resources"
-                    borders
-                    variant="compact"
-                    className="ocs-io-operator-table"
-                  >
+            <OcsNamedResourceDataView
+              ouiaId="operator-installing-status-dv"
+              ariaLabel="Installation resources"
+              itemsLabel="resources"
+              items={resources}
+              getName={(resource) => resource.name}
+            >
+              {(rows) => (
+                <>
                     <Thead>
                       <Tr>
-                        <Th dataLabel="Name">Name</Th>
-                        <Th dataLabel="Kind">Kind</Th>
-                        <Th dataLabel="Status">Status</Th>
-                        <Th dataLabel="API version">API version</Th>
+                        <Th dataLabel="Name">
+                          <PlainTableHeader label="Name" />
+                        </Th>
+                        <Th dataLabel="Kind">
+                          <PlainTableHeader label="Kind" />
+                        </Th>
+                        <Th dataLabel="Status">
+                          <PlainTableHeader label="Status" />
+                        </Th>
+                        <Th dataLabel="API version">
+                          <PlainTableHeader label="API version" />
+                        </Th>
                       </Tr>
                     </Thead>
                     <Tbody>
-                      {resources.map((resource, index) => (
+                      {rows.map((resource, index) => (
                         <Tr key={index}>
                           <Td dataLabel="Name">
                             <div className="flex items-center gap-[8px]">
@@ -197,10 +204,9 @@ export default function OperatorInstallingPage() {
                         </Tr>
                       ))}
                     </Tbody>
-                  </Table>
-                </InnerScrollContainer>
-              </PageSection>
-            </DataView>
+                </>
+              )}
+            </OcsNamedResourceDataView>
           </div>
         </div>
         </Breadcrumbs>

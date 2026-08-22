@@ -116,7 +116,7 @@ export default function ResourceQuotasPage() {
           ResourceQuotas provide constraints that limit aggregate resource consumption per namespace.
         </Content>
 
-        <div className="ocs-pods-list__panel app-glass-panel">
+        <div className="ocs-pods-list__panel">
           <DataView ouiaId="resource-quotas-data-view" className={OCS_PROTOTYPE_DATAVIEW_CLASS}>
             <DataViewToolbar
               ouiaId="resource-quotas-dv-toolbar"

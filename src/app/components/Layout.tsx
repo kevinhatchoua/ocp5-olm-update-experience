@@ -54,6 +54,7 @@ import { useFavorites } from "../contexts/FavoritesContext";
 import { useToast } from "../contexts/ToastContext";
 import {
   ADMINISTRATION_SUB,
+  AGENTIC_RUNS_SUB,
   BUILDS_SUB,
   COMPUTE_SUB,
   ECOSYSTEM_SUB,
@@ -487,6 +488,12 @@ export default function Layout() {
               subItems={COMPUTE_SUB}
             />
             <ExpandableNavRouteGroup
+              groupId="layout-nav-agentic-runs"
+              label="Agentic Runs"
+              pathname={location.pathname}
+              subItems={AGENTIC_RUNS_SUB}
+            />
+            <ExpandableNavRouteGroup
               groupId="layout-nav-user-management"
               label="User Management"
               pathname={location.pathname}
@@ -596,13 +603,13 @@ export default function Layout() {
       />
       <CopyLoginCommandModal isOpen={isCopyLoginOpen} onClose={() => setIsCopyLoginOpen(false)} />
 
+      {!isAIOpen ? (
       <Button
         type="button"
         variant="plain"
         className="ocs-lightspeed-fab"
-        onClick={() => setIsAIOpen(!isAIOpen)}
-        aria-label={isAIOpen ? "Close OpenShift LightSpeed" : "Open OpenShift LightSpeed"}
-        aria-pressed={isAIOpen}
+        onClick={() => setIsAIOpen(true)}
+        aria-label="Open OpenShift Lightspeed"
       >
         <img
           src={LIGHTSPEED_FAB_ICON_SRC}
@@ -615,6 +622,7 @@ export default function Layout() {
           referrerPolicy="no-referrer"
         />
       </Button>
+      ) : null}
     </>
   );
 }

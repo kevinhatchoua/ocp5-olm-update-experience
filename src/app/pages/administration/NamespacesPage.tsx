@@ -65,7 +65,8 @@ const STATUS_OPTIONS = [{ value: "Active", label: "Active" }];
 function rowMatchesFilters(row: Namespace, filters: NamespaceFilters): boolean {
   const nameQ = (filters.name ?? "").trim().toLowerCase();
   if (nameQ && !row.name.toLowerCase().includes(nameQ)) return false;
-  if (filters.status.length > 0 && !filters.status.includes(row.status)) return false;
+  const statusFilters = filters.status ?? [];
+  if (statusFilters.length > 0 && !statusFilters.includes(row.status)) return false;
   return true;
 }
 
@@ -135,7 +136,7 @@ export default function NamespacesPage() {
             <Button variant="primary">Create Namespace</Button>
           </Flex>
 
-          <div className="ocs-pods-list__panel app-glass-panel">
+          <div className="ocs-pods-list__panel">
             <DataView ouiaId="namespaces-data-view" className={OCS_PROTOTYPE_DATAVIEW_CLASS}>
               <DataViewToolbar
                 ouiaId="namespaces-dv-toolbar"
