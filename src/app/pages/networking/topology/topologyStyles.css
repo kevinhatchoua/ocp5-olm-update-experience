@@ -1,0 +1,674 @@
+/* PatternFly Topology network view — PF tokens only. */
+
+.ocs-pf-topo-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  flex: 1;
+  height: 100%;
+}
+
+.ocs-pf-topo-shell .pf-topology-container,
+.ocs-pf-topo-shell .pf-topology-content {
+  min-height: 0;
+  flex: 1;
+  height: 100%;
+}
+
+.ocs-pf-topo-canvas-wrap {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+  background-color: var(--pf-t--global--background--color--secondary--default);
+  border: var(--pf-t--global--border--width--regular) solid var(--pf-t--global--border--color--default);
+  border-radius: var(--pf-t--global--border--radius--small);
+  overflow: hidden;
+}
+
+.ocs-pf-topo-canvas-wrap > .pf-v6-l-stack {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+}
+
+.ocs-pf-topo-canvas-wrap .pf-topology-container {
+  height: 100%;
+  flex: 1;
+}
+
+.ocs-pf-topo-canvas-wrap--hide-labels .pf-topology__node__label,
+.ocs-pf-topo-canvas-wrap--hide-labels .pf-topology__group__label {
+  display: none;
+}
+
+.ocs-pf-topo-canvas-wrap .pf-v6-c-toolbar {
+  --pf-v6-c-toolbar--PaddingBlockStart: var(--pf-t--global--spacer--sm);
+  --pf-v6-c-toolbar--PaddingBlockEnd: var(--pf-t--global--spacer--sm);
+  --pf-v6-c-toolbar--PaddingInlineStart: var(--pf-t--global--spacer--md);
+  --pf-v6-c-toolbar--PaddingInlineEnd: var(--pf-t--global--spacer--md);
+  --pf-v6-c-toolbar--RowGap: 0;
+  --pf-v6-c-toolbar--Gap: var(--pf-t--global--spacer--md);
+  background: transparent;
+  row-gap: 0;
+}
+
+.ocs-pf-topo-canvas-wrap .pf-v6-c-toolbar__content,
+.ocs-pf-topo-canvas-wrap .pf-v6-c-toolbar__content-section {
+  --pf-v6-c-toolbar__content--PaddingBlockStart: 0;
+  --pf-v6-c-toolbar__content--PaddingBlockEnd: 0;
+  --pf-v6-c-toolbar__content--PaddingInlineStart: 0;
+  --pf-v6-c-toolbar__content--PaddingInlineEnd: 0;
+  --pf-v6-c-toolbar__content--RowGap: 0;
+  --pf-v6-c-toolbar__content--Gap: var(--pf-t--global--spacer--md);
+  width: 100%;
+  display: flex;
+  align-items: center;
+}
+
+/* Hide the trailing toolbar divider that sits against the canvas. */
+.ocs-pf-topo-canvas-wrap .pf-v6-c-toolbar > .pf-v6-c-divider {
+  display: none;
+}
+
+.ocs-pf-topo-canvas-wrap .pf-v6-c-toolbar > .pf-v6-c-toolbar__content + .pf-v6-c-toolbar__content {
+  border-block-start: var(--pf-t--global--border--width--regular) solid var(--pf-t--global--border--color--default);
+  padding-block-start: var(--pf-t--global--spacer--sm);
+  margin-block-start: var(--pf-t--global--spacer--sm);
+}
+
+.ocs-pf-topo-toolbar-group,
+.ocs-pf-topo-view-toolbar__filters,
+.ocs-pf-topo-view-toolbar__actions {
+  --pf-v6-c-toolbar__group--Gap: var(--pf-t--global--spacer--md);
+  column-gap: var(--pf-t--global--spacer--md);
+  row-gap: 0;
+  align-items: center;
+  flex-wrap: nowrap;
+}
+
+.ocs-pf-topo-canvas-wrap .pf-topology-view__project-toolbar,
+.ocs-pf-topo-canvas-wrap .pf-topology-view__view-toolbar {
+  --pf-v6-c-toolbar__group--Gap: var(--pf-t--global--spacer--md);
+  display: flex;
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
+  column-gap: var(--pf-t--global--spacer--md);
+  row-gap: 0;
+  align-items: center;
+}
+
+.ocs-pf-topo-canvas-wrap .pf-topology-view__view-toolbar {
+  justify-content: space-between;
+}
+
+.ocs-pf-topo-view-toolbar__filters {
+  flex: 1 1 auto;
+  min-width: 0;
+  justify-content: flex-start;
+}
+
+.ocs-pf-topo-view-toolbar__actions {
+  flex: 0 0 auto;
+  margin-inline-start: auto;
+}
+
+.ocs-pf-topo-perspective-hint {
+  max-width: 20rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--pf-t--global--text--color--subtle);
+}
+
+.ocs-pf-topo-canvas-wrap .pf-v6-c-toolbar__item {
+  margin-inline-end: 0;
+}
+
+.ocs-pf-topo-canvas-wrap .pf-v6-c-menu-toggle:not(.pf-m-text),
+.ocs-pf-topo-canvas-wrap .ocs-net-topo-panel__search {
+  min-height: 2.25rem;
+}
+
+.ocs-pf-topo-display-toggle.pf-v6-c-menu-toggle {
+  --pf-v6-c-menu-toggle--Color: var(--pf-t--global--text--color--regular);
+  --pf-v6-c-menu-toggle--BackgroundColor: var(--pf-t--global--background--color--control--default, var(--pf-t--global--background--color--primary--default));
+  --pf-v6-c-menu-toggle--BorderColor: var(--pf-t--global--border--color--default);
+  --pf-v6-c-menu-toggle--expanded--BackgroundColor: var(--pf-t--global--background--color--control--default, var(--pf-t--global--background--color--primary--default));
+  --pf-v6-c-menu-toggle--hover--BackgroundColor: var(--pf-t--global--background--color--control--hover, var(--pf-t--global--background--color--secondary--default));
+  color: var(--pf-t--global--text--color--regular);
+}
+
+.ocs-pf-topo-display-toggle.pf-v6-c-menu-toggle .pf-v6-c-menu-toggle__text,
+.ocs-pf-topo-display-toggle.pf-v6-c-menu-toggle .pf-v6-c-menu-toggle__icon,
+.ocs-pf-topo-display-toggle.pf-v6-c-menu-toggle .pf-v6-c-menu-toggle__toggle-icon {
+  color: var(--pf-t--global--text--color--regular);
+}
+
+.ocs-pf-topo-display-dropdown.pf-v6-c-menu,
+.ocs-pf-topo-display-dropdown .pf-v6-c-menu__content {
+  opacity: 1;
+  isolation: isolate;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  --pf-v6-c-menu--BackgroundColor: var(--pf-t--global--background--color--floating--default);
+  background-color: var(--pf-t--global--background--color--floating--default);
+  box-shadow: var(--pf-t--global--box-shadow--md);
+  overflow: visible;
+  max-height: none;
+}
+
+.ocs-pf-topo-display-popover {
+  position: absolute;
+  z-index: 10;
+  margin-block-start: var(--pf-t--global--spacer--xs);
+  padding: var(--pf-t--global--spacer--md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--pf-t--global--spacer--md);
+  min-width: 14rem;
+  background-color: var(--pf-t--global--background--color--floating--default);
+  color: var(--pf-t--global--text--color--regular);
+  border: var(--pf-t--global--border--width--regular) solid var(--pf-t--global--border--color--default);
+  border-radius: var(--pf-t--global--border--radius--small);
+  box-shadow: var(--pf-t--global--box-shadow--md);
+  opacity: 1;
+  isolation: isolate;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.ocs-pf-topo-display-menu {
+  padding: var(--pf-t--global--spacer--md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--pf-t--global--spacer--md);
+  min-width: 18rem;
+  max-width: 22rem;
+  max-height: min(40rem, 80vh);
+  overflow: auto;
+}
+
+.ocs-pf-topo-display-menu .pf-v6-c-switch__label {
+  color: var(--pf-t--global--text--color--regular);
+}
+
+.ocs-pf-topo-display-menu__section {
+  margin: 0;
+  font-size: var(--pf-t--global--font--size--body--sm);
+  font-weight: var(--pf-t--global--font--weight--heading);
+  color: var(--pf-t--global--text--color--subtle);
+}
+
+.ocs-pf-topo-display-menu__layouts {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pf-t--global--spacer--sm);
+}
+
+.ocs-pf-topo-display-menu__layouts .pf-v6-c-radio__label,
+.ocs-pf-topo-display-menu__layouts .pf-v6-c-radio__description {
+  color: var(--pf-t--global--text--color--regular);
+}
+
+.ocs-pf-topo-display-menu__layouts .pf-v6-c-radio__description {
+  color: var(--pf-t--global--text--color--subtle);
+}
+
+.ocs-pf-topo-context-toolbar,
+.ocs-pf-topo-view-toolbar {
+  background: transparent;
+}
+
+.ocs-net-topo-panel__list-mode > .ocs-pf-topo-context-toolbar + .ocs-pf-topo-view-toolbar {
+  border-block-start: var(--pf-t--global--border--width--regular) solid var(--pf-t--global--border--color--default);
+  padding-block-start: var(--pf-t--global--spacer--sm);
+  margin-block-start: var(--pf-t--global--spacer--sm);
+}
+
+.ocs-pf-topo-node {
+  --pf-topology__node--Color: var(--pf-t--global--icon--color--regular);
+  --pf-topology__node__background--Fill: var(--pf-t--global--background--color--primary--default);
+  --pf-topology__node--m-selected--Background--Fill: var(--pf-t--global--background--color--primary--default);
+  --pf-topology__node--m-info--Background--Fill: var(--pf-t--global--background--color--primary--default);
+  --pf-topology__node--m-success--Background--Fill: var(--pf-t--global--background--color--primary--default);
+  --pf-topology__node--m-warning--Background--Fill: var(--pf-t--global--background--color--primary--default);
+  --pf-topology__node--m-danger--Background--Fill: var(--pf-t--global--background--color--primary--default);
+}
+
+.ocs-pf-topo-node__icon,
+.ocs-pf-topo-node__icon svg {
+  color: var(--pf-t--global--icon--color--regular);
+  fill: currentColor;
+  pointer-events: none;
+}
+
+/* Status as a ring, not a filled background — keeps icon contrast. */
+.ocs-pf-topo-node--circle .pf-topology__node__background {
+  fill: var(--pf-t--global--background--color--primary--default);
+  stroke-width: 3;
+}
+
+.ocs-pf-topo-node.pf-m-selected .pf-topology__node__background,
+.pf-topology__node.pf-m-selected.ocs-pf-topo-node .pf-topology__node__background {
+  fill: var(--pf-t--global--background--color--primary--default);
+  stroke: var(--pf-t--global--border--color--brand--default);
+  stroke-width: 4;
+}
+
+.ocs-pf-topo-status--configured .pf-topology__node__background {
+  stroke: var(--pf-t--global--color--status--success--default);
+}
+
+.ocs-pf-topo-status--installing .pf-topology__node__background {
+  stroke: var(--pf-t--global--color--status--info--default);
+}
+
+.ocs-pf-topo-status--creating .pf-topology__node__background {
+  stroke: var(--pf-t--global--color--status--warning--default);
+}
+
+.ocs-pf-topo-status--failed .pf-topology__node__background {
+  stroke: var(--pf-t--global--color--status--danger--default);
+}
+
+.ocs-pf-topo-status--pending .pf-topology__node__background {
+  stroke: var(--pf-t--global--color--nonstatus--gray--default);
+}
+
+/* Rounded hull groups (console Application-style) */
+.ocs-pf-topo-hull .pf-topology__group__background {
+  fill: var(--pf-t--global--background--color--primary--default);
+  fill-opacity: 0.55;
+  stroke: var(--pf-t--global--border--color--default);
+  stroke-width: 2;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.ocs-pf-topo-logical-lane .pf-topology__group__background {
+  fill: var(--pf-t--global--background--color--secondary--default);
+  fill-opacity: 0.65;
+  stroke-dasharray: 6 4;
+}
+
+.ocs-pf-topo-canvas-wrap .pf-topology__edge__link {
+  stroke: var(--pf-t--global--icon--color--regular);
+  stroke-width: 2;
+  stroke-opacity: 0.9;
+}
+
+.ocs-pf-topo-canvas-wrap .pf-topology__edge.pf-m-hover .pf-topology__edge__link,
+.ocs-pf-topo-canvas-wrap .pf-topology__edge.pf-m-selected .pf-topology__edge__link {
+  stroke: var(--pf-t--global--border--color--brand--default);
+  stroke-width: 2.5;
+  stroke-opacity: 1;
+}
+
+.ocs-pf-topo-cross-edge .pf-topology__edge__link {
+  stroke: var(--pf-t--global--border--color--hover);
+  stroke-dasharray: 8 6;
+  stroke-width: 2;
+}
+
+.ocs-pf-topo-canvas-wrap .pf-v6-c-drawer {
+  height: 100%;
+}
+
+.ocs-pf-topo-canvas-wrap .pf-v6-c-drawer__main,
+.ocs-pf-topo-canvas-wrap .pf-v6-c-drawer__content,
+.ocs-pf-topo-canvas-wrap .pf-v6-c-drawer__body {
+  height: 100%;
+}
+
+.ocs-pf-topo-canvas-wrap .pf-v6-c-drawer__panel {
+  --pf-v6-c-drawer__panel--PaddingBlockStart: 0;
+  --pf-v6-c-drawer__panel--PaddingBlockEnd: 0;
+  --pf-v6-c-drawer__panel--PaddingInlineStart: 0;
+  --pf-v6-c-drawer__panel--PaddingInlineEnd: 0;
+}
+
+.ocs-pf-topo-canvas-wrap .pf-v6-c-drawer__splitter.pf-m-vertical {
+  width: 1px;
+  min-width: 1px;
+  padding: 0;
+  background-color: var(--pf-t--global--border--color--default);
+}
+
+.ocs-pf-topo-canvas-wrap .pf-v6-c-drawer__splitter.pf-m-vertical::after {
+  display: none;
+}
+
+.ocs-pf-topo-canvas-wrap .pf-topology__node.pf-m-selected .pf-topology__node__background {
+  fill: var(--pf-t--global--background--color--primary--default);
+  stroke: var(--pf-t--global--border--color--brand--default);
+  stroke-width: 4px;
+}
+
+.ocs-pf-topo-sidebar.pf-topology-side-bar,
+.ocs-pf-topo-sidebar.pf-topology-resizable-side-bar {
+  width: 100%;
+  max-width: none;
+  height: 100%;
+  padding: 0;
+  overflow: hidden;
+}
+
+.ocs-pf-topo-sidepanel {
+  padding: var(--pf-t--global--spacer--md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--pf-t--global--spacer--md);
+  height: 100%;
+  overflow: auto;
+  background: var(--pf-t--global--background--color--primary--default);
+}
+
+.ocs-pf-topo-sidepanel__header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--pf-t--global--spacer--sm);
+  min-width: 0;
+}
+
+.ocs-pf-topo-sidepanel__header-actions {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--pf-t--global--spacer--sm);
+  flex-shrink: 0;
+}
+
+.ocs-pf-topo-sidepanel__title-row {
+  display: flex;
+  align-items: center;
+  gap: var(--pf-t--global--spacer--sm);
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.ocs-pf-topo-sidepanel__title {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ocs-pf-topo-sidepanel__kind-badge {
+  flex-shrink: 0;
+}
+
+.ocs-pf-topo-sidepanel__tab {
+  padding-block-start: var(--pf-t--global--spacer--md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--pf-t--global--spacer--md);
+}
+
+.ocs-pf-topo-sidepanel__dl {
+  margin-block-start: var(--pf-t--global--spacer--sm);
+}
+
+.ocs-pf-topo-sidepanel__connectivity {
+  margin-block-end: var(--pf-t--global--spacer--md);
+}
+
+.ocs-pf-topo-sidepanel__health {
+  margin-block-end: var(--pf-t--global--spacer--sm);
+}
+
+.ocs-pf-topo-sidepanel__check {
+  margin-block: var(--pf-t--global--spacer--xs);
+}
+
+.ocs-pf-topo-sidepanel__muted {
+  color: var(--pf-t--global--text--color--subtle);
+}
+
+.ocs-pf-topo-sidepanel__list {
+  margin: 0;
+  padding-inline-start: var(--pf-t--global--spacer--md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--pf-t--global--spacer--xs);
+}
+
+.ocs-pf-topo-sidepanel__quick-actions,
+.ocs-pf-topo-sidepanel__observe,
+.ocs-pf-topo-sidepanel__metric {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pf-t--global--spacer--sm);
+}
+
+.ocs-pf-topo-hull.pf-m-selected .pf-topology__group__background {
+  stroke: var(--pf-t--global--border--color--brand--default);
+  stroke-width: 3;
+}
+
+/* PF LabelContextMenu offsets the kebab -6px; recenter it in the action column. */
+.ocs-pf-topo-canvas-wrap .pf-topology__node__action-icon__icon,
+.ocs-pf-topo-canvas-wrap .pf-topology__group__label .pf-topology__node__action-icon__icon {
+  translate: 6px 0;
+}
+
+.ocs-pf-topo-legend {
+  /* Anchor next to TopologyControlBar (bottom-left), not the toolbar corner. */
+  position: absolute;
+  bottom: calc(2.5rem + var(--pf-t--global--spacer--md));
+  left: var(--pf-t--global--spacer--lg);
+  top: auto;
+  right: auto;
+  z-index: 5;
+  max-width: 22rem;
+  /* Light panel on the dark canvas so labels stay readable. */
+  --pf-v6-c-card--BackgroundColor: var(--pf-t--color--white, #fff);
+  color: var(--pf-t--global--text--color--100, #151515);
+  box-shadow: var(--pf-t--global--box-shadow--lg);
+  opacity: 1;
+  isolation: isolate;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.ocs-pf-topo-legend.pf-v6-theme-light,
+.ocs-pf-topo-legend .pf-v6-c-card__title,
+.ocs-pf-topo-legend .pf-v6-c-card__body {
+  color: var(--pf-t--global--text--color--100, #151515);
+}
+
+.ocs-pf-topo-legend .pf-v6-c-card__title {
+  font-size: var(--pf-t--global--font--size--body--default);
+  padding-block-end: var(--pf-t--global--spacer--xs);
+}
+
+/* Compact, vertically centered zoom / fit / legend controls. */
+.ocs-pf-topo-canvas-wrap .pf-topology-control-bar {
+  display: flex;
+  align-items: center;
+}
+
+.ocs-pf-topo-canvas-wrap .pf-topology-control-bar__button.pf-v6-c-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  min-height: 2rem;
+  height: 2rem;
+  margin-block: 0;
+  padding-block: 0;
+  padding-inline: var(--pf-t--global--spacer--sm);
+  line-height: 1;
+  font-size: var(--pf-t--global--font--size--sm);
+  --pf-v6-c-button--MinHeight: 2rem;
+  --pf-v6-c-button--PaddingBlockStart: 0;
+  --pf-v6-c-button--PaddingBlockEnd: 0;
+}
+
+.ocs-pf-topo-canvas-wrap .pf-topology-control-bar__button.pf-v6-c-button .pf-v6-c-button__icon,
+.ocs-pf-topo-canvas-wrap .pf-topology-control-bar__button.pf-v6-c-button .pf-v6-c-button__text {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+}
+
+.ocs-pf-topo-canvas-wrap .pf-topology-control-bar__button.pf-v6-c-button svg {
+  display: block;
+}
+
+.ocs-pf-topo-canvas-wrap .pf-topology-control-bar__button.pf-v6-c-button.pf-m-tertiary:not(.pf-m-disabled) {
+  background-color: var(--pf-t--global--background--color--floating--default);
+  opacity: 1;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+.ocs-pf-topo-trace-banner {
+  position: absolute;
+  top: var(--pf-t--global--spacer--md);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 6;
+}
+
+.ocs-pf-topo-canvas-wrap--path-trace .pf-topology__node:not(.ocs-pf-topo-path-highlight),
+.ocs-pf-topo-canvas-wrap--path-trace .pf-topology__group:not(.ocs-pf-topo-path-highlight),
+.ocs-pf-topo-canvas-wrap--path-trace .pf-topology__edge:not(.ocs-pf-topo-path-highlight) {
+  opacity: 0.2;
+}
+
+.ocs-pf-topo-path-highlight {
+  opacity: 1 !important;
+}
+
+.ocs-pf-topo-legend__row {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--pf-t--global--spacer--sm);
+  margin-block: var(--pf-t--global--spacer--xs);
+  font-size: var(--pf-t--global--font--size--body--sm);
+  color: var(--pf-t--global--text--color--100, #151515);
+}
+
+.ocs-pf-topo-legend__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  min-width: 0;
+}
+
+.ocs-pf-topo-legend__copy strong {
+  color: var(--pf-t--global--text--color--100, #151515);
+}
+
+.ocs-pf-topo-legend__copy span,
+.ocs-pf-topo-legend__hint {
+  color: #3d3d3d;
+}
+
+.ocs-pf-topo-legend__hint {
+  margin-block-start: var(--pf-t--global--spacer--sm);
+  margin-block-end: 0;
+  font-size: var(--pf-t--global--font--size--xs);
+}
+
+.ocs-pf-topo-legend__swatch {
+  width: 0.75rem;
+  height: 0.75rem;
+  border-radius: 50%;
+  flex-shrink: 0;
+  box-shadow: inset 0 0 0 2px var(--pf-t--global--background--color--floating--default);
+}
+
+.ocs-pf-topo-legend__swatch--configured {
+  background: var(--pf-t--global--color--status--success--default);
+}
+
+.ocs-pf-topo-legend__swatch--pending {
+  background: var(--pf-t--global--color--nonstatus--gray--default);
+}
+
+.ocs-pf-topo-legend__swatch--installing {
+  background: var(--pf-t--global--color--status--info--default);
+}
+
+.ocs-pf-topo-legend__swatch--creating {
+  background: var(--pf-t--global--color--status--warning--default);
+}
+
+.ocs-pf-topo-legend__swatch--failed {
+  background: var(--pf-t--global--color--status--danger--default);
+}
+
+.ocs-pf-topo-shortcuts {
+  margin: 0;
+  padding-inline-start: var(--pf-t--global--spacer--lg);
+}
+
+.ocs-pf-topo-shortcuts kbd {
+  font-family: var(--pf-t--global--font--family--mono);
+  padding: 0 var(--pf-t--global--spacer--xs);
+  border: var(--pf-t--global--border--width--regular) solid var(--pf-t--global--border--color--default);
+  border-radius: var(--pf-t--global--border--radius--small);
+}
+
+/* Fill remaining viewport under title/chrome so the graph is never page-scrolled. */
+.ocs-net-topo-page {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  height: 100%;
+  max-height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  padding-block-end: var(--pf-t--global--spacer--sm);
+}
+
+.ocs-net-topo-page > .pf-v6-c-page__main-tabs {
+  flex-shrink: 0;
+}
+
+.ocs-net-topo-page > .pf-v6-c-page__main-section {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.ocs-net-topo-page > .pf-v6-c-page__main-section > .pf-v6-l-flex {
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  height: 100%;
+}
+
+.ocs-net-topo-page > .pf-v6-c-page__main-section > .pf-v6-l-flex > .pf-v6-l-flex,
+.ocs-net-topo-page .ocs-networking-above-title,
+.ocs-net-topo-page .ocs-net-topo-page-desc {
+  flex-shrink: 0;
+}
+
+.ocs-net-topo-page .ocs-nnc-stage {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: auto;
+}
+
+.ocs-net-topo-page .ocs-net-topo-panel,
+.ocs-net-topo-page .ocs-net-topo-panel__stage,
+.ocs-net-topo-page .ocs-net-topo-split,
+.ocs-net-topo-page .ocs-net-topo-split__layout,
+.ocs-net-topo-page .ocs-net-topo-split__viewport {
+  min-height: 0;
+  height: 100%;
+}
+
+.ocs-pf-topo-node--workload .pf-topology__node__background {
+  stroke: var(--pf-t--global--color--status--info--default);
+}

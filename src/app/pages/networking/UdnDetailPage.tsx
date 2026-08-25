@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
-import { Link, useLocation, useParams } from "react-router";
+import { Link, useLocation, useParams, useSearchParams } from "react-router";
 import {
-  Button,
   DescriptionList,
   DescriptionListDescription,
   DescriptionListGroup,
@@ -24,7 +23,9 @@ import {
 import {
   getAttachedVmsForNetwork,
   getUdn,
+  topologyHighlightPath,
   udnDetailPath,
+  udnTopologyHighlightId,
   udnYaml,
   type NetworkResourceRef,
 } from "./networkingMockData";
@@ -33,11 +34,14 @@ import { NETWORKING_CRUMB as CRUMB } from "./networkingShared";
 export default function UdnDetailPage() {
   const { name = "", namespace: nsParam } = useParams();
   const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const fromTopology = Boolean((location.state as { fromTopology?: boolean } | null)?.fromTopology);
   const decodedName = decodeURIComponent(name);
   const isCluster = location.pathname.includes("/userdefinednetworks/cluster/");
   const decodedNs = nsParam ? decodeURIComponent(nsParam) : undefined;
   const udn = getUdn(decodedName, decodedNs);
-  const [activeTab, setActiveTab] = useState("details");
+  const initialTab = searchParams.get("tab") === "yaml" ? "yaml" : "details";
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [attachmentRev, setAttachmentRev] = useState(0);
 
   const networkRef: NetworkResourceRef = useMemo(
@@ -53,6 +57,10 @@ export default function UdnDetailPage() {
     [networkRef, attachmentRev]
   );
 
+  const topologyCrumb = fromTopology
+    ? [{ label: "Topology", path: "/networking/topology" }]
+    : [];
+
   if (!udn || (isCluster && udn.kind !== "CUDN") || (!isCluster && udn.kind === "CUDN")) {
     return (
       <div className="ocs-app-page-outer w-full">
@@ -60,6 +68,7 @@ export default function UdnDetailPage() {
           items={[
             { label: "Home", path: "/" },
             CRUMB,
+            ...topologyCrumb,
             { label: "UserDefinedNetworks", path: "/networking/userdefinednetworks" },
             { label: "Not found" },
           ]}
@@ -67,9 +76,9 @@ export default function UdnDetailPage() {
           <Title headingLevel="h1" size="2xl">
             UserDefinedNetwork not found
           </Title>
-          <Button variant="link" component={Link} to="/networking/userdefinednetworks" className="pf-v6-u-mt-md">
+          <Link to="/networking/userdefinednetworks" className="pf-v6-c-button pf-m-link pf-v6-u-mt-md">
             Back to UserDefinedNetworks
-          </Button>
+          </Link>
         </Breadcrumbs>
       </div>
     );
@@ -77,6 +86,7 @@ export default function UdnDetailPage() {
 
   const detailPath = udnDetailPath(udn);
   const kindLabel = udn.kind === "CUDN" ? "CUDN" : "UDN";
+  const topologyPath = topologyHighlightPath(udnTopologyHighlightId(udn));
 
   return (
     <div className="ocs-app-page-outer ocs-net-detail-page h-full min-h-0 overflow-y-auto">
@@ -84,19 +94,30 @@ export default function UdnDetailPage() {
         items={[
           { label: "Home", path: "/" },
           CRUMB,
+          ...topologyCrumb,
           { label: "UserDefinedNetworks", path: "/networking/userdefinednetworks" },
           { label: "UserDefinedNetwork details" },
         ]}
       >
         <Flex direction={{ default: "column" }} gap={{ default: "gapLg" }}>
-          <Flex alignItems={{ default: "alignItemsCenter" }} gap={{ default: "gapMd" }} flexWrap={{ default: "wrap" }}>
-            <Label color="purple" isCompact className="ocs-resource-label">
-              {kindLabel}
-            </Label>
-            <Title headingLevel="h1" size="2xl">
-              {udn.name}
-            </Title>
-            <FavoriteButton name={udn.name} path={detailPath} />
+          <Flex
+            alignItems={{ default: "alignItemsCenter" }}
+            justifyContent={{ default: "justifyContentSpaceBetween" }}
+            gap={{ default: "gapMd" }}
+            flexWrap={{ default: "wrap" }}
+          >
+            <Flex alignItems={{ default: "alignItemsCenter" }} gap={{ default: "gapMd" }} flexWrap={{ default: "wrap" }}>
+              <Label color="purple" isCompact className="ocs-resource-label">
+                {kindLabel}
+              </Label>
+              <Title headingLevel="h1" size="2xl">
+                {udn.name}
+              </Title>
+              <FavoriteButton name={udn.name} path={detailPath} />
+            </Flex>
+            <Link to={topologyPath} className="pf-v6-c-button pf-m-link">
+              View in Topology
+            </Link>
           </Flex>
 
           <Tabs

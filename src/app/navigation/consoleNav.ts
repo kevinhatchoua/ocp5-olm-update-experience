@@ -122,12 +122,18 @@ export const ADMINISTRATION_SUB: SubNavEntry[] = [
   { path: "/administration/dynamic-plugins", label: "Dynamic Plugins" },
 ];
 
-/** GitOps surfaces (HPUX-1943) — native pages in this prototype. */
+/** GitOps surfaces (HPUX-1943 / HPUX-2073 / GITOPS-10917). */
 export const GITOPS_SUB: SubNavEntry[] = [
-  { path: "/gitops/rollouts", label: "Rollouts" },
-  { path: "/gitops/argocd", label: "Argo CD" },
+  { path: "/gitops/overview", label: "Overview" },
   { path: "/gitops/applications", label: "Applications" },
   { path: "/gitops/applicationsets", label: "ApplicationSets" },
+  { path: "/gitops/appprojects", label: "AppProjects" },
+  { path: "/gitops/rollouts", label: "Rollouts" },
+  { path: "/gitops/imageupdaters", label: "Image Updater" },
+  { path: "/gitops/promotions", label: "Promotion Pipelines" },
+  { path: "/gitops/agents", label: "Connected Agents" },
+  { path: "/gitops/argocd", label: "Argo CD" },
+  { path: "/gitops/settings", label: "Settings" },
 ];
 
 /** Paths that should render {@link ConsoleStubPage} (plus any ad-hoc additions in routes). */
@@ -161,10 +167,17 @@ export function collectStubPaths(): string[] {
     "/workloads/jobs",
     "/workloads/cronjobs",
     "/gitops",
+    "/gitops/overview",
     "/gitops/rollouts",
     "/gitops/argocd",
     "/gitops/applications",
     "/gitops/applicationsets",
+    "/gitops/appprojects",
+    "/gitops/imageupdaters",
+    "/gitops/agents",
+    "/gitops/promotions",
+    "/gitops/settings",
+    "/gitops/create",
     "/networking",
     "/networking/topology",
     "/networking/routes",

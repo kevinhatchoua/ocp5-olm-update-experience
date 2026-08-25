@@ -3,6 +3,7 @@ import {
   getNadRecords,
   getNetworkingResourceRevision,
   getNncpRecords,
+  getPhysicalNetworks,
   getUdnRecords,
   subscribeNetworkingResources,
 } from "./networkingMockData";
@@ -14,5 +15,6 @@ export function useNetworkingResources() {
     nadRecords: getNadRecords(),
     udnRecords: getUdnRecords(),
     nncpRecords: getNncpRecords(),
+    physicalNetworks: getPhysicalNetworks(),
   };
 }

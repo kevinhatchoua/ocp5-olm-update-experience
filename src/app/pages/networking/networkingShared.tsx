@@ -20,6 +20,9 @@ export function NetworkingPageShell({
   createButton,
   children,
   extraHeader,
+  aboveTitle,
+  breadcrumbExtra,
+  className,
 }: {
   title: string;
   path: string;
@@ -28,17 +31,24 @@ export function NetworkingPageShell({
   createButton?: ReactNode;
   children: ReactNode;
   extraHeader?: ReactNode;
+  /** OCP pattern: project selector (or similar) above the page title. */
+  aboveTitle?: ReactNode;
+  /** Extra breadcrumb items inserted before the current page title crumb. */
+  breadcrumbExtra?: { label: string; path?: string }[];
+  className?: string;
 }) {
   return (
-    <div className="ocs-app-page-outer w-full">
+    <div className={["ocs-app-page-outer", "w-full", className].filter(Boolean).join(" ")}>
       <Breadcrumbs
         items={[
           { label: "Home", path: "/" },
           NETWORKING_CRUMB,
+          ...(breadcrumbExtra ?? []),
           { label: title, path },
         ]}
       >
-        <Flex direction={{ default: "column" }} gap={{ default: "gapLg" }}>
+        <Flex direction={{ default: "column" }} gap={{ default: "gapLg" }} flexWrap={{ default: "nowrap" }}>
+          {aboveTitle ? <div className="ocs-networking-above-title">{aboveTitle}</div> : null}
           <Flex
             alignItems={{ default: "alignItemsCenter" }}
             justifyContent={{ default: "justifyContentSpaceBetween" }}

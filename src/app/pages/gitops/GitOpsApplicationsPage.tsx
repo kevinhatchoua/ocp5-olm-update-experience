@@ -1,7 +1,6 @@
-import { useParams } from "react-router";
 import { GitOpsSimpleListPage } from "./GitOpsSimpleListPage";
-import GitOpsSimpleDetailPage, { GitOpsNotFound } from "./GitOpsSimpleDetailPage";
-import { findApplication, GITOPS_APPLICATIONS } from "./gitopsData";
+import GitOpsApplicationDetailRich from "./GitOpsApplicationDetailRich";
+import { GITOPS_APPLICATIONS } from "./gitopsData";
 import { HealthStatus, ManagedByCell } from "./gitopsShared";
 
 export default function GitOpsApplicationsPage() {
@@ -36,31 +35,5 @@ export default function GitOpsApplicationsPage() {
 }
 
 export function GitOpsApplicationDetailPage() {
-  const { namespace = "", name = "" } = useParams();
-  const rec = findApplication(decodeURIComponent(namespace), decodeURIComponent(name));
-  if (!rec) return <GitOpsNotFound listPath="/gitops/applications" listTitle="Applications" />;
-  return (
-    <GitOpsSimpleDetailPage
-      kindLabel="Application"
-      listPath="/gitops/applications"
-      listTitle="Applications"
-      resourceKind="Application"
-      detailKind="applications"
-      title={rec.name}
-      ns={rec.ns}
-      status={rec.health}
-      fields={[
-        { term: "Name", value: rec.name },
-        { term: "Namespace", value: rec.ns },
-        { term: "Project", value: rec.project },
-        { term: "Sync status", value: rec.sync },
-        { term: "Repo", value: rec.repo },
-        { term: "Path", value: rec.path },
-        { term: "Revision", value: rec.revision },
-        { term: "Destination", value: rec.destination },
-        { term: "Managed by", value: <ManagedByCell owner={rec.managedBy} /> },
-      ]}
-      footnote="Application inventory and graph sidebars are covered by HPUX-1942."
-    />
-  );
+  return <GitOpsApplicationDetailRich />;
 }

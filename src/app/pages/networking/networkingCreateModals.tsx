@@ -64,8 +64,10 @@ const CREATE_ITEMS: { id: NetworkCreateResource; label: string }[] = [
 
 export function NetworkResourceCreateDropdown({
   onSelect,
+  isDisabled = false,
 }: {
   onSelect: (resource: NetworkCreateResource) => void;
+  isDisabled?: boolean;
 }) {
   const [open, setOpen] = useState(false);
 
@@ -74,7 +76,12 @@ export function NetworkResourceCreateDropdown({
       isOpen={open}
       onOpenChange={(isOpen) => setOpen(isOpen)}
       toggle={(toggleRef) => (
-        <MenuToggle ref={toggleRef} onClick={() => setOpen((o) => !o)} variant="primary">
+        <MenuToggle
+          ref={toggleRef}
+          onClick={() => setOpen((o) => !o)}
+          variant="primary"
+          isDisabled={isDisabled}
+        >
           Create
         </MenuToggle>
       )}

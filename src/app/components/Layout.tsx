@@ -1,7 +1,6 @@
 import { Link, Outlet, useLocation, useNavigate } from "react-router";
 import { forwardRef, useEffect, useState } from "react";
 import {
-  Badge,
   Banner,
   Button,
   Content,
@@ -35,7 +34,6 @@ import { css } from "@patternfly/react-styles";
 import displayStyles from "@patternfly/react-styles/css/utilities/Display/display.mjs";
 import flexStyles from "@patternfly/react-styles/css/utilities/Flex/flex.mjs";
 import sizingStyles from "@patternfly/react-styles/css/utilities/Sizing/sizing.mjs";
-import BellIcon from "@patternfly/react-icons/dist/esm/icons/bell-icon";
 import CogIcon from "@patternfly/react-icons/dist/esm/icons/cog-icon";
 import MinusCircleIcon from "@patternfly/react-icons/dist/esm/icons/minus-circle-icon";
 import QuestionCircleIcon from "@patternfly/react-icons/dist/esm/icons/question-circle-icon";
@@ -47,6 +45,8 @@ import ImpersonateUserModal from "./ImpersonateUserModal";
 import CopyLoginCommandModal from "./CopyLoginCommandModal";
 import BackToPrototypesBanner from "./BackToPrototypesBanner";
 import { MastheadFedoraMark } from "./MastheadFedoraMark";
+import ConsoleNotificationDrawer, { NotificationBell } from "./ConsoleNotificationDrawer";
+import NamespaceBar from "./NamespaceBar";
 import { usePermissions } from "../contexts/PermissionsContext";
 import { useChat } from "../contexts/ChatContext";
 import { useFavorites } from "../contexts/FavoritesContext";
@@ -283,6 +283,7 @@ export default function Layout() {
   const [isCopyLoginOpen, setIsCopyLoginOpen] = useState(false);
   const [isFavoritesExpanded, setIsFavoritesExpanded] = useState(false);
   const [isHomeExpanded, setIsHomeExpanded] = useState(true);
+  const [isNotificationDrawerOpen, setIsNotificationDrawerOpen] = useState(false);
   const location = useLocation();
 
   const { impersonatedUser, setImpersonatedUser } = usePermissions();
@@ -290,7 +291,6 @@ export default function Layout() {
   const { isOpen: isAIOpen, setIsOpen: setIsAIOpen } = useChat();
 
   const { favorites } = useFavorites();
-  const { activeCount: activeToastCount } = useToast();
 
   const handleImpersonate = (user: {
     id: string;
@@ -350,18 +350,10 @@ export default function Layout() {
                 <MastheadIconButton label="Application launcher" icon={<ThIcon aria-hidden />} />
               </ToolbarItem>
               <ToolbarItem className="ocs-masthead-toolbar-item ocs-masthead-toolbar-notifications">
-                <Flex
-                  alignItems={{ default: "alignItemsCenter" }}
-                  justifyContent={{ default: "justifyContentCenter" }}
-                  gap={{ default: "gapXs" }}
-                >
-                  <MastheadIconButton label="Notifications" icon={<BellIcon aria-hidden />} />
-                  {activeToastCount > 0 ? (
-                    <Badge isRead={false} screenReaderText={`${activeToastCount} active notifications`}>
-                      {activeToastCount}
-                    </Badge>
-                  ) : null}
-                </Flex>
+                <NotificationBell
+                  isDrawerOpen={isNotificationDrawerOpen}
+                  onToggle={() => setIsNotificationDrawerOpen((open) => !open)}
+                />
               </ToolbarItem>
               <ToolbarItem className="ocs-masthead-toolbar-item">
                 <MastheadIconButton label="Settings" icon={<CogIcon aria-hidden />} />
@@ -562,7 +554,8 @@ export default function Layout() {
         >
           <BackToPrototypesBanner />
           <Page
-            className={css(sizingStyles.h_100, "ocs-console-page")}
+            className={css(flexStyles.flex_1, "ocs-console-page")}
+            style={{ minHeight: "var(--pf-t--global--spacer--0, 0px)" }}
             isManagedSidebar
             isContentFilled
             masthead={masthead}
@@ -571,6 +564,8 @@ export default function Layout() {
             mainContainerId="app-main-container"
             mainAriaLabel="OpenShift console"
             banner={impersonationBanner}
+            notificationDrawer={<ConsoleNotificationDrawer onClose={() => setIsNotificationDrawerOpen(false)} />}
+            isNotificationDrawerExpanded={isNotificationDrawerOpen}
           >
             <div
               className={css(
@@ -593,7 +588,18 @@ export default function Layout() {
                     }
               }
             >
-              <Outlet />
+              <NamespaceBar />
+              <div
+                className={css(
+                  displayStyles.displayFlex,
+                  flexStyles.flexDirectionColumn,
+                  flexStyles.flexShrink_1,
+                  flexStyles.flex_1
+                )}
+                style={{ minHeight: "var(--pf-t--global--spacer--0, 0px)" }}
+              >
+                <Outlet />
+              </div>
             </div>
           </Page>
         </div>

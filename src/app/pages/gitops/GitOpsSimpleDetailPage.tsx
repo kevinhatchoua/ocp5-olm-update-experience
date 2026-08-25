@@ -35,8 +35,8 @@ export default function GitOpsSimpleDetailPage({
   kindLabel: string;
   listPath: string;
   listTitle: string;
-  resourceKind: "Application" | "ApplicationSet" | "ArgoCD";
-  detailKind: "applications" | "applicationsets" | "argocd";
+  resourceKind: "Application" | "ApplicationSet" | "ArgoCD" | "AppProject" | "ImageUpdater" | "Promotion";
+  detailKind: "applications" | "applicationsets" | "argocd" | "appprojects" | "imageupdaters" | "promotions";
   title: string;
   ns: string;
   status?: string;

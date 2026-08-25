@@ -51,6 +51,7 @@ import {
   type VirtualMachineRecord,
   vmDetailPath,
 } from "../../pages/networking/networkingMockData";
+import { useToast } from "../../contexts/ToastContext";
 
 type VmFilters = { name: string };
 type AddVmFilters = { name: string };
@@ -92,6 +93,7 @@ export function NetworkVirtualMachinesTab({
   networkName: string;
   onAttachmentsChange?: () => void;
 }) {
+  const { pushToast } = useToast();
   const [refreshKey, setRefreshKey] = useState(0);
   const [addOpen, setAddOpen] = useState(false);
   const [removeTarget, setRemoveTarget] = useState<AttachedVmRow | null>(null);
@@ -124,19 +126,37 @@ export function NetworkVirtualMachinesTab({
 
   const confirmRemove = () => {
     if (!removeTarget) return;
-    detachVmFromNetwork(networkRef, removeTarget.vmName, removeTarget.vmNamespace);
+    const { vmName, vmNamespace } = removeTarget;
+    detachVmFromNetwork(networkRef, vmName, vmNamespace);
     setRemoveTarget(null);
     bump();
+    pushToast({
+      variant: "success",
+      title: `Removed ${vmName} from ${networkName}`,
+    });
   };
 
   const confirmAdd = () => {
+    const added: string[] = [];
     selectedToAdd.forEach((key) => {
       const vm = getAllVirtualMachines().find((v) => vmKey(v) === key);
-      if (vm) attachVmToNetwork(networkRef, vm.name, vm.namespace);
+      if (vm) {
+        attachVmToNetwork(networkRef, vm.name, vm.namespace);
+        added.push(vm.name);
+      }
     });
     setSelectedToAdd(new Set());
     setAddOpen(false);
     bump();
+    if (added.length > 0) {
+      pushToast({
+        variant: "success",
+        title:
+          added.length === 1
+            ? `Attached ${added[0]} to ${networkName}`
+            : `Attached ${added.length} virtual machines to ${networkName}`,
+      });
+    }
   };
 
   if (attached.length === 0) {
@@ -289,14 +309,12 @@ export function NetworkVirtualMachinesTab({
                         <Label color="blue" isCompact className="ocs-resource-label">
                           VM
                         </Label>
-                        <Button
-                          variant="link"
-                          isInline
-                          component={Link}
+                        <Link
                           to={vmDetailPath(row.vmNamespace, row.vmName)}
+                          className="pf-v6-c-button pf-m-link pf-m-inline"
                         >
                           {row.vmName}
-                        </Button>
+                        </Link>
                       </Flex>
                     </Td>
                     <Td dataLabel="Namespace">
@@ -304,9 +322,9 @@ export function NetworkVirtualMachinesTab({
                         <Label color="green" isCompact className="ocs-resource-label">
                           NS
                         </Label>
-                        <Button variant="link" isInline>
+                        <Link to="/administration/namespaces" className="pf-v6-c-button pf-m-link pf-m-inline">
                           {row.vmNamespace}
-                        </Button>
+                        </Link>
                       </Flex>
                     </Td>
                     <Td dataLabel="Status">
@@ -375,14 +393,12 @@ export function NetworkVirtualMachinesTab({
                 <Label color="blue" isCompact className="ocs-resource-label">
                   VM
                 </Label>
-                <Button
-                  variant="link"
-                  isInline
-                  component={Link}
+                <Link
                   to={vmDetailPath(removeTarget.vmNamespace, removeTarget.vmName)}
+                  className="pf-v6-c-button pf-m-link pf-m-inline"
                 >
                   {removeTarget.vmName}
-                </Button>
+                </Link>
               </Flex>{" "}
               from <strong>{networkName}</strong>?
             </Content>
@@ -605,14 +621,12 @@ function AddVirtualMachinesModal({
                               <Label color="blue" isCompact className="ocs-resource-label">
                                 VM
                               </Label>
-                              <Button
-                                variant="link"
-                                isInline
-                                component={Link}
+                              <Link
                                 to={vmDetailPath(vm.namespace, vm.name)}
+                                className="pf-v6-c-button pf-m-link pf-m-inline"
                               >
                                 {vm.name}
-                              </Button>
+                              </Link>
                             </Flex>
                           </Td>
                           <Td dataLabel="Namespace">

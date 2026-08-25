@@ -128,7 +128,7 @@ export default function GitOpsRolloutsPage() {
               </Title>
               <FavoriteButton name="Rollouts" path="/gitops/rollouts" />
             </Flex>
-            <Button variant="primary" onClick={() => setToast("Create Rollout (prototype stub)")}>
+            <Button variant="primary" onClick={() => navigate("/gitops/create?kind=rollout")}>
               Create Rollout
             </Button>
           </Flex>

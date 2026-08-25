@@ -161,9 +161,59 @@ export interface NncpRecord {
   status: string;
 }
 
+export type PhysicalNetwork = {
+  name: string;
+  type: "bridge" | "bond" | "vlan" | "interface";
+  bridgeName?: string;
+  vlanId?: number;
+  workerNodes: string[];
+  status: "configured" | "pending" | "failed";
+  nncpName?: string;
+  createdAt: string;
+};
+
+const INITIAL_PHYSICAL_NETWORKS: PhysicalNetwork[] = [
+  {
+    name: "br-ex-a",
+    type: "bridge",
+    bridgeName: "br-ex-a",
+    workerNodes: ["worker-0", "worker-1", "worker-2", "worker-3", "worker-4"],
+    status: "configured",
+    createdAt: "2025-11-12T14:22:00Z",
+  },
+  {
+    name: "br-localnet",
+    type: "bridge",
+    bridgeName: "br-localnet",
+    workerNodes: ["worker-0", "worker-1"],
+    status: "pending",
+    nncpName: "nncp-br-localnet",
+    createdAt: "2026-01-08T09:15:00Z",
+  },
+  {
+    name: "br-int",
+    type: "bridge",
+    bridgeName: "br-int",
+    workerNodes: ["worker-0", "worker-1", "worker-2"],
+    status: "configured",
+    createdAt: "2025-11-12T14:22:00Z",
+  },
+  {
+    name: "localnet-rzpi1d",
+    type: "vlan",
+    bridgeName: "br-localnet",
+    vlanId: 100,
+    workerNodes: ["worker-0", "worker-1"],
+    status: "configured",
+    nncpName: "nncp-br-localnet",
+    createdAt: "2026-02-01T11:00:00Z",
+  },
+];
+
 let nadRecords: NadRecord[] = [...INITIAL_NAD_RECORDS];
 let udnRecords: UdnRecord[] = [...INITIAL_UDN_RECORDS];
 let nncpRecords: NncpRecord[] = [{ name: "nncp-br-localnet", status: "Progressing" }];
+let physicalNetworkRecords: PhysicalNetwork[] = [...INITIAL_PHYSICAL_NETWORKS];
 
 export type NamespacePropagationTarget = {
   namespace: string;
@@ -222,6 +272,14 @@ export function getUdnRecords(): UdnRecord[] {
 
 export function getNncpRecords(): NncpRecord[] {
   return nncpRecords;
+}
+
+export function getPhysicalNetworks(): PhysicalNetwork[] {
+  return physicalNetworkRecords;
+}
+
+export function getPhysicalNetwork(name: string): PhysicalNetwork | undefined {
+  return physicalNetworkRecords.find((n) => n.name === name);
 }
 
 export interface CreateNadInput {
@@ -297,6 +355,82 @@ export function createNncp(input: CreateNncpInput): NncpRecord {
   nncpRecords = [...nncpRecords, record];
   notifyResourceListeners();
   return record;
+}
+
+export function deleteNad(namespace: string, name: string): boolean {
+  const next = nadRecords.filter((n) => !(n.namespace === namespace && n.name === name));
+  if (next.length === nadRecords.length) return false;
+  nadRecords = next;
+  notifyResourceListeners();
+  return true;
+}
+
+export function deleteUdn(name: string, namespace?: string): boolean {
+  const next = udnRecords.filter((u) => {
+    if (u.kind === "CUDN") return !(u.name === name && !namespace);
+    return !(u.name === name && u.namespace === namespace);
+  });
+  if (next.length === udnRecords.length) return false;
+  udnRecords = next;
+  notifyResourceListeners();
+  return true;
+}
+
+export function deleteNncp(name: string): boolean {
+  const next = nncpRecords.filter((n) => n.name !== name);
+  if (next.length === nncpRecords.length) return false;
+  nncpRecords = next;
+  notifyResourceListeners();
+  return true;
+}
+
+export function getNncp(name: string): NncpRecord | undefined {
+  return nncpRecords.find((n) => n.name === name);
+}
+
+export interface CreatePhysicalNetworkInput {
+  name: string;
+  type: PhysicalNetwork["type"];
+  bridgeName?: string;
+  vlanId?: number;
+  workerNodes?: string[];
+  nncpName?: string;
+  status?: PhysicalNetwork["status"];
+}
+
+export function createPhysicalNetwork(input: CreatePhysicalNetworkInput): PhysicalNetwork {
+  const record: PhysicalNetwork = {
+    name: input.name.trim(),
+    type: input.type,
+    bridgeName: input.bridgeName,
+    vlanId: input.vlanId,
+    workerNodes: input.workerNodes ?? [],
+    status: input.status ?? "pending",
+    nncpName: input.nncpName,
+    createdAt: new Date().toISOString(),
+  };
+  physicalNetworkRecords = [...physicalNetworkRecords, record];
+  notifyResourceListeners();
+  return record;
+}
+
+export function deletePhysicalNetwork(name: string): boolean {
+  const next = physicalNetworkRecords.filter((n) => n.name !== name);
+  if (next.length === physicalNetworkRecords.length) return false;
+  physicalNetworkRecords = next;
+  notifyResourceListeners();
+  return true;
+}
+
+export function physicalNetworkTopologyPath(name: string): string {
+  return `/networking/topology?highlight=${encodeURIComponent(name)}`;
+}
+
+export function nncpListPath(nncpName?: string): string {
+  if (nncpName) {
+    return nncpDetailPath(nncpName);
+  }
+  return "/networking/nodenetworkconfigurationpolicy";
 }
 
 export function generateNadName(): string {
@@ -418,6 +552,29 @@ export function udnDetailPath(record: UdnRecord): string {
   return `/networking/userdefinednetworks/${encodeURIComponent(record.namespace!)}/${encodeURIComponent(record.name)}`;
 }
 
+export function nncpDetailPath(name: string): string {
+  return `/networking/nodenetworkconfigurationpolicy/${encodeURIComponent(name)}`;
+}
+
+/** Deep-link id for `/networking/topology?highlight=` — NAD (not yet a canvas node; includes-match ready). */
+export function nadTopologyHighlightId(namespace: string, name: string): string {
+  return `nad-${namespace}-${name}`;
+}
+
+/** Matches `logicalNetworkId()` in networkTopologyData (`logical-udn-*` / `logical-cudn-*`). */
+export function udnTopologyHighlightId(record: Pick<UdnRecord, "name" | "kind">): string {
+  return `logical-${record.kind === "CUDN" ? "cudn" : "udn"}-${record.name}`;
+}
+
+/** Matches NNCP / bridge-config standalone ids (`nncp-br-localnet`). */
+export function nncpTopologyHighlightId(name: string): string {
+  return name.startsWith("nncp-") ? name : `nncp-${name}`;
+}
+
+export function topologyHighlightPath(highlightId: string): string {
+  return `/networking/topology?highlight=${encodeURIComponent(highlightId)}`;
+}
+
 export function networkResourcePath(ref: NetworkResourceRef): string {
   switch (ref.kind) {
     case "NAD":
@@ -491,4 +648,17 @@ metadata:
   name: ${record.name}${ns}
 spec:
   topology: ${record.topology}`;
+}
+
+export function nncpYaml(record: NncpRecord): string {
+  return `apiVersion: nmstate.io/v1
+kind: NodeNetworkConfigurationPolicy
+metadata:
+  name: ${record.name}
+spec:
+  desiredState:
+    interfaces:
+      - name: br-localnet
+        type: ovs-bridge
+        state: up`;
 }

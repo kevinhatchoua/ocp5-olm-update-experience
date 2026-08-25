@@ -1,7 +1,6 @@
 import { useMemo, useState } from "react";
-import { Link, useParams } from "react-router";
+import { Link, useLocation, useParams, useSearchParams } from "react-router";
 import {
-  Button,
   DescriptionList,
   DescriptionListDescription,
   DescriptionListGroup,
@@ -25,17 +24,23 @@ import {
   getAttachedVmsForNetwork,
   getNad,
   nadDetailPath,
+  nadTopologyHighlightId,
   nadYaml,
+  topologyHighlightPath,
   type NetworkResourceRef,
 } from "./networkingMockData";
 import { NETWORKING_CRUMB as CRUMB } from "./networkingShared";
 
 export default function NadDetailPage() {
   const { namespace = "", name = "" } = useParams();
+  const location = useLocation();
+  const [searchParams] = useSearchParams();
+  const fromTopology = Boolean((location.state as { fromTopology?: boolean } | null)?.fromTopology);
   const decodedNs = decodeURIComponent(namespace);
   const decodedName = decodeURIComponent(name);
   const nad = getNad(decodedNs, decodedName);
-  const [activeTab, setActiveTab] = useState("details");
+  const initialTab = searchParams.get("tab") === "yaml" ? "yaml" : "details";
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [attachmentRev, setAttachmentRev] = useState(0);
 
   const networkRef: NetworkResourceRef = useMemo(
@@ -48,6 +53,10 @@ export default function NadDetailPage() {
     [networkRef, attachmentRev]
   );
 
+  const topologyCrumb = fromTopology
+    ? [{ label: "Topology", path: "/networking/topology" }]
+    : [];
+
   if (!nad) {
     return (
       <div className="ocs-app-page-outer w-full">
@@ -55,6 +64,7 @@ export default function NadDetailPage() {
           items={[
             { label: "Home", path: "/" },
             CRUMB,
+            ...topologyCrumb,
             { label: "NetworkAttachmentDefinitions", path: "/networking/networkattachmentdefinitions" },
             { label: "Not found" },
           ]}
@@ -62,20 +72,19 @@ export default function NadDetailPage() {
           <Title headingLevel="h1" size="2xl">
             NetworkAttachmentDefinition not found
           </Title>
-          <Button
-            variant="link"
-            component={Link}
+          <Link
             to="/networking/networkattachmentdefinitions"
-            className="pf-v6-u-mt-md"
+            className="pf-v6-c-button pf-m-link pf-v6-u-mt-md"
           >
             Back to NetworkAttachmentDefinitions
-          </Button>
+          </Link>
         </Breadcrumbs>
       </div>
     );
   }
 
   const detailPath = nadDetailPath(decodedNs, decodedName);
+  const topologyPath = topologyHighlightPath(nadTopologyHighlightId(decodedNs, decodedName));
 
   return (
     <div className="ocs-app-page-outer ocs-net-detail-page h-full min-h-0 overflow-y-auto">
@@ -83,19 +92,30 @@ export default function NadDetailPage() {
         items={[
           { label: "Home", path: "/" },
           CRUMB,
+          ...topologyCrumb,
           { label: "NetworkAttachmentDefinitions", path: "/networking/networkattachmentdefinitions" },
           { label: "NetworkAttachmentDefinition details" },
         ]}
       >
         <Flex direction={{ default: "column" }} gap={{ default: "gapLg" }}>
-          <Flex alignItems={{ default: "alignItemsCenter" }} gap={{ default: "gapMd" }} flexWrap={{ default: "wrap" }}>
-            <Label color="blue" isCompact className="ocs-resource-label">
-              NAD
-            </Label>
-            <Title headingLevel="h1" size="2xl">
-              {nad.name}
-            </Title>
-            <FavoriteButton name={nad.name} path={detailPath} />
+          <Flex
+            alignItems={{ default: "alignItemsCenter" }}
+            justifyContent={{ default: "justifyContentSpaceBetween" }}
+            gap={{ default: "gapMd" }}
+            flexWrap={{ default: "wrap" }}
+          >
+            <Flex alignItems={{ default: "alignItemsCenter" }} gap={{ default: "gapMd" }} flexWrap={{ default: "wrap" }}>
+              <Label color="blue" isCompact className="ocs-resource-label">
+                NAD
+              </Label>
+              <Title headingLevel="h1" size="2xl">
+                {nad.name}
+              </Title>
+              <FavoriteButton name={nad.name} path={detailPath} />
+            </Flex>
+            <Link to={topologyPath} className="pf-v6-c-button pf-m-link">
+              View in Topology
+            </Link>
           </Flex>
 
           <Tabs

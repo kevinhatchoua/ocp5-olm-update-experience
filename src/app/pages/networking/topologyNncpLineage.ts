@@ -1,6 +1,6 @@
 import { isBridgeNetworkResource } from "./networkTopologyData";
 import type { NetResource } from "./networkTopologyData";
-import { getNncpRecords } from "./networkingMockData";
+import { getNncpRecords, nncpDetailPath } from "./networkingMockData";
 
 export type NncpLineageLink = {
   nncpName: string;
@@ -23,7 +23,7 @@ export function resolveNncpLineageForBridge(resource: {
 
   return {
     nncpName,
-    nncpPath: "/networking/nodenetworkconfigurationpolicy",
+    nncpPath: nncpDetailPath(nncpName),
     bridgeLabel: resource.label,
     bridgeResourceId: resource.id,
   };

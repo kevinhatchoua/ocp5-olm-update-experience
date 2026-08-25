@@ -193,8 +193,212 @@ export const GITOPS_APPLICATION_SETS: ApplicationSetRecord[] = [
   },
 ];
 
+export type AppProjectRecord = {
+  name: string;
+  ns: string;
+  description: string;
+  destinations: string;
+  sourceRepos: string;
+  age: string;
+};
+
+export type ImageUpdaterRecord = {
+  name: string;
+  ns: string;
+  images: string;
+  strategy: string;
+  status: "Healthy" | "Degraded";
+  lastUpdate: string;
+  age: string;
+};
+
+/** Status/health only — never include jwt/tls/credential fields. */
+export type AgentSpokeRecord = {
+  name: string;
+  cluster: string;
+  connection: "Connected" | "Disconnected";
+  syncMode: "Managed" | "Autonomous";
+  lastHeartbeat: string;
+  reconnections: number;
+};
+
+export type DashboardMetrics = {
+  synced: number;
+  outOfSync: number;
+  healthy: number;
+  degraded: number;
+  progressing: number;
+  syncSuccessRate: number;
+  reconciliations24h: number;
+  gitFetchFailures: number;
+  sparklineSync: number[];
+  sparklineReconcile: number[];
+  needsAttention: {
+    name: string;
+    ns: string;
+    reason: string;
+    severity: "warning" | "danger" | "info";
+  }[];
+};
+
+export type PromotionPipelineRecord = {
+  name: string;
+  ns: string;
+  environments: string;
+  status: "Running" | "Blocked" | "Succeeded" | "Failed";
+  gates: string;
+  age: string;
+};
+
+export const GITOPS_APP_PROJECTS: AppProjectRecord[] = [
+  {
+    name: "default",
+    ns: "argocd",
+    description: "Default project for cluster-scoped demos",
+    destinations: "in-cluster / *",
+    sourceRepos: "https://github.com/argoproj/*, https://github.com/demo/*",
+    age: "45d",
+  },
+  {
+    name: "payments",
+    ns: "argocd",
+    description: "Payments team workloads and overlays",
+    destinations: "in-cluster / payments, spoke-east / payments",
+    sourceRepos: "https://gitlab.example.com/payments/*",
+    age: "18d",
+  },
+  {
+    name: "platform",
+    ns: "openshift-gitops",
+    description: "Platform add-ons and cluster services",
+    destinations: "in-cluster / openshift-*, in-cluster / gitops-*",
+    sourceRepos: "https://github.com/demo/cluster-addons.git",
+    age: "30d",
+  },
+];
+
+export const GITOPS_IMAGE_UPDATERS: ImageUpdaterRecord[] = [
+  {
+    name: "payments-api-updater",
+    ns: "argocd",
+    images: "quay.io/demo/payments-api",
+    strategy: "semver",
+    status: "Healthy",
+    lastUpdate: "2h ago",
+    age: "12d",
+  },
+  {
+    name: "frontend-canary-updater",
+    ns: "demo-workloads",
+    images: "argoproj/rollouts-demo",
+    strategy: "newest-build",
+    status: "Degraded",
+    lastUpdate: "1d ago",
+    age: "8d",
+  },
+];
+
+export const GITOPS_AGENT_SPOKES: AgentSpokeRecord[] = [
+  {
+    name: "spoke-east-agent",
+    cluster: "spoke-east",
+    connection: "Connected",
+    syncMode: "Managed",
+    lastHeartbeat: "12s ago",
+    reconnections: 2,
+  },
+  {
+    name: "spoke-west-agent",
+    cluster: "spoke-west",
+    connection: "Connected",
+    syncMode: "Autonomous",
+    lastHeartbeat: "45s ago",
+    reconnections: 0,
+  },
+  {
+    name: "edge-lab-agent",
+    cluster: "edge-lab",
+    connection: "Disconnected",
+    syncMode: "Managed",
+    lastHeartbeat: "3h ago",
+    reconnections: 11,
+  },
+];
+
+export const GITOPS_PROMOTION_PIPELINES: PromotionPipelineRecord[] = [
+  {
+    name: "payments-promote",
+    ns: "argocd",
+    environments: "dev → staging → prod",
+    status: "Running",
+    gates: "manual (staging→prod)",
+    age: "4h",
+  },
+  {
+    name: "frontend-canary-promote",
+    ns: "demo-workloads",
+    environments: "canary → stable",
+    status: "Blocked",
+    gates: "analysis + approval",
+    age: "1d",
+  },
+];
+
+function buildDashboardMetrics(): DashboardMetrics {
+  const synced = GITOPS_APPLICATIONS.filter((a) => a.sync === "Synced").length;
+  const outOfSync = GITOPS_APPLICATIONS.filter((a) => a.sync === "OutOfSync").length;
+  const healthy = GITOPS_APPLICATIONS.filter((a) => a.health === "Healthy").length;
+  const degraded = GITOPS_APPLICATIONS.filter((a) => a.health === "Degraded").length;
+  const progressing = GITOPS_APPLICATIONS.filter((a) => a.health === "Progressing").length;
+  const total = GITOPS_APPLICATIONS.length || 1;
+  const needsAttention = GITOPS_APPLICATIONS.filter(
+    (a) => a.sync === "OutOfSync" || a.health === "Degraded" || a.health === "Progressing"
+  ).map((a) => ({
+    name: a.name,
+    ns: a.ns,
+    reason:
+      a.health === "Degraded"
+        ? "Health degraded"
+        : a.sync === "OutOfSync"
+          ? "Out of sync with desired revision"
+          : "Sync in progress",
+    severity: (a.health === "Degraded" ? "danger" : a.sync === "OutOfSync" ? "warning" : "info") as
+      | "warning"
+      | "danger"
+      | "info",
+  }));
+  return {
+    synced,
+    outOfSync,
+    healthy,
+    degraded,
+    progressing,
+    syncSuccessRate: Math.round((synced / total) * 100),
+    reconciliations24h: 128 + synced * 12,
+    gitFetchFailures: outOfSync > 0 ? 2 : 0,
+    sparklineSync: [72, 78, 81, 75, 88, 90, Math.round((synced / total) * 100)],
+    sparklineReconcile: [40, 52, 48, 61, 55, 70, 64],
+    needsAttention,
+  };
+}
+
+export const GITOPS_DASHBOARD_METRICS: DashboardMetrics = buildDashboardMetrics();
+
+export const ARGO_INSTANCE_OPTIONS = ARGO_INSTANCES.map((inst) => ({
+  value: `${inst.ns}/${inst.name}`,
+  label: `${inst.name} (${inst.ns})`,
+}));
+
 export const gitopsDetailPath = (
-  kind: "rollouts" | "applications" | "applicationsets" | "argocd",
+  kind:
+    | "rollouts"
+    | "applications"
+    | "applicationsets"
+    | "argocd"
+    | "appprojects"
+    | "imageupdaters"
+    | "agents"
+    | "promotions",
   ns: string,
   name: string
 ) => `/gitops/ns/${encodeURIComponent(ns)}/${kind}/${encodeURIComponent(name)}`;
@@ -207,12 +411,32 @@ export function findApplication(ns: string, name: string) {
   return GITOPS_APPLICATIONS.find((a) => a.ns === ns && a.name === name);
 }
 
+/** Applications whose destination targets the given namespace. */
+export function applicationsForNamespace(ns: string) {
+  const suffix = ` / ${ns}`;
+  return GITOPS_APPLICATIONS.filter(
+    (a) => a.destination.includes(ns) || a.destination.endsWith(suffix)
+  );
+}
+
 export function findApplicationSet(ns: string, name: string) {
   return GITOPS_APPLICATION_SETS.find((a) => a.ns === ns && a.name === name);
 }
 
 export function findArgoCd(ns: string, name: string) {
   return ARGO_INSTANCES.find((a) => a.ns === ns && a.name === name);
+}
+
+export function findAppProject(ns: string, name: string) {
+  return GITOPS_APP_PROJECTS.find((p) => p.ns === ns && p.name === name);
+}
+
+export function findImageUpdater(ns: string, name: string) {
+  return GITOPS_IMAGE_UPDATERS.find((u) => u.ns === ns && u.name === name);
+}
+
+export function findPromotionPipeline(ns: string, name: string) {
+  return GITOPS_PROMOTION_PIPELINES.find((p) => p.ns === ns && p.name === name);
 }
 
 export type DomainAction = "Promote" | "Full Promote" | "Abort" | "Retry" | "Restart";

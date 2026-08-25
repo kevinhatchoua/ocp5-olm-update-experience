@@ -26,6 +26,10 @@ const KIND_ABBREV: Record<string, string> = {
   Pod: "P",
   Namespace: "NS",
   ArgoCD: "AC",
+  AppProject: "AP",
+  ImageUpdater: "IU",
+  Agent: "AG",
+  Promotion: "PR",
 };
 
 const KIND_COLOR: Record<string, "blue" | "green" | "teal" | "purple" | "orange" | "grey"> = {
@@ -36,6 +40,10 @@ const KIND_COLOR: Record<string, "blue" | "green" | "teal" | "purple" | "orange"
   Pod: "teal",
   Namespace: "green",
   ArgoCD: "orange",
+  AppProject: "teal",
+  ImageUpdater: "purple",
+  Agent: "green",
+  Promotion: "blue",
 };
 
 export function ResourceName({

@@ -17,8 +17,8 @@ type GitOpsSimpleListPageProps<T extends { name: string; ns: string }> = {
   title: string;
   path: string;
   createLabel: string;
-  kind: "Application" | "ApplicationSet" | "ArgoCD";
-  detailKind: "applications" | "applicationsets" | "argocd";
+  kind: "Application" | "ApplicationSet" | "ArgoCD" | "AppProject" | "ImageUpdater" | "Promotion";
+  detailKind: "applications" | "applicationsets" | "argocd" | "appprojects" | "imageupdaters" | "promotions";
   items: T[];
   columns: Column[];
   renderCell: (item: T, key: string) => ReactNode;
@@ -42,7 +42,7 @@ export function GitOpsSimpleListPage<T extends { name: string; ns: string }>({
       <Breadcrumbs
         items={[
           { label: "Home", path: "/" },
-          { label: "GitOps", path: "/gitops/rollouts" },
+          { label: "GitOps", path: "/gitops/overview" },
           { label: title, path },
         ]}
       >
@@ -59,7 +59,24 @@ export function GitOpsSimpleListPage<T extends { name: string; ns: string }>({
               </Title>
               <FavoriteButton name={title} path={path} />
             </Flex>
-            <Button variant="primary">{createLabel}</Button>
+            <Button
+              variant="primary"
+              onClick={() => {
+                const kindParam =
+                  kind === "ApplicationSet"
+                    ? "applicationset"
+                    : kind === "AppProject"
+                      ? "appproject"
+                      : kind === "ImageUpdater"
+                        ? "imageupdater"
+                        : kind === "Promotion"
+                          ? "promotion"
+                          : "application";
+                navigate(`/gitops/create?kind=${kindParam}`);
+              }}
+            >
+              {createLabel}
+            </Button>
           </Flex>
 
           <OcsNamedResourceDataView

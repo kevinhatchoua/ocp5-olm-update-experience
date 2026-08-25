@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from "react";
+import { Link } from "react-router";
 import {
   Button,
   Content,
@@ -234,9 +235,12 @@ export default function NamespacesPage() {
                     paginated.map((ns) => (
                       <Tr key={ns.name}>
                         <Td dataLabel="Name">
-                          <Button variant="link" isInline>
+                          <Link
+                            to={`/administration/namespaces/${encodeURIComponent(ns.name)}`}
+                            className="pf-v6-c-button pf-m-link pf-m-inline"
+                          >
                             {ns.name}
-                          </Button>
+                          </Link>
                         </Td>
                         <Td dataLabel="Status">
                           <Flex alignItems={{ default: "alignItemsCenter" }} gap={{ default: "gapSm" }}>

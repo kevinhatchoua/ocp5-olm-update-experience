@@ -1,11 +1,13 @@
 import { Link } from "react-router";
-import { Button, Content, Flex, Label, Title } from "@patternfly/react-core";
+import { Content, Flex, Label, Title } from "@patternfly/react-core";
 import ExternalLinkAltIcon from "@patternfly/react-icons/dist/esm/icons/external-link-alt-icon";
 import {
   getNamespacePropagationTargets,
   nadDetailPath,
   type NetworkResourceKind,
 } from "./networkingMockData";
+
+const NAMESPACES_PATH = "/administration/namespaces";
 
 export default function NetworkNamespacePropagationTab({
   networkName,
@@ -40,7 +42,9 @@ export default function NetworkNamespacePropagationTab({
                 <Label color="blue" isCompact>
                   Namespace
                 </Label>
-                <span className="ocs-net-topo-propagation-row__namespace">{target.namespace}</span>
+                <Link to={NAMESPACES_PATH} className="pf-v6-c-button pf-m-link pf-m-inline">
+                  {target.namespace}
+                </Link>
                 {target.namespaceSelector ? (
                   <Content component="small" className="ocs-net-topo-propagation-row__selector">
                     Selector: {target.namespaceSelector}
@@ -52,16 +56,12 @@ export default function NetworkNamespacePropagationTab({
                 <Label color="green" isCompact>
                   NAD
                 </Label>
-                <Button
-                  variant="link"
-                  isInline
-                  component={Link}
+                <Link
                   to={nadDetailPath(target.namespace, target.nadName)}
-                  icon={<ExternalLinkAltIcon />}
-                  iconPosition="right"
+                  className="pf-v6-c-button pf-m-link pf-m-inline"
                 >
-                  {target.nadName}
-                </Button>
+                  {target.nadName} <ExternalLinkAltIcon />
+                </Link>
               </Flex>
             </li>
           ))}

@@ -20,6 +20,7 @@ import IngressesPage from "./pages/networking/IngressesPage";
 import PhysicalNetworksPage from "./pages/networking/PhysicalNetworksPage";
 import NetworkPoliciesPage from "./pages/networking/NetworkPoliciesPage";
 import NodeNetworkConfigurationPolicyPage from "./pages/networking/NodeNetworkConfigurationPolicyPage";
+import NncpDetailPage from "./pages/networking/NncpDetailPage";
 import NetworkAttachmentDefinitionsPage from "./pages/networking/NetworkAttachmentDefinitionsPage";
 import NadDetailPage from "./pages/networking/NadDetailPage";
 import UserDefinedNetworksPage from "./pages/networking/UserDefinedNetworksPage";
@@ -56,7 +57,6 @@ import UpdateFailedPage from "./pages/administration/UpdateFailedPage";
 import VersionDetailPage from "./pages/administration/VersionDetailPage";
 import AgentModePage from "./pages/administration/AgentModePage";
 import ClusterUpdateHistoryPage from "./pages/administration/ClusterUpdateHistoryPage";
-import NamespacesPage from "./pages/administration/NamespacesPage";
 import ResourceQuotasPage from "./pages/administration/ResourceQuotasPage";
 import LimitRangesPage from "./pages/administration/LimitRangesPage";
 import CustomResourceDefinitionsPage from "./pages/administration/CustomResourceDefinitionsPage";
@@ -68,7 +68,6 @@ import OperatorDetailPage from "./pages/ecosystem/OperatorDetailPage";
 import OperatorUpdatePage from "./pages/ecosystem/OperatorUpdatePage";
 import OperatorInstallingPage from "./pages/ecosystem/OperatorInstallingPage";
 import OperatorInstalledPage from "./pages/ecosystem/OperatorInstalledPage";
-
 import NodeDetailPage from "./pages/compute/NodeDetailPage";
 import ConsoleStubPage from "./pages/ConsoleStubPage";
 import GitOpsRolloutsPage from "./pages/gitops/GitOpsRolloutsPage";
@@ -76,6 +75,15 @@ import GitOpsRolloutDetailPage from "./pages/gitops/GitOpsRolloutDetailPage";
 import GitOpsArgoCdPage, { GitOpsArgoCdDetailPage } from "./pages/gitops/GitOpsArgoCdPage";
 import GitOpsApplicationsPage, { GitOpsApplicationDetailPage } from "./pages/gitops/GitOpsApplicationsPage";
 import GitOpsApplicationSetsPage, { GitOpsApplicationSetDetailPage } from "./pages/gitops/GitOpsApplicationSetsPage";
+import GitOpsDashboardPage from "./pages/gitops/GitOpsDashboardPage";
+import GitOpsAppProjectsPage, { GitOpsAppProjectDetailPage } from "./pages/gitops/GitOpsAppProjectsPage";
+import GitOpsImageUpdaterPage, { GitOpsImageUpdaterDetailPage } from "./pages/gitops/GitOpsImageUpdaterPage";
+import GitOpsAgentSpokesPage from "./pages/gitops/GitOpsAgentSpokesPage";
+import GitOpsPromotionsPage, { GitOpsPromotionDetailPage } from "./pages/gitops/GitOpsPromotionsPage";
+import GitOpsSettingsPage from "./pages/gitops/GitOpsSettingsPage";
+import GitOpsCreateWizardPage from "./pages/gitops/GitOpsCreateWizardPage";
+import NamespaceDetailPage from "./pages/administration/NamespaceDetailPage";
+import NamespacesPage from "./pages/administration/NamespacesPage";
 
 const consoleStubRoutes = collectStubPaths().map((fullPath) => ({
   path: fullPath.replace(/^\//, ""),
@@ -120,15 +128,25 @@ export const router = createBrowserRouter([
           { path: "workloads/jobs", Component: JobsPage },
           { path: "workloads/cronjobs", Component: CronJobsPage },
           { path: "workloads/topology", Component: TopologyPage },
-          { path: "gitops", loader: () => redirect("/gitops/rollouts") },
+          { path: "gitops", loader: () => redirect("/gitops/overview") },
+          { path: "gitops/overview", Component: GitOpsDashboardPage },
           { path: "gitops/rollouts", Component: GitOpsRolloutsPage },
           { path: "gitops/argocd", Component: GitOpsArgoCdPage },
           { path: "gitops/applications", Component: GitOpsApplicationsPage },
           { path: "gitops/applicationsets", Component: GitOpsApplicationSetsPage },
+          { path: "gitops/appprojects", Component: GitOpsAppProjectsPage },
+          { path: "gitops/imageupdaters", Component: GitOpsImageUpdaterPage },
+          { path: "gitops/agents", Component: GitOpsAgentSpokesPage },
+          { path: "gitops/promotions", Component: GitOpsPromotionsPage },
+          { path: "gitops/settings", Component: GitOpsSettingsPage },
+          { path: "gitops/create", Component: GitOpsCreateWizardPage },
           { path: "gitops/ns/:namespace/rollouts/:name", Component: GitOpsRolloutDetailPage },
           { path: "gitops/ns/:namespace/argocd/:name", Component: GitOpsArgoCdDetailPage },
           { path: "gitops/ns/:namespace/applications/:name", Component: GitOpsApplicationDetailPage },
           { path: "gitops/ns/:namespace/applicationsets/:name", Component: GitOpsApplicationSetDetailPage },
+          { path: "gitops/ns/:namespace/appprojects/:name", Component: GitOpsAppProjectDetailPage },
+          { path: "gitops/ns/:namespace/imageupdaters/:name", Component: GitOpsImageUpdaterDetailPage },
+          { path: "gitops/ns/:namespace/promotions/:name", Component: GitOpsPromotionDetailPage },
           { path: "networking", Component: ServicesPage },
           { path: "networking/topology", Component: NetworkTopologyPage },
           { path: "networking/routes", Component: RoutesPage },
@@ -136,6 +154,10 @@ export const router = createBrowserRouter([
           { path: "networking/physical-networks", Component: PhysicalNetworksPage },
           { path: "networking/networkpolicies", Component: NetworkPoliciesPage },
           { path: "networking/nodenetworkconfigurationpolicy", Component: NodeNetworkConfigurationPolicyPage },
+          {
+            path: "networking/nodenetworkconfigurationpolicy/:name",
+            Component: NncpDetailPage,
+          },
           { path: "networking/networkattachmentdefinitions", Component: NetworkAttachmentDefinitionsPage },
           {
             path: "networking/networkattachmentdefinitions/:namespace/:name",
@@ -176,6 +198,7 @@ export const router = createBrowserRouter([
           { path: "administration/cluster-update/agent-mode", Component: AgentModePage },
           { path: "administration/cluster-settings", Component: ClusterSettingsPage },
           { path: "administration/namespaces", Component: NamespacesPage },
+          { path: "administration/namespaces/:name", Component: NamespaceDetailPage },
           { path: "administration/resource-quotas", Component: ResourceQuotasPage },
           { path: "administration/limit-ranges", Component: LimitRangesPage },
           { path: "administration/custom-resource-definitions", Component: CustomResourceDefinitionsPage },

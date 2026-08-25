@@ -114,6 +114,7 @@ Definition of done
 
 Design artifacts
 [Any existing designs for this effort that should be built upon? Otherwise leave blank until deliverables are created and linked here.]
+Prototype links (when a prototype exists): https://openshift-platform-prototype.vercel.app/{path from src/app/routes.ts} — specific list or details page, not the site root. Never use openshift-console-mock.vercel.app or /k8s/ns/... console-core paths.
 ```
 
 ## Step 4: Confirm and Create
@@ -171,6 +172,7 @@ Definition of done
 
 Design artifacts
 [Any existing designs for this effort that should be built upon? Otherwise leave blank until deliverables are created and linked here.]
+Prototype links (when a prototype exists): https://openshift-platform-prototype.vercel.app/{path from src/app/routes.ts} — specific list or details page, not the site root. Never use openshift-console-mock.vercel.app or /k8s/ns/... console-core paths.
 ```
 
 ## Step 4: Confirm and Create

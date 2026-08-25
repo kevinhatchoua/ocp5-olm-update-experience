@@ -22,6 +22,7 @@
     "@patternfly/react-data-view": "6.5.0",
     "@patternfly/react-icons": "6.5.0",
     "@patternfly/react-table": "6.5.0",
+    "@patternfly/react-topology": "^6.5.0",
     "@vercel/analytics": "^2.0.1",
     "react": "18.3.1",
     "react-dnd": "16.0.1",

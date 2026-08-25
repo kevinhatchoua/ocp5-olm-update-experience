@@ -86,6 +86,8 @@ type NodeNetworkTableListProps = {
   onResourceLifecycleAction?: (target: ResourceLifecycleTarget, action: ResourceLifecycleAction) => void;
   onNotice?: (notice: { title: string; variant: "success" | "warning" | "info" }) => void;
   onResourceDeleted?: (resourceId: string) => void;
+  /** e.g. Topology/List toggle — shown in the table toolbar (topology chrome is hidden in list mode). */
+  toolbarActions?: ReactNode;
 };
 
 function groupInterfaceList(interfaces: NodeNetworkStateRow["interfaces"]) {
@@ -165,6 +167,7 @@ export default function NodeNetworkTableList({
   onResourceLifecycleAction,
   onNotice,
   onResourceDeleted,
+  toolbarActions,
 }: NodeNetworkTableListProps) {
   const navigate = useNavigate();
   const { filters, onSetFilters, clearAllFilters } = useDataViewFilters<NnsListFilters>({
@@ -226,7 +229,7 @@ export default function NodeNetworkTableList({
               values={filters}
               onChange={(_id, partial) => onSetFilters(partial)}
               breakpoint="xl"
-              midContent={null}
+              midContent={toolbarActions ?? null}
             >
               <DataViewTextFilter
                 title="Name"

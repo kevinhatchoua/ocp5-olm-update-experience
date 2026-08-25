@@ -13,6 +13,9 @@ import {
   Dropdown,
   DropdownItem,
   DropdownList,
+  EmptyState,
+  EmptyStateBody,
+  EmptyStateVariant,
   Flex,
   FlexItem,
   Label,
@@ -76,6 +79,52 @@ type RevisionRow = {
   canRollback: boolean;
   kind: "ReplicaSet" | "Rollout";
 };
+
+type ExperimentRow = {
+  name: string;
+  phase: "Successful" | "Running" | "Failed";
+  duration: string;
+  metrics: string;
+};
+
+function experimentsFor(rolloutName: string): ExperimentRow[] {
+  if (rolloutName === "rollout-canary-api" || rolloutName.includes("canary")) {
+    return [
+      {
+        name: `${rolloutName}-analysis-1`,
+        phase: "Successful",
+        duration: "4m12s",
+        metrics: "success-rate 99.1% · latency p99 82ms",
+      },
+      {
+        name: `${rolloutName}-experiment-web`,
+        phase: "Running",
+        duration: "1m40s",
+        metrics: "error-rate 0.4% · cpu 42%",
+      },
+    ];
+  }
+  if (rolloutName === "rollout-bluegreen") {
+    return [
+      {
+        name: `${rolloutName}-pre-promote`,
+        phase: "Failed",
+        duration: "2m05s",
+        metrics: "success-rate 71% · error-rate 8.2%",
+      },
+    ];
+  }
+  return [];
+}
+
+function ExperimentPhase({ phase }: { phase: ExperimentRow["phase"] }) {
+  const color = phase === "Successful" ? "green" : phase === "Running" ? "blue" : "red";
+  return (
+    <Label color={color} isCompact>
+      {phase}
+    </Label>
+  );
+}
 
 function buildRevisions(name: string, status: string, promoted: boolean, showScale: boolean, showRolloutRow: boolean): RevisionRow[] {
   const previewInfo = promoted
@@ -208,6 +257,7 @@ export default function GitOpsRolloutDetailPage() {
     () => buildRevisions(rolloutName, statusText, st.promoted, showScale, showRolloutRow),
     [rolloutName, statusText, st.promoted, showScale, showRolloutRow]
   );
+  const experimentRows = useMemo(() => experimentsFor(rolloutName), [rolloutName]);
   const filteredRevisions = useMemo(() => {
     const q = (filters.name ?? "").trim().toLowerCase();
     if (!q) return revisions;
@@ -405,6 +455,7 @@ export default function GitOpsRolloutDetailPage() {
             <Tab eventKey="details" title={<TabTitleText>Details</TabTitleText>} />
             <Tab eventKey="yaml" title={<TabTitleText>YAML</TabTitleText>} />
             <Tab eventKey="revisions" title={<TabTitleText>Revisions</TabTitleText>} />
+            <Tab eventKey="experiments" title={<TabTitleText>Experiments</TabTitleText>} />
             <Tab eventKey="pods" title={<TabTitleText>Pods</TabTitleText>} />
             <Tab eventKey="events" title={<TabTitleText>Events</TabTitleText>} />
           </Tabs>
@@ -581,6 +632,74 @@ export default function GitOpsRolloutDetailPage() {
                 </DescriptionListDescription>
               </DescriptionListGroup>
             </DescriptionList>
+          ) : activeTab === "experiments" ? (
+            <FlexItem grow={{ default: "grow" }} alignSelf={{ default: "alignSelfStretch" }}>
+              <Title headingLevel="h2" size="lg" className="pf-v6-u-mb-md">
+                Experiments / AnalysisRuns
+              </Title>
+              <Content component="p" className="pf-v6-u-mb-md pf-v6-u-color-200">
+                Additive to Rollout domain actions (Promote, Abort, Restart, Retry — HPUX-1943). Use the
+                actions menu for promote/abort; this tab tracks AnalysisRuns / Experiments only.
+              </Content>
+              {experimentRows.length === 0 ? (
+                <EmptyState
+                  variant={EmptyStateVariant.sm}
+                  titleText="No experiments"
+                  headingLevel="h3"
+                >
+                  <EmptyStateBody>
+                    This Rollout has no AnalysisRuns or Experiments yet.
+                  </EmptyStateBody>
+                </EmptyState>
+              ) : (
+                <div className="ocs-pods-list__panel">
+                  <DataView ouiaId="rollout-experiments" className={OCS_PROTOTYPE_DATAVIEW_CLASS}>
+                    <OcsPrototypeListTable ariaLabel="Rollout experiments">
+                      <Thead>
+                        <Tr>
+                          <Th dataLabel="Name">
+                            <PlainTableHeader label="Name" />
+                          </Th>
+                          <Th dataLabel="Phase">
+                            <PlainTableHeader label="Phase" />
+                          </Th>
+                          <Th dataLabel="Duration">
+                            <PlainTableHeader label="Duration" />
+                          </Th>
+                          <Th dataLabel="Metrics">
+                            <PlainTableHeader label="Metrics summary" />
+                          </Th>
+                        </Tr>
+                      </Thead>
+                      <Tbody>
+                        {experimentRows.map((row) => (
+                          <Tr key={row.name}>
+                            <Td dataLabel="Name">
+                              <Button
+                                variant="link"
+                                isInline
+                                onClick={() =>
+                                  setToast(`Opened ${row.name} (prototype detail stub).`)
+                                }
+                              >
+                                {row.name}
+                              </Button>
+                            </Td>
+                            <Td dataLabel="Phase">
+                              <ExperimentPhase phase={row.phase} />
+                            </Td>
+                            <Td dataLabel="Duration">{row.duration}</Td>
+                            <Td dataLabel="Metrics">
+                              <Content component="small">{row.metrics}</Content>
+                            </Td>
+                          </Tr>
+                        ))}
+                      </Tbody>
+                    </OcsPrototypeListTable>
+                  </DataView>
+                </div>
+              )}
+            </FlexItem>
           ) : (
             <Content component="p" className="pf-v6-u-color-200">
               {activeTab.charAt(0).toUpperCase()}

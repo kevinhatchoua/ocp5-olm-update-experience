@@ -54,6 +54,73 @@
  * Cards: no drop shadow — surface separation comes from glass border + background tokens
  * (matches OCP console Overview; elevation shadows are reserved for overlays/menus).
  */
+
+/**
+ * Global: floating overlays stay opaque (menus, dropdowns, popovers).
+ *
+ * PatternFly 6 Glass mode handbook:
+ * - Glass applies to Page / Masthead / Nav (and opt-in Card, Drawer, Hero, Panel via isGlass).
+ * - Menus/popovers are NOT glass surfaces; they use
+ *   `--pf-t--global--background--color--floating--default` (solid).
+ * - In glass theme, `--pf-t--global--background--color--primary--default` becomes ~50% rgba —
+ *   never use primary for dropdown panels or the content will show through.
+ * - No glass-on-glass; floating overlays must remain solid for contrast/legibility.
+ */
+.pf-v6-c-menu,
+.pf-v6-c-menu__content,
+.pf-v6-c-popover,
+.pf-v6-c-popover__content,
+.pf-v6-c-popover__arrow,
+.pf-v6-c-dropdown__menu,
+.pf-v6-c-select__menu,
+.pf-v6-c-options-menu__menu {
+  --pf-v6-c-menu--BackgroundColor: var(--pf-t--global--background--color--floating--default);
+  --pf-v6-c-popover__content--BackgroundColor: var(--pf-t--global--background--color--floating--default);
+  --pf-v6-c-popover__arrow--BackgroundColor: var(--pf-t--global--background--color--floating--default);
+  background-color: var(--pf-t--global--background--color--floating--default) !important;
+  background-image: none !important;
+  opacity: 1 !important;
+  isolation: isolate;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  mix-blend-mode: normal;
+}
+
+html.pf-v6-theme-glass .pf-v6-c-menu,
+html.pf-v6-theme-glass .pf-v6-c-menu__content,
+html.pf-v6-theme-glass .pf-v6-c-popover__content,
+html.pf-v6-theme-glass .pf-v6-c-popover__arrow,
+html.pf-v6-theme-glass .pf-v6-c-dropdown__menu,
+html.pf-v6-theme-glass .pf-v6-c-select__menu,
+html.pf-v6-theme-glass .pf-v6-c-options-menu__menu {
+  /* Re-assert solid floating fill — never inherit glass primary rgba. */
+  --pf-v6-c-menu--BackgroundColor: var(--pf-t--global--background--color--floating--default);
+  background-color: var(--pf-t--global--background--color--floating--default) !important;
+}
+
+html.pf-v6-theme-glass.pf-v6-theme-dark .pf-v6-c-menu,
+html.pf-v6-theme-glass.pf-v6-theme-dark .pf-v6-c-menu__content,
+html.pf-v6-theme-glass.dark .pf-v6-c-menu,
+html.pf-v6-theme-glass.dark .pf-v6-c-menu__content,
+html.pf-v6-theme-glass.pf-v6-theme-dark .pf-v6-c-popover__content,
+html.pf-v6-theme-glass.dark .pf-v6-c-popover__content {
+  background-color: var(--pf-color-gray-80, #292929) !important;
+}
+
+html.pf-v6-theme-glass:not(.pf-v6-theme-dark):not(.dark) .pf-v6-c-menu,
+html.pf-v6-theme-glass:not(.pf-v6-theme-dark):not(.dark) .pf-v6-c-menu__content,
+html.pf-v6-theme-glass:not(.pf-v6-theme-dark):not(.dark) .pf-v6-c-popover__content {
+  background-color: var(--pf-color-white, #ffffff) !important;
+}
+
+.pf-v6-c-tooltip,
+.pf-v6-c-tooltip__content {
+  opacity: 1;
+  isolation: isolate;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
 html.pf-v6-theme-glass .pf-v6-c-card.pf-m-glass,
 html.pf-v6-theme-glass .pf-v6-c-card.pf-m-glass:where(:hover, :focus-within) {
   --pf-v6-c-card--m-glass--BoxShadow: none;
@@ -877,7 +944,36 @@ html:not(.dark) .ocs-masthead-cluster-switch.pf-v6-c-switch {
 
 .ocs-console-toast-group.pf-v6-c-alert-group.pf-m-toast {
   --pf-v6-c-alert-group--m-toast--InsetBlockStart: calc(var(--ocs-console-masthead-height, 3.75rem) + var(--pf-t--global--spacer--md));
+  --pf-v6-c-alert-group--m-toast--InsetInlineEnd: var(--pf-t--global--spacer--md);
   --pf-v6-c-alert-group--m-toast--ZIndex: var(--pf-t--global--z-index--2xl, 600);
+}
+
+/* Toast alerts are floating overlays — never glass/transparent (PF Alert + Glass handbook). */
+.ocs-console-toast-group.pf-v6-c-alert-group.pf-m-toast .pf-v6-c-alert {
+  --pf-v6-c-alert--BackgroundColor: var(--pf-t--global--background--color--floating--default);
+  background-color: var(--pf-color-gray-80, #292929);
+  opacity: 1;
+  isolation: isolate;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  box-shadow: var(--pf-t--global--box-shadow--lg);
+}
+
+html:not(.dark):not(.pf-v6-theme-dark) .ocs-console-toast-group.pf-v6-c-alert-group.pf-m-toast .pf-v6-c-alert {
+  background-color: var(--pf-color-white, #ffffff);
+}
+
+.ocs-console-notification-drawer.pf-v6-c-notification-drawer {
+  height: 100%;
+  background-color: var(--pf-t--global--background--color--floating--default);
+  opacity: 1;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+html.pf-v6-theme-glass.dark .ocs-console-notification-drawer.pf-v6-c-notification-drawer,
+html.pf-v6-theme-glass.pf-v6-theme-dark .ocs-console-notification-drawer.pf-v6-c-notification-drawer {
+  background-color: var(--pf-color-gray-80, #292929);
 }
 
 .ocs-lightspeed-fab.pf-v6-c-button.pf-m-plain {
@@ -1319,6 +1415,8 @@ html .ocs-console-page.pf-v6-c-page {
   --pf-v6-c-page__main-section--m-secondary--BackgroundColor: transparent;
   --pf-v6-c-page__main-tabs--BackgroundColor: transparent;
   --pf-v6-c-page__main-breadcrumb--BackgroundColor: transparent;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 /** Home / stub PageSection, or any full-width app section without Breadcrumbs. */
@@ -1339,6 +1437,35 @@ html .ocs-console-page.pf-v6-c-page {
   padding-block-start: var(--ocs-app-page-pad-t);
   padding-inline: var(--ocs-app-page-pad-x);
   padding-block-end: var(--ocs-app-page-pad-b);
+}
+
+/* OCP namespace bar: sits above breadcrumbs on every console page. */
+.ocs-ocp-namespace-bar-strip {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  padding-block: var(--pf-t--global--spacer--sm);
+  padding-inline: var(--ocs-app-page-pad-x);
+  border-block-end: var(--pf-t--global--border--width--regular) solid var(--pf-t--global--border--color--default);
+}
+
+.ocs-ocp-namespace-toggle.pf-v6-c-menu-toggle.pf-m-plain.pf-m-text {
+  --pf-v6-c-menu-toggle--PaddingBlockStart: 0;
+  --pf-v6-c-menu-toggle--PaddingBlockEnd: 0;
+  --pf-v6-c-menu-toggle--PaddingInlineStart: 0;
+  --pf-v6-c-menu-toggle--PaddingInlineEnd: 0;
+  --pf-v6-c-menu-toggle--MinHeight: auto;
+  --pf-v6-c-menu-toggle--after--BorderWidth: 0;
+  --pf-v6-c-menu-toggle--ColumnGap: var(--pf-t--global--spacer--xs);
+  background-color: transparent;
+  font-size: var(--pf-t--global--font--size--body--default);
+  font-weight: var(--pf-t--global--font--weight--body--default);
+}
+
+.ocs-ocp-namespace-toggle.pf-v6-c-menu-toggle.pf-m-plain.pf-m-text:hover,
+.ocs-ocp-namespace-toggle.pf-v6-c-menu-toggle.pf-m-plain.pf-m-text:focus-visible,
+.ocs-ocp-namespace-toggle.pf-v6-c-menu-toggle.pf-m-plain.pf-m-text.pf-m-expanded {
+  background-color: transparent;
 }
 
 .ocs-app-page-outer--end-3xl {
@@ -2647,8 +2774,23 @@ html.dark .ocs-net-topo-panel__stage .ocs-net-topo-create-drawer.pf-v6-c-drawer_
   background: var(--pf-t--global--background--color--secondary--default);
 }
 
-.ocs-node-network-table__row--selected td {
-  background: var(--pf-t--global--background--color--highlight--default);
+/* Selected row: readable contrast (never PF highlight yellow on light text). */
+.ocs-node-network-table__row--selected > td {
+  background-color: var(--pf-t--global--background--color--secondary--default) !important;
+  color: var(--pf-t--global--text--color--regular) !important;
+  box-shadow: inset 0.25rem 0 0 var(--pf-t--global--border--color--brand--default);
+}
+
+.ocs-node-network-table__row--selected > td .ocs-node-network-table__resource-link,
+.ocs-node-network-table__row--selected > td .pf-v6-c-button.pf-m-link,
+.ocs-node-network-table__row--selected > td .pf-v6-c-content {
+  color: var(--pf-t--global--text--color--link--default, var(--pf-t--global--text--color--regular)) !important;
+}
+
+html.dark .ocs-node-network-table__row--selected > td,
+html.pf-v6-theme-dark .ocs-node-network-table__row--selected > td {
+  background-color: var(--pf-t--global--background--color--secondary--hover, #3c3f42) !important;
+  color: var(--pf-t--global--text--color--regular) !important;
 }
 
 .ocs-node-network-table__resource-link {
@@ -2660,7 +2802,41 @@ html.dark .ocs-net-topo-panel__stage .ocs-net-topo-create-drawer.pf-v6-c-drawer_
 }
 
 .ocs-net-topo-panel__drawer-body--table {
+  display: flex;
+  flex-direction: column;
   padding: 0;
+  overflow: auto;
+}
+
+.ocs-net-topo-panel__drawer-body--table .ocs-pods-list__panel,
+.ocs-net-topo-panel__drawer-body--table .ocs-io-dataview {
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+/* List-mode DataView toolbar: consistent filter control alignment */
+.ocs-net-topo-panel__drawer-body--table .ocs-io-dataview-toolbar.pf-v6-c-toolbar {
+  padding-block: var(--pf-t--global--spacer--sm);
+  padding-inline: var(--pf-t--global--spacer--md);
+}
+
+.ocs-net-topo-panel__drawer-body--table .ocs-io-filters-mid__group.pf-v6-c-toolbar__group {
+  align-items: center;
+  column-gap: var(--pf-t--global--spacer--md);
+  row-gap: var(--pf-t--global--spacer--sm);
+}
+
+.ocs-net-topo-panel__list-mode {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
+}
+
+.ocs-net-topo-panel__list-mode > .pf-v6-c-drawer {
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .ocs-net-topo-panel__toolbar {
@@ -3689,6 +3865,11 @@ html.dark .ocs-net-topo-panel__canvas {
 
 .ocs-net-topo-canvas-menu .pf-v6-c-menu {
   min-width: 12.5rem;
+  background-color: var(--pf-t--global--background--color--floating--default);
+  opacity: 1;
+  isolation: isolate;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
 }
 
 .ocs-net-topo-page-desc {
