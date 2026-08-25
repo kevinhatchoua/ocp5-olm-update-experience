@@ -279,7 +279,7 @@
   stroke: var(--pf-t--global--color--nonstatus--gray--default);
 }
 
-/* Rounded hull groups (console Application-style) */
+/* Rounded hull groups — outline follows the node cluster, not a rectangle */
 .ocs-pf-topo-hull .pf-topology__group__background {
   fill: var(--pf-t--global--background--color--primary--default);
   fill-opacity: 0.55;

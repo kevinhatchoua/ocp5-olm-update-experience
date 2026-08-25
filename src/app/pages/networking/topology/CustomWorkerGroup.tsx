@@ -52,6 +52,7 @@ const WorkerGroupInner = observer(
         collapsible={false}
         showLabel
         truncateLength={28}
+        hulledOutline
       />
     );
   }

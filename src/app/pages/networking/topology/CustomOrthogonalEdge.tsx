@@ -10,6 +10,11 @@ import {
   type Node,
   type WithSelectionProps,
 } from "@patternfly/react-topology";
+import {
+  elbowBendpointsInsideHull,
+  paddedHullPolygon,
+  sharedParentGroup,
+} from "./groupHull";
 import { roundedElbowBendpoints } from "./roundedEdgePath";
 import { getPathHighlightIds, subscribePathHighlight } from "./topologyActionHandlers";
 import { isConnectionEdgeData, type ConnectionEdgeData } from "./topologyNodeData";
@@ -51,6 +56,12 @@ function elbowBendpoints(start: Point, end: Point): Point[] {
   return [new Point(midX, start.y), new Point(midX, end.y)];
 }
 
+function elbowsForEdge(element: Edge, start: Point, end: Point): Point[] {
+  const group = sharedParentGroup(element.getSourceAnchorNode(), element.getTargetAnchorNode());
+  if (!group) return elbowBendpoints(start, end);
+  return elbowBendpointsInsideHull(start, end, paddedHullPolygon(group));
+}
+
 function bendpointsMatch(current: Point[], next: Point[]) {
   if (current.length !== next.length) return false;
   return next.every((point, index) => almostEqual(point.x, current[index].x) && almostEqual(point.y, current[index].y));
@@ -71,7 +82,7 @@ function computeRoundedElbowFromNodes(element: Edge): Point[] {
   const targetNode = element.getTargetAnchorNode();
   const start = sourceNode.getAnchor(AnchorEnd.source, element.getType()).getLocation(nodeCenter(targetNode));
   const end = targetNode.getAnchor(AnchorEnd.target, element.getType()).getLocation(nodeCenter(sourceNode));
-  const elbows = elbowBendpoints(start, end);
+  const elbows = elbowsForEdge(element, start, end);
   return roundedElbowBendpoints(start, elbows, end);
 }
 

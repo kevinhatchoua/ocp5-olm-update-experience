@@ -34,6 +34,7 @@ const LogicalLaneInner = observer(
       collapsible={false}
       showLabel
       truncateLength={40}
+      hulledOutline
     />
   )
 );
