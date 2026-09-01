@@ -1,7 +1,7 @@
 import {
   ColaGroupsLayout,
   ConcentricLayout,
-  DagreLayout,
+  DagreGroupsLayout,
   ForceLayout,
   type Graph,
   type Layout,
@@ -28,7 +28,7 @@ export const networkTopologyLayoutFactory: LayoutFactory = (
 ): Layout | undefined => {
   switch (type) {
     case "DagreTB":
-      return new DagreLayout(graph, {
+      return new DagreGroupsLayout(graph, {
         ...DAGRE_COMPACT,
         rankdir: "TB",
         ranksep: 64,
@@ -61,7 +61,7 @@ export const networkTopologyLayoutFactory: LayoutFactory = (
       });
     case "DagreLR":
     default:
-      return new DagreLayout(graph, {
+      return new DagreGroupsLayout(graph, {
         ...DAGRE_COMPACT,
         rankdir: "LR",
         ranksep: 56,

@@ -75,6 +75,7 @@ import { resolveConfigurePath } from "./topologyConfigureNavigate";
 import { useNetworkTopologyModel } from "./useNetworkTopologyModel";
 import { type TopologyPerspective, type TopologyResourceFilter, computeFilterCounts } from "./topologyPerspective";
 import { DEFAULT_TOPOLOGY_LAYOUT, type TopologyLayoutId } from "./topologyLayouts";
+import { packGraphGroupChildren } from "./topologyGroupLayout";
 import { focusTopologySelection } from "./topologyFocus";
 import TopologyMinimap from "./TopologyMinimap";
 import { TopologyLightSpeedAction } from "./TopologyLightSpeedAction";
@@ -272,8 +273,7 @@ export default function NetworkTopologyView({
 
   const controllerRef = useRef<Visualization | null>(null);
   const fitAfterLayoutRef = useRef(true);
-  const layoutScopeRef = useRef(`${layoutName}-${perspective}`);
-  const prevPerspectiveRef = useRef<TopologyPerspective>(perspective);
+  const layoutScopeRef = useRef("");
   const prevModelStructureKeyRef = useRef("");
 
   const modelStructureKey = useMemo(() => {
@@ -296,18 +296,6 @@ export default function NetworkTopologyView({
     return () => window.clearTimeout(timer);
   }, [searchTerm]);
 
-  useEffect(() => {
-    if (prevPerspectiveRef.current === perspective) {
-      return;
-    }
-    const fromPerspective = prevPerspectiveRef.current;
-    prevPerspectiveRef.current = perspective;
-    if (perspective !== "host" && fromPerspective === "host") {
-      setLayoutId((current) =>
-        current === "DagreLR" || current === "DagreTB" ? "ClusterPerspective" : current
-      );
-    }
-  }, [perspective]);
 
   const controller = useMemo(() => {
     const visualization = new Visualization();
@@ -317,6 +305,11 @@ export default function NetworkTopologyView({
       setSelectedIds(Array.isArray(ids) ? ids : []);
     });
     visualization.addEventListener(GRAPH_LAYOUT_END_EVENT, () => {
+      try {
+        packGraphGroupChildren(visualization.getGraph());
+      } catch {
+        /* graph may not be ready yet */
+      }
       if (!fitAfterLayoutRef.current) return;
       fitAfterLayoutRef.current = false;
       try {
@@ -334,39 +327,43 @@ export default function NetworkTopologyView({
   useEffect(() => {
     const layoutScope = `${layoutName}-${perspective}`;
     const shouldFit = layoutScopeRef.current !== layoutScope;
-    layoutScopeRef.current = layoutScope;
-    fitAfterLayoutRef.current = shouldFit;
-
     const structureChanged = prevModelStructureKeyRef.current !== modelStructureKey;
-    prevModelStructureKeyRef.current = modelStructureKey;
 
     controller.fromModel(model, true);
     if (!structureChanged && !shouldFit) {
       return;
     }
 
-    const graph = controller.getGraph();
-    const savedScale = graph.getScale();
-    const savedPosition = new Point(graph.getPosition().x, graph.getPosition().y);
+    layoutScopeRef.current = layoutScope;
+    prevModelStructureKeyRef.current = modelStructureKey;
 
-    requestAnimationFrame(() => {
-      try {
-        if (shouldFit) {
-          const type = graph.getLayout();
-          if (type) {
-            graph.setLayout(undefined);
-            graph.setLayout(type);
-          }
-        }
+    try {
+      action(() => {
+        const graph = controller.getGraph();
+        const savedScale = graph.getScale();
+        const savedPosition = new Point(graph.getPosition().x, graph.getPosition().y);
+        const type = graph.getLayout() ?? layoutName;
+        // setLayout can emit GRAPH_LAYOUT_END; do not consume the fit flag there.
+        fitAfterLayoutRef.current = false;
+        graph.setLayout(undefined);
+        graph.setLayout(type);
+        fitAfterLayoutRef.current = shouldFit;
         graph.layout();
-        if (!shouldFit) {
+        packGraphGroupChildren(graph);
+        if (shouldFit) {
+          try {
+            graph.fit(120);
+          } catch {
+            /* graph may not be ready yet */
+          }
+        } else {
           graph.setScale(savedScale);
           graph.setPosition(savedPosition);
         }
-      } catch {
-        /* graph may not be ready yet */
-      }
-    });
+      })();
+    } catch {
+      /* graph may not be ready yet */
+    }
   }, [controller, model, modelStructureKey, layoutName, perspective]);
 
   useEffect(() => {
@@ -767,6 +764,11 @@ export default function NetworkTopologyView({
       setPerspective(next);
       setSelectedIds([]);
       setFilterKind("all");
+      if (next !== "host") {
+        setLayoutId((current) =>
+          current === "DagreLR" || current === "DagreTB" ? "ClusterPerspective" : current
+        );
+      }
     },
     searchTerm,
     onSearchTermChange: setSearchTerm,
