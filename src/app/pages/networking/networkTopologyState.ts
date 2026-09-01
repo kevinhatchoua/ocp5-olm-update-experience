@@ -1,7 +1,8 @@
 import { useCallback, useSyncExternalStore } from "react";
 import {
-  WORKER_NODE_GROUPS,
-  TOPOLOGY_WORKER_CATALOG,
+  getUdnRecordsForScale,
+  getWorkerGroupsForScale,
+  topologyWorkerCatalogFromGroups,
   attachStandaloneResourceToGroup,
   bridgeAssignmentKey,
   bridgeLabelFromAssignmentKey,
@@ -18,9 +19,10 @@ import {
   type ResourceInstallStatus,
   type StandaloneTopologyResource,
   type TopologyCrossEdge,
+  type TopologyDataScale,
   type WorkerNodeGroup,
 } from "./networkTopologyData";
-import { getUdnRecords, type UdnRecord, udnDetailPath } from "./networkingMockData";
+import { type UdnRecord, udnDetailPath } from "./networkingMockData";
 
 export type ResourceLifecycleAction = "pause" | "stop" | "restart" | "delete";
 
@@ -37,31 +39,58 @@ function lifecycleStatusForAction(action: Exclude<ResourceLifecycleAction, "dele
   return "installing";
 }
 
-function cloneGroups(): WorkerNodeGroup[] {
-  return WORKER_NODE_GROUPS.map((group) => ({
+function cloneGroups(scale: TopologyDataScale): WorkerNodeGroup[] {
+  return getWorkerGroupsForScale(scale).map((group) => ({
     ...group,
     resources: group.resources.map((r) => ({ ...r })),
     edges: group.edges.map((e) => ({ ...e })),
   }));
 }
 
-function buildInitialLogicalLayer(): {
+function buildInitialLogicalLayer(
+  scale: TopologyDataScale,
+  groups: WorkerNodeGroup[]
+): {
   standaloneResources: StandaloneTopologyResource[];
   networkNodeAssignments: NetworkNodeAssignments;
 } {
-  const records = getUdnRecords();
+  const records = getUdnRecordsForScale(scale);
   const standaloneResources = records.map((record, index) =>
     logicalNetworkFromRecord(record, index, udnDetailPath(record))
   );
-  const networkNodeAssignments: NetworkNodeAssignments = Object.fromEntries(
-    standaloneResources
-      .filter(isLogicalNetworkStandalone)
-      .map((resource) => [resource.id, [] as string[]])
-  );
+  const allWorkerIds = groups.map((group) => group.id);
+  const networkNodeAssignments: NetworkNodeAssignments = {};
+
+  standaloneResources.filter(isLogicalNetworkStandalone).forEach((resource, index) => {
+    if (resource.kind === "cudn") {
+      networkNodeAssignments[resource.id] = allWorkerIds.filter((_, workerIndex) => workerIndex % 2 === 0);
+      return;
+    }
+    const stride = 3 + (index % 2);
+    networkNodeAssignments[resource.id] = allWorkerIds.filter((_, workerIndex) => workerIndex % stride === 0);
+  });
+
   return { standaloneResources, networkNodeAssignments };
 }
 
+function buildTopologySnapshot(scale: TopologyDataScale): TopologySnapshot {
+  const groups = cloneGroups(scale);
+  const logical = buildInitialLogicalLayer(scale, groups);
+  return {
+    scale,
+    groups,
+    standaloneResources: logical.standaloneResources,
+    crossEdges: crossEdgesForAssignments(logical.networkNodeAssignments, logical.standaloneResources, groups),
+    networkNodeAssignments: logical.networkNodeAssignments,
+    revealedGroupIds: groups.map((group) => group.id),
+    provisionGeneration: 0,
+    fitContentToken: 1,
+    provisionedBridgeConfig: null,
+  };
+}
+
 type TopologySnapshot = {
+  scale: TopologyDataScale;
   groups: WorkerNodeGroup[];
   standaloneResources: StandaloneTopologyResource[];
   crossEdges: TopologyCrossEdge[];
@@ -72,20 +101,7 @@ type TopologySnapshot = {
   provisionedBridgeConfig: NodeNetworkConfigurationInput | null;
 };
 
-const initialGroups = cloneGroups();
-const initialLogical = buildInitialLogicalLayer();
-const initialRevealedGroupIds = ["worker-0"];
-
-let snapshot: TopologySnapshot = {
-  groups: initialGroups,
-  standaloneResources: initialLogical.standaloneResources,
-  crossEdges: [],
-  networkNodeAssignments: initialLogical.networkNodeAssignments,
-  revealedGroupIds: initialRevealedGroupIds,
-  provisionGeneration: 0,
-  fitContentToken: 0,
-  provisionedBridgeConfig: null,
-};
+let snapshot: TopologySnapshot = buildTopologySnapshot("scale");
 
 const listeners = new Set<() => void>();
 
@@ -100,6 +116,19 @@ function subscribe(listener: () => void) {
 
 function getSnapshot(): TopologySnapshot {
   return snapshot;
+}
+
+export function getTopologyDataScale(): TopologyDataScale {
+  return snapshot.scale;
+}
+
+export function setTopologyDataScale(scale: TopologyDataScale): void {
+  if (snapshot.scale === scale) return;
+  snapshot = {
+    ...buildTopologySnapshot(scale),
+    fitContentToken: snapshot.fitContentToken + 1,
+  };
+  emit();
 }
 
 function syncCrossEdgesFromAssignments() {
@@ -180,7 +209,7 @@ export function useNetworkTopologyState() {
       if (assigned) {
         if (current.includes(workerId)) return;
         const nextWorkers = [...current, workerId];
-        const worker = TOPOLOGY_WORKER_CATALOG.find((entry) => entry.id === workerId);
+        const worker = topologyWorkerCatalogFromGroups(snapshot.groups).find((entry) => entry.id === workerId);
         const group = snapshot.groups.find((entry) => entry.id === workerId);
         if (!worker || !group) return;
 
@@ -211,7 +240,6 @@ export function useNetworkTopologyState() {
           groups: nextGroups,
           standaloneResources: nextStandalones,
           revealedGroupIds,
-          fitContentToken: snapshot.fitContentToken + 1,
         };
       } else {
         const nextWorkers = current.filter((id) => id !== workerId);
@@ -230,7 +258,6 @@ export function useNetworkTopologyState() {
               edges: group.edges.filter((edge) => edge.from !== standaloneId && edge.to !== standaloneId),
             };
           }),
-          fitContentToken: snapshot.fitContentToken + 1,
         };
       }
 
@@ -260,7 +287,6 @@ export function useNetworkTopologyState() {
       ...snapshot,
       networkNodeAssignments: nextAssignments,
       revealedGroupIds,
-      fitContentToken: snapshot.fitContentToken + 1,
     };
     syncCrossEdgesFromAssignments();
     emit();
@@ -280,7 +306,6 @@ export function useNetworkTopologyState() {
         ...snapshot.networkNodeAssignments,
         [id]: [],
       },
-      fitContentToken: snapshot.fitContentToken + 1,
     };
     syncCrossEdgesFromAssignments();
     emit();
@@ -303,7 +328,6 @@ export function useNetworkTopologyState() {
       },
       provisionedBridgeConfig: bridgeConfig,
       provisionGeneration: snapshot.provisionGeneration + 1,
-      fitContentToken: snapshot.fitContentToken + 1,
     };
     syncCrossEdgesFromAssignments();
     emit();
@@ -323,7 +347,6 @@ export function useNetworkTopologyState() {
         revealedGroupIds: snapshot.revealedGroupIds.includes(groupId)
           ? snapshot.revealedGroupIds
           : [...snapshot.revealedGroupIds, groupId],
-        fitContentToken: snapshot.fitContentToken + 1,
       };
       syncCrossEdgesFromAssignments();
       emit();
@@ -370,7 +393,6 @@ export function useNetworkTopologyState() {
     snapshot = {
       ...snapshot,
       revealedGroupIds: [...snapshot.revealedGroupIds, ...unique],
-      fitContentToken: snapshot.fitContentToken + 1,
     };
     emit();
   }, []);
@@ -388,7 +410,6 @@ export function useNetworkTopologyState() {
       ...snapshot,
       revealedGroupIds: snapshot.revealedGroupIds.filter((id) => !idSet.has(id)),
       networkNodeAssignments: nextAssignments,
-      fitContentToken: snapshot.fitContentToken + 1,
     };
     syncCrossEdgesFromAssignments();
     emit();
@@ -418,7 +439,6 @@ export function useNetworkTopologyState() {
               ...snapshot.networkNodeAssignments,
               [bridgeKey]: [],
             },
-            fitContentToken: snapshot.fitContentToken + 1,
           };
         } else if (isPerWorkerBridge) {
           const workerId = target.groupId ?? target.resourceId.replace(/-br-localnet$/, "");
@@ -442,7 +462,6 @@ export function useNetworkTopologyState() {
               ...snapshot.networkNodeAssignments,
               [bridgeKey]: current.filter((id) => id !== workerId),
             },
-            fitContentToken: snapshot.fitContentToken + 1,
           };
         } else if (target.placement === "standalone") {
           snapshot = {
@@ -450,7 +469,6 @@ export function useNetworkTopologyState() {
             standaloneResources: snapshot.standaloneResources.filter(
               (resource) => resource.id !== target.resourceId
             ),
-            fitContentToken: snapshot.fitContentToken + 1,
           };
         } else {
           snapshot = {
@@ -465,7 +483,6 @@ export function useNetworkTopologyState() {
                 ),
               };
             }),
-            fitContentToken: snapshot.fitContentToken + 1,
           };
         }
         syncCrossEdgesFromAssignments();
@@ -480,7 +497,6 @@ export function useNetworkTopologyState() {
           standaloneResources: snapshot.standaloneResources.map((resource) =>
             resource.id === target.resourceId ? { ...resource, status: nextStatus } : resource
           ),
-          fitContentToken: snapshot.fitContentToken + 1,
         };
       } else if (target.groupId) {
         snapshot = {
@@ -494,7 +510,6 @@ export function useNetworkTopologyState() {
               ),
             };
           }),
-          fitContentToken: snapshot.fitContentToken + 1,
         };
       }
       emit();
@@ -504,6 +519,7 @@ export function useNetworkTopologyState() {
 
   return {
     ...state,
+    setTopologyDataScale,
     setGroups,
     setStandaloneResources,
     setCrossEdges,

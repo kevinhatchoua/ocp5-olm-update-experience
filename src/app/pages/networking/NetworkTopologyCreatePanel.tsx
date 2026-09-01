@@ -1,5 +1,7 @@
 import { DrawerActions, DrawerCloseButton, DrawerHead, Title } from "@patternfly/react-core";
 import NodeNetworkConfigurationWizard from "./NodeNetworkConfigurationWizard";
+import { TopologyLightSpeedAction } from "./topology/TopologyLightSpeedAction";
+import { topologyLightspeedContext } from "./topology/topologyLightspeed";
 import {
   CreateClusterUdnForm,
   CreateNadForm,
@@ -16,6 +18,29 @@ export const CREATE_RESOURCE_TITLES: Record<NetworkCreateResource, string> = {
   "cluster-user-defined-network": "Create ClusterUserDefinedNetwork",
   "node-network-configuration-policy": "Create NodeNetworkConfigurationPolicy",
 };
+
+const CREATE_LIGHTSPEED_SCENARIO: Record<NetworkCreateResource, string> = {
+  "node-network-configuration": "nnc",
+  "network-attachment-definition": "nad",
+  "user-defined-network": "udn",
+  "cluster-user-defined-network": "cudn",
+  "node-network-configuration-policy": "nncp",
+};
+
+function CreatePanelLightSpeedAssist({ resource }: { resource: NetworkCreateResource }) {
+  return (
+    <div className="ocs-net-topo-create-panel__lightspeed">
+      <TopologyLightSpeedAction
+        contextKey={topologyLightspeedContext("create", CREATE_LIGHTSPEED_SCENARIO[resource])}
+        intent="create"
+        variant="link"
+        isInline
+      >
+        Draft with LightSpeed
+      </TopologyLightSpeedAction>
+    </div>
+  );
+}
 
 export type NetworkTopologyNncWizardProps = {
   activeStep: number;
@@ -72,6 +97,7 @@ export default function NetworkTopologyCreatePanel({
         <Title headingLevel="h2" size="xl">
           {CREATE_RESOURCE_TITLES[resource]}
         </Title>
+        <CreatePanelLightSpeedAssist resource={resource} />
         <DrawerActions>
           <DrawerCloseButton onClick={onClose} />
         </DrawerActions>

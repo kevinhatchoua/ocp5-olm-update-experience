@@ -21,10 +21,6 @@ import {
   type WithDragNodeProps,
   type WithSelectionProps,
 } from "@patternfly/react-topology";
-import NetworkWiredIcon from "@patternfly/react-icons/dist/esm/icons/network-wired-icon";
-import ProjectDiagramIcon from "@patternfly/react-icons/dist/esm/icons/project-diagram-icon";
-import ShareAltIcon from "@patternfly/react-icons/dist/esm/icons/share-alt-icon";
-import ServerIcon from "@patternfly/react-icons/dist/esm/icons/server-icon";
 import { RESOURCE_INSTALL_STATUS_LABELS, RESOURCE_KIND_LABELS } from "../networkTopologyData";
 import { onTopologyCreateConnector } from "./createTopologyConnection";
 import { KIND_TOKEN_CLASS, STATUS_TOKEN_CLASS } from "./statusMap";
@@ -32,7 +28,12 @@ import {
   KIND_BADGE,
   KIND_BADGE_COLOR,
   KIND_BADGE_TEXT,
+  TYPE_BADGE_BORDER,
+  TYPE_BADGE_COLOR,
+  TYPE_BADGE_TEXT,
 } from "./topologyBadges";
+import { TopologyKindIcon } from "./topologyKindIcons";
+import { nodeShapeClass } from "./topologyNodeShapes";
 import {
   getPathHighlightIds,
   subscribePathHighlight,
@@ -72,13 +73,11 @@ function resourceTooltip(data: ResourceNodeData): string {
 }
 
 function KindIcon({ kind }: { kind: string }) {
-  if (kind === "cudn" || kind === "udn") return <ProjectDiagramIcon aria-hidden width={NODE_ICON} height={NODE_ICON} />;
-  if (kind === "tunnel") return <ShareAltIcon aria-hidden width={NODE_ICON} height={NODE_ICON} />;
-  if (kind === "pod" || kind === "vm") return <ServerIcon aria-hidden width={NODE_ICON} height={NODE_ICON} />;
-  if (kind === "interface" || kind === "port") {
-    return <NetworkWiredIcon aria-hidden width={NODE_ICON} height={NODE_ICON} />;
-  }
-  return <ServerIcon aria-hidden width={NODE_ICON} height={NODE_ICON} />;
+  return <TopologyKindIcon kind={kind} size={NODE_ICON} />;
+}
+
+function resourceShapeModifier(element: Node): string {
+  return nodeShapeClass(element.getNodeShape());
 }
 
 type NodeInnerProps = {
@@ -136,12 +135,12 @@ const ResourceNodeInner = observer(
           onContextMenu={onContextMenu}
           contextMenuOpen={contextMenuOpen}
           badge={badge}
-          badgeColor="var(--pf-t--global--color--status--info--default)"
-          badgeTextColor="var(--pf-t--global--text--color--on-brand--regular, #fff)"
-          badgeBorderColor="var(--pf-t--global--color--status--info--default)"
-          badgeLocation={BadgeLocation.below}
+          badgeColor={TYPE_BADGE_COLOR}
+          badgeTextColor={TYPE_BADGE_TEXT}
+          badgeBorderColor={TYPE_BADGE_BORDER}
+          badgeLocation={BadgeLocation.inner}
           secondaryLabel={data.attachment.namespace}
-          className={`ocs-pf-topo-node ocs-pf-topo-node--circle ocs-pf-topo-node--workload${pathClass}`}
+          className={`ocs-pf-topo-node ${resourceShapeModifier(element)} ocs-pf-topo-node--workload${pathClass}`}
           truncateLength={18}
         >
           <title>{tip}</title>
@@ -198,8 +197,8 @@ const ResourceNodeInner = observer(
         badgeColor={KIND_BADGE_COLOR[data.kind]}
         badgeTextColor={KIND_BADGE_TEXT[data.kind]}
         badgeBorderColor={KIND_BADGE_COLOR[data.kind]}
-        badgeLocation={BadgeLocation.below}
-        className={`ocs-pf-topo-node ocs-pf-topo-node--circle ${kindClass} ${statusClass}${pathClass}`}
+        badgeLocation={BadgeLocation.inner}
+        className={`ocs-pf-topo-node ${resourceShapeModifier(element)} ${kindClass} ${statusClass}${pathClass}`}
         truncateLength={18}
       >
         <title>{resourceTooltip(data)}</title>
@@ -283,9 +282,9 @@ const LogicalNodeInner = observer(
         badgeColor={KIND_BADGE_COLOR[data.kind]}
         badgeTextColor={KIND_BADGE_TEXT[data.kind]}
         badgeBorderColor={KIND_BADGE_COLOR[data.kind]}
-        badgeLocation={BadgeLocation.below}
+        badgeLocation={BadgeLocation.inner}
         secondaryLabel={secondary}
-        className={`ocs-pf-topo-node ocs-pf-topo-node--circle ocs-pf-topo-node--logical ${kindClass} ${statusClass}${pathClass}`}
+        className={`ocs-pf-topo-node ${resourceShapeModifier(element)} ocs-pf-topo-node--logical ${kindClass} ${statusClass}${pathClass}`}
         truncateLength={22}
       >
         <title>{tip}</title>

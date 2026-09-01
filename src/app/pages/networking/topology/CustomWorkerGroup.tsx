@@ -2,6 +2,7 @@ import { useSyncExternalStore } from "react";
 import {
   DefaultGroup,
   LabelPosition,
+  nodeDragSourceSpec,
   observer,
   withContextMenu,
   withDragNode,
@@ -12,6 +13,7 @@ import {
   type WithSelectionProps,
 } from "@patternfly/react-topology";
 import { WORKER_BADGE, WORKER_BADGE_COLOR, WORKER_BADGE_TEXT } from "./topologyBadges";
+import { workerGroupHullClass } from "./topologyNodeShapes";
 import { getPathHighlightIds, subscribePathHighlight } from "./topologyActionHandlers";
 import { buildNodeContextMenu } from "./topologyContextMenu";
 import { isWorkerGroupNodeData, type NetworkTopologyNodeData } from "./topologyNodeData";
@@ -32,6 +34,8 @@ const WorkerGroupInner = observer(
       () => false
     );
 
+    const hullClass = group ? workerGroupHullClass(group.resources) : "ocs-pf-topo-worker-group--healthy";
+
     return (
       <DefaultGroup
         element={element}
@@ -40,7 +44,7 @@ const WorkerGroupInner = observer(
         dragNodeRef={dragNodeRef}
         onContextMenu={onContextMenu}
         contextMenuOpen={contextMenuOpen}
-        className={`ocs-pf-topo-worker-group ocs-pf-topo-hull${
+        className={`ocs-pf-topo-worker-group ocs-pf-topo-hull ${hullClass}${
           pathHighlighted ? " ocs-pf-topo-path-highlight" : ""
         }`}
         label={group?.shortName ?? element.getLabel()}
@@ -59,5 +63,5 @@ const WorkerGroupInner = observer(
 );
 
 export const CustomWorkerGroup = withContextMenu(buildNodeContextMenu)(
-  withDragNode()(withSelection()(WorkerGroupInner))
+  withDragNode(nodeDragSourceSpec("group"))(withSelection()(WorkerGroupInner))
 );

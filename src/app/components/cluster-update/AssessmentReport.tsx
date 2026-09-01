@@ -186,9 +186,11 @@ export function AssessmentReport({ showLightSpeedActions = true }: { showLightSp
             <CodeBlockCode>{OPERATOR_HEALTH_WARNING_COMMAND}</CodeBlockCode>
           </CodeBlock>
           {showLightSpeedActions ? (
-            <Button variant="secondary" size="sm" icon={<RhUiAiInfoIcon aria-hidden />} onClick={openRemediation}>
-              Learn more with AI
-            </Button>
+            <Flex>
+              <Button variant="secondary" size="sm" icon={<RhUiAiInfoIcon aria-hidden />} onClick={openRemediation}>
+                Learn more with AI
+              </Button>
+            </Flex>
           ) : null}
         </Flex>
       </Alert>

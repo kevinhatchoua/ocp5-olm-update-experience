@@ -1,7 +1,6 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { useNavigate } from "react-router";
-import { Button, Content, Flex } from "@patternfly/react-core";
-import PlusCircleIcon from "@patternfly/react-icons/dist/esm/icons/plus-circle-icon";
+import { Content } from "@patternfly/react-core";
 import { useToast } from "../../contexts/ToastContext";
 import NetworkTopologyPanel from "./NetworkTopologyPanel";
 import { OpenWorkerNodeModal } from "./OpenWorkerNodeModal";
@@ -9,7 +8,7 @@ import {
   RemoveWorkerNodeGroupModal,
   type WorkerNodeRemovalTarget,
 } from "./RemoveWorkerNodeGroupModal";
-import { TOPOLOGY_WORKER_CATALOG } from "./networkTopologyData";
+import { topologyWorkerCatalogFromGroups } from "./networkTopologyData";
 import { NNC_WIZARD_STEPS } from "./NodeNetworkConfigurationWizard";
 import { NetworkResourceCreateDropdown, type NetworkCreateResource } from "./networkingCreateModals";
 import { nadDetailPath } from "./networkingMockData";
@@ -21,7 +20,7 @@ import { useNodeNetworkViewMode } from "./useNodeNetworkViewMode";
 type NodeNetworkConfigurationStageProps = {
   pushToast: ReturnType<typeof useToast>["pushToast"];
   dismissToast: ReturnType<typeof useToast>["dismissToast"];
-  /** Render the Topology page chrome with Create / Add worker next to the title. */
+  /** Render the Topology page chrome with Create next to the title. */
   wrapInPageShell?: boolean;
 };
 
@@ -33,6 +32,7 @@ export default function NodeNetworkConfigurationStage({
   const navigate = useNavigate();
   const { viewMode, setViewMode } = useNodeNetworkViewMode();
   const {
+    scale,
     groups,
     standaloneResources,
     crossEdges,
@@ -44,6 +44,7 @@ export default function NodeNetworkConfigurationStage({
     setStandaloneResources,
     setCrossEdges,
     setWorkerAssignedToNetwork,
+    setTopologyDataScale,
     addLogicalNetwork,
     attachStandaloneToGroup,
     revealWorkerGroups,
@@ -103,7 +104,7 @@ export default function NodeNetworkConfigurationStage({
 
   const confirmRemoveWorkerGroup = useCallback(
     (workerId: string) => {
-      const worker = TOPOLOGY_WORKER_CATALOG.find((entry) => entry.id === workerId);
+      const worker = topologyWorkerCatalogFromGroups(groups).find((entry) => entry.id === workerId);
       hideWorkerGroups([workerId]);
       pushToast({
         variant: "success",
@@ -113,8 +114,10 @@ export default function NodeNetworkConfigurationStage({
       });
       setWorkerRemovalTarget(null);
     },
-    [hideWorkerGroups, pushToast]
+    [groups, hideWorkerGroups, pushToast]
   );
+
+  const workerCatalog = useMemo(() => topologyWorkerCatalogFromGroups(groups), [groups]);
 
   const panel = (
     <div className="ocs-nnc-stage">
@@ -132,6 +135,8 @@ export default function NodeNetworkConfigurationStage({
         onAttachStandaloneToGroup={handleAttachStandaloneToGroup}
         onOpenWorkerNodeModal={() => setWorkerNodeModalOpen(true)}
         onRequestRemoveWorkerGroup={requestRemoveWorkerGroup}
+        topologyScale={scale}
+        onTopologyScaleChange={setTopologyDataScale}
         fitContentToken={fitContentToken}
         highlightResourceSuffix={provisionGeneration > 0 ? "br-localnet" : undefined}
         viewMode={viewMode}
@@ -189,7 +194,7 @@ export default function NodeNetworkConfigurationStage({
       <OpenWorkerNodeModal
         isOpen={workerNodeModalOpen}
         onClose={() => setWorkerNodeModalOpen(false)}
-        workers={TOPOLOGY_WORKER_CATALOG}
+        workers={workerCatalog}
         revealedGroupIds={revealedGroupIds}
         onAddWorkers={handleAddWorkersToTopology}
         onRequestRemoveWorker={(worker) => {
@@ -213,26 +218,16 @@ export default function NodeNetworkConfigurationStage({
           path="/networking/topology"
           className="ocs-net-topo-page"
           createButton={
-            <Flex alignItems={{ default: "alignItemsCenter" }} gap={{ default: "gapMd" }}>
-              <NetworkResourceCreateDropdown
-                onSelect={(resource) => {
-                  setActiveCreateResource(resource);
-                  openFormWizard();
-                }}
-              />
-              <Button
-                variant="link"
-                icon={<PlusCircleIcon />}
-                onClick={() => setWorkerNodeModalOpen(true)}
-              >
-                Add worker node
-              </Button>
-            </Flex>
+            <NetworkResourceCreateDropdown
+              onSelect={(resource) => {
+                setActiveCreateResource(resource);
+                openFormWizard();
+              }}
+            />
           }
           extraHeader={
             <Content component="p" className="ocs-net-topo-page-desc">
-              Visualize, scale, and manage your cluster topology. Right-click the canvas to add nodes, or manage worker
-              node groups from Add worker node.
+              Visualize, scale, and manage your cluster topology. Right-click the canvas for additional actions.
             </Content>
           }
         >

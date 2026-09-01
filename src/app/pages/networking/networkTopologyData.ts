@@ -1,4 +1,7 @@
 import type { TopologyStep } from "./networkTopologyTypes";
+import { getUdnRecords, type UdnRecord } from "./networkingMockData";
+
+export type TopologyDataScale = "compact" | "scale";
 
 export type NetResourceKind = "bridge" | "interface" | "tunnel" | "port" | "cudn" | "udn";
 
@@ -65,6 +68,31 @@ export const RESOURCE_W = 80;
 export const RESOURCE_H = 92;
 export const BASE_X = 40;
 export const BASE_Y = 48;
+
+export const LOGICAL_NETWORK_Y = 12;
+export const LOGICAL_NETWORK_H_SPACING = 176;
+/** Vertical gap between logical-network lane and worker node groups. */
+export const LOGICAL_TO_WORKER_GAP = 40;
+
+/** Matches `.ocs-net-topo-logical-lane` padding and label block in theme.css */
+export const LOGICAL_LANE_PADDING_TOP = 6;
+export const LOGICAL_LANE_PADDING_X = 12;
+export const LOGICAL_LANE_PADDING_BOTTOM = 8;
+export const LOGICAL_LANE_LABEL_BLOCK = 24;
+export const LOGICAL_LANE_NODE_OFFSET = 20;
+export const LOGICAL_LANE_BOTTOM_PAD = 24;
+
+export function workerGroupBaseY(hasLogicalNetworks: boolean): number {
+  if (!hasLogicalNetworks) return BASE_Y;
+  const laneHeight =
+    LOGICAL_LANE_PADDING_TOP +
+    LOGICAL_LANE_LABEL_BLOCK +
+    LOGICAL_LANE_NODE_OFFSET +
+    RESOURCE_H +
+    LOGICAL_LANE_BOTTOM_PAD +
+    LOGICAL_LANE_PADDING_BOTTOM;
+  return LOGICAL_NETWORK_Y - LOGICAL_LANE_PADDING_TOP + laneHeight + LOGICAL_TO_WORKER_GAP;
+}
 
 /** Non-overlapping grid cells inside each worker group. */
 export const RESOURCE_CELL_W = 88;
@@ -215,110 +243,178 @@ function buildWorkerGroup(
   };
 }
 
-export const WORKER_NODE_GROUPS: WorkerNodeGroup[] = [
-  buildWorkerGroup(
-    "worker-0",
-    "worker-0",
-    "ip-10-0-24-42.us-east-2.compute.internal",
-    BASE_X,
-    BASE_Y,
-    "081",
-    {
-      "worker-0-br-ex-a": "configured",
-      "worker-0-br-ex-b": "configured",
-      "worker-0-br-int": "configured",
-      "worker-0-geneve": "configured",
-      "worker-0-ovn-k8s-mp0": "configured",
-      "worker-0-ens5": "configured",
-    }
-  ),
-  buildWorkerGroup(
-    "worker-1",
-    "worker-1",
-    "ip-10-0-25-18.us-east-2.compute.internal",
-    BASE_X + GROUP_W + GROUP_GAP,
-    BASE_Y,
-    "142",
-    {
-      "worker-1-br-ex-a": "configured",
-      "worker-1-br-ex-b": "configured",
-      "worker-1-br-int": "installing",
-      "worker-1-geneve": "pending",
-      "worker-1-ovn-k8s-mp0": "creating",
-      "worker-1-ens5": "configured",
-    }
-  ),
-  buildWorkerGroup(
-    "worker-2",
-    "worker-2",
-    "ip-10-0-26-91.us-east-2.compute.internal",
-    BASE_X + (GROUP_W + GROUP_GAP) * 2,
-    BASE_Y,
-    "203",
-    {
-      "worker-2-br-ex-a": "configured",
-      "worker-2-br-ex-b": "pending",
-      "worker-2-br-int": "pending",
-      "worker-2-geneve": "failed",
-      "worker-2-ovn-k8s-mp0": "creating",
-      "worker-2-ens5": "installing",
-    }
-  ),
-  buildWorkerGroup(
-    "worker-3",
-    "worker-3",
-    "ip-10-0-27-14.us-east-2.compute.internal",
-    BASE_X + (GROUP_W + GROUP_GAP) * 3,
-    BASE_Y,
-    "264",
-    {
-      "worker-3-br-ex-a": "configured",
-      "worker-3-br-ex-b": "configured",
-      "worker-3-br-int": "pending",
-      "worker-3-geneve": "pending",
-      "worker-3-ovn-k8s-mp0": "pending",
-      "worker-3-ens5": "configured",
-    }
-  ),
-  buildWorkerGroup(
-    "worker-4",
-    "worker-4",
-    "ip-10-0-28-55.us-east-2.compute.internal",
-    BASE_X + (GROUP_W + GROUP_GAP) * 4,
-    BASE_Y,
-    "325",
-    {
-      "worker-4-br-ex-a": "configured",
-      "worker-4-br-ex-b": "pending",
-      "worker-4-br-int": "pending",
-      "worker-4-geneve": "pending",
-      "worker-4-ovn-k8s-mp0": "pending",
-      "worker-4-ens5": "configured",
-    }
-  ),
-  ...Array.from({ length: 6 }, (_, offset) => {
-    const index = offset + 5;
-    const id = `worker-${index}`;
-    const geneSuffix = String(300 + index * 17).slice(-3);
-    const ready = index % 3 !== 0;
-    return buildWorkerGroup(
-      id,
-      id,
-      `ip-10-0-${20 + index}-${(index * 11 + 14) % 100}.us-east-2.compute.internal`,
-      BASE_X + (GROUP_W + GROUP_GAP) * index,
-      BASE_Y,
-      geneSuffix,
-      {
-        [`${id}-br-ex-a`]: "configured",
-        [`${id}-br-ex-b`]: ready ? "configured" : "pending",
-        [`${id}-br-int`]: ready ? "configured" : "installing",
-        [`${id}-geneve`]: ready ? "configured" : "pending",
-        [`${id}-ovn-k8s-mp0`]: ready ? "configured" : "creating",
-        [`${id}-ens5`]: ready ? "configured" : "installing",
-      }
-    );
-  }),
+/** Large-scale topology demo — grid of worker hulls with varied reconciliation status. */
+export const TOPOLOGY_WORKER_COUNT = 48;
+export const TOPOLOGY_WORKERS_PER_ROW = 8;
+
+const CURATED_WORKER_HOSTNAMES: Record<number, string> = {
+  0: "ip-10-0-24-42.us-east-2.compute.internal",
+  1: "ip-10-0-25-18.us-east-2.compute.internal",
+  2: "ip-10-0-26-91.us-east-2.compute.internal",
+  3: "ip-10-0-27-14.us-east-2.compute.internal",
+  4: "ip-10-0-28-55.us-east-2.compute.internal",
+};
+
+const CURATED_WORKER_STATUSES: Record<number, Record<string, ResourceInstallStatus>> = {
+  0: {
+    "worker-0-br-ex-a": "configured",
+    "worker-0-br-ex-b": "configured",
+    "worker-0-br-int": "configured",
+    "worker-0-geneve": "configured",
+    "worker-0-ovn-k8s-mp0": "configured",
+    "worker-0-ens5": "configured",
+  },
+  1: {
+    "worker-1-br-ex-a": "configured",
+    "worker-1-br-ex-b": "configured",
+    "worker-1-br-int": "installing",
+    "worker-1-geneve": "pending",
+    "worker-1-ovn-k8s-mp0": "creating",
+    "worker-1-ens5": "configured",
+  },
+  2: {
+    "worker-2-br-ex-a": "configured",
+    "worker-2-br-ex-b": "pending",
+    "worker-2-br-int": "pending",
+    "worker-2-geneve": "failed",
+    "worker-2-ovn-k8s-mp0": "creating",
+    "worker-2-ens5": "installing",
+  },
+  3: {
+    "worker-3-br-ex-a": "configured",
+    "worker-3-br-ex-b": "configured",
+    "worker-3-br-int": "pending",
+    "worker-3-geneve": "pending",
+    "worker-3-ovn-k8s-mp0": "pending",
+    "worker-3-ens5": "configured",
+  },
+  4: {
+    "worker-4-br-ex-a": "configured",
+    "worker-4-br-ex-b": "pending",
+    "worker-4-br-int": "pending",
+    "worker-4-geneve": "pending",
+    "worker-4-ovn-k8s-mp0": "pending",
+    "worker-4-ens5": "configured",
+  },
+};
+
+const RESOURCE_STATUS_CYCLE: ResourceInstallStatus[] = [
+  "configured",
+  "configured",
+  "configured",
+  "pending",
+  "installing",
+  "creating",
 ];
+
+function workerHostname(index: number): string {
+  return (
+    CURATED_WORKER_HOSTNAMES[index] ??
+    `ip-10-0-${20 + (index % 40)}-${(index * 11 + 14) % 100}.us-east-2.compute.internal`
+  );
+}
+
+function workerGridPosition(index: number) {
+  const col = index % TOPOLOGY_WORKERS_PER_ROW;
+  const row = Math.floor(index / TOPOLOGY_WORKERS_PER_ROW);
+  const baseY = workerGroupBaseY(true);
+  return {
+    x: BASE_X + col * (GROUP_W + GROUP_GAP),
+    y: baseY + row * (GROUP_H + GROUP_GAP),
+  };
+}
+
+function defaultWorkerStatuses(id: string, index: number): Record<string, ResourceInstallStatus> {
+  const ready = index % 5 !== 2;
+  const pick = (suffix: string, offset: number): ResourceInstallStatus => {
+    if (suffix === "geneve" && index % 17 === 0) return "failed";
+    if (ready) return "configured";
+    return RESOURCE_STATUS_CYCLE[(index + offset) % RESOURCE_STATUS_CYCLE.length];
+  };
+  return {
+    [`${id}-br-ex-a`]: "configured",
+    [`${id}-br-ex-b`]: pick("br-ex-b", 1),
+    [`${id}-br-int`]: pick("br-int", 2),
+    [`${id}-geneve`]: pick("geneve", 3),
+    [`${id}-ovn-k8s-mp0`]: pick("ovn-k8s-mp0", 4),
+    [`${id}-ens5`]: pick("ens5", 5),
+  };
+}
+
+function buildScaleWorkerGroups(): WorkerNodeGroup[] {
+  return Array.from({ length: TOPOLOGY_WORKER_COUNT }, (_, index) => {
+    const id = `worker-${index}`;
+    const { x, y } = workerGridPosition(index);
+    const geneSuffix = String(100 + index * 17).slice(-3);
+    const statuses = CURATED_WORKER_STATUSES[index] ?? defaultWorkerStatuses(id, index);
+    return buildWorkerGroup(id, id, workerHostname(index), x, y, geneSuffix, statuses);
+  });
+}
+
+/** Compact demo topology — single row of workers for presentations. */
+export const COMPACT_TOPOLOGY_WORKER_COUNT = 5;
+export const COMPACT_TOPOLOGY_UDN_RECORD_LIMIT = 4;
+
+function buildCompactWorkerGroups(): WorkerNodeGroup[] {
+  const baseY = workerGroupBaseY(true);
+  return Array.from({ length: COMPACT_TOPOLOGY_WORKER_COUNT }, (_, index) => {
+    const id = `worker-${index}`;
+    const x = BASE_X + index * (GROUP_W + GROUP_GAP);
+    const geneSuffix = String(100 + index * 17).slice(-3);
+    const statuses = CURATED_WORKER_STATUSES[index] ?? defaultWorkerStatuses(id, index);
+    return buildWorkerGroup(id, id, workerHostname(index), x, baseY, geneSuffix, statuses);
+  });
+}
+
+export const COMPACT_WORKER_NODE_GROUPS: WorkerNodeGroup[] = buildCompactWorkerGroups();
+export const WORKER_NODE_GROUPS: WorkerNodeGroup[] = buildScaleWorkerGroups();
+
+const BOND_WORKER_IDS = new Set(["worker-1", "worker-2", "worker-3"]);
+
+function injectBondResources(group: WorkerNodeGroup): WorkerNodeGroup {
+  if (!BOND_WORKER_IDS.has(group.id)) return group;
+  const prefix = `${group.id}-`;
+  const bondStatus: ResourceInstallStatus =
+    group.id === "worker-2" ? "failed" : group.id === "worker-1" ? "configured" : "pending";
+  const bondSlot = resourceGridPos(0, 2);
+  const bondResource: NetResource = {
+    id: `${prefix}bond0`,
+    label: "bond0",
+    kind: "interface",
+    x: bondSlot.x,
+    y: bondSlot.y,
+    status: bondStatus,
+    detail: "802.3ad LACP bond uplink aggregating physical NICs to br-ex.",
+    highlightSteps: ["uplink-connection", "review"],
+    related: [`${prefix}ens5`, `${prefix}br-ex-a`],
+  };
+  const resources = group.resources.map((resource) =>
+    resource.id === `${prefix}ens5`
+      ? { ...resource, detail: "Bond member — VLAN 100 uplink to the data center network." }
+      : resource
+  );
+  resources.push(bondResource);
+  const edges = [
+    ...group.edges,
+    { id: edgeId(`${prefix}bond0`, `${prefix}ens5`), from: `${prefix}bond0`, to: `${prefix}ens5` },
+    { id: edgeId(`${prefix}bond0`, `${prefix}br-ex-a`), from: `${prefix}bond0`, to: `${prefix}br-ex-a` },
+  ];
+  return { ...group, resources, edges };
+}
+
+export function getWorkerGroupsForScale(scale: TopologyDataScale): WorkerNodeGroup[] {
+  const source = scale === "compact" ? COMPACT_WORKER_NODE_GROUPS : WORKER_NODE_GROUPS;
+  return source.map(injectBondResources);
+}
+
+/** CUDN/UDN records shown on the topology graph for the active demo scale. */
+export function getUdnRecordsForScale(scale: TopologyDataScale): UdnRecord[] {
+  const all = getUdnRecords();
+  if (scale === "scale") return all;
+  const cudns = all.filter((record) => record.kind === "CUDN").slice(0, 2);
+  const udns = all.filter((record) => record.kind === "UDN").slice(0, 2);
+  return [...cudns, ...udns].slice(0, COMPACT_TOPOLOGY_UDN_RECORD_LIMIT);
+}
 
 export function computeCanvasWidth(groupWidths: number[]) {
   if (groupWidths.length === 0) return BASE_X + GROUP_W + 40;
@@ -351,31 +447,6 @@ export const RESOURCE_KIND_COLORS: Record<NetResourceKind, string> = {
   cudn: "#6753ac",
   udn: "#009596",
 };
-
-export const LOGICAL_NETWORK_Y = 12;
-export const LOGICAL_NETWORK_H_SPACING = 176;
-/** Vertical gap between logical-network lane and worker node groups. */
-export const LOGICAL_TO_WORKER_GAP = 40;
-
-/** Matches `.ocs-net-topo-logical-lane` padding and label block in theme.css */
-export const LOGICAL_LANE_PADDING_TOP = 6;
-export const LOGICAL_LANE_PADDING_X = 12;
-export const LOGICAL_LANE_PADDING_BOTTOM = 8;
-export const LOGICAL_LANE_LABEL_BLOCK = 24;
-export const LOGICAL_LANE_NODE_OFFSET = 20;
-export const LOGICAL_LANE_BOTTOM_PAD = 24;
-
-export function workerGroupBaseY(hasLogicalNetworks: boolean): number {
-  if (!hasLogicalNetworks) return BASE_Y;
-  const laneHeight =
-    LOGICAL_LANE_PADDING_TOP +
-    LOGICAL_LANE_LABEL_BLOCK +
-    LOGICAL_LANE_NODE_OFFSET +
-    RESOURCE_H +
-    LOGICAL_LANE_BOTTOM_PAD +
-    LOGICAL_LANE_PADDING_BOTTOM;
-  return LOGICAL_NETWORK_Y - LOGICAL_LANE_PADDING_TOP + laneHeight + LOGICAL_TO_WORKER_GAP;
-}
 
 export function logicalNetworkLaneWidth(logicalCount: number, maxIndex?: number): number {
   if (logicalCount <= 0) return 0;
@@ -534,6 +605,15 @@ export const TOPOLOGY_WORKER_CATALOG: TopologyWorkerCatalogEntry[] = WORKER_NODE
   hostname: group.hostname,
   ready: group.resources.every((resource) => resource.status !== "failed"),
 }));
+
+export function topologyWorkerCatalogFromGroups(groups: WorkerNodeGroup[]): TopologyWorkerCatalogEntry[] {
+  return groups.map((group) => ({
+    id: group.id,
+    shortName: group.shortName,
+    hostname: group.hostname,
+    ready: group.resources.every((resource) => resource.status !== "failed"),
+  }));
+}
 
 /** logicalNetworkId → worker node ids assigned to run that network. */
 export type NetworkNodeAssignments = Record<string, string[]>;

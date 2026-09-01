@@ -125,6 +125,9 @@ export function elbowBendpointsInsideHull(start: Point, end: Point, hull: Point[
 }
 
 export function sharedParentGroup(source: Node, target: Node): Node | undefined {
+  if (!source.hasParent() || !target.hasParent()) {
+    return undefined;
+  }
   const sourceParent = source.getParent();
   const targetParent = target.getParent();
   if (

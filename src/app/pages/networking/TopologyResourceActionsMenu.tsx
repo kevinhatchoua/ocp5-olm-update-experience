@@ -12,9 +12,11 @@ import {
   ModalHeader,
 } from "@patternfly/react-core";
 import CogIcon from "@patternfly/react-icons/dist/esm/icons/cog-icon";
+import CodeIcon from "@patternfly/react-icons/dist/esm/icons/code-icon";
 import EllipsisVIcon from "@patternfly/react-icons/dist/esm/icons/ellipsis-v-icon";
 import OutlinedStopCircleIcon from "@patternfly/react-icons/dist/esm/icons/outlined-stop-circle-icon";
 import PauseIcon from "@patternfly/react-icons/dist/esm/icons/pause-icon";
+import RhUiAiInfoIcon from "@patternfly/react-icons/dist/esm/icons/rh-ui-ai-info-icon";
 import RedoIcon from "@patternfly/react-icons/dist/esm/icons/redo-icon";
 import TrashIcon from "@patternfly/react-icons/dist/esm/icons/trash-icon";
 import type { ResourceLifecycleAction, ResourceLifecycleTarget } from "./networkTopologyState";
@@ -25,11 +27,13 @@ type TopologyResourceActionsMenuProps = {
   onResourceLifecycleAction?: (target: ResourceLifecycleTarget, action: ResourceLifecycleAction) => void;
   onConfigure?: () => void;
   configureLabel?: string;
+  onViewYaml?: () => void;
+  onAssessDeleteImpact?: () => void;
   onNotice?: (notice: { title: string; variant: "success" | "warning" | "info" }) => void;
   onDeleted?: () => void;
   isOpen: boolean;
   onOpenChange: (open: boolean) => void;
-  toggleVariant?: "plain" | "secondary";
+  toggleVariant?: "plain" | "secondary" | "default";
   showActionsLabel?: boolean;
 };
 
@@ -39,17 +43,20 @@ export default function TopologyResourceActionsMenu({
   onResourceLifecycleAction,
   onConfigure,
   configureLabel = "Configure",
+  onViewYaml,
+  onAssessDeleteImpact,
   onNotice,
   onDeleted,
   isOpen,
   onOpenChange,
-  toggleVariant = "plain",
+  toggleVariant: toggleVariantProp = "plain",
   showActionsLabel = false,
 }: TopologyResourceActionsMenuProps) {
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const canLifecycle = Boolean(onResourceLifecycleAction && lifecycleTarget);
+  const toggleVariant = showActionsLabel ? "default" : toggleVariantProp;
 
-  if (!canLifecycle && !onConfigure) return null;
+  if (!canLifecycle && !onConfigure && !onViewYaml && !onAssessDeleteImpact) return null;
 
   const runLifecycleAction = (action: Exclude<ResourceLifecycleAction, "delete">) => {
     if (!lifecycleTarget || !onResourceLifecycleAction) return;
@@ -95,6 +102,18 @@ export default function TopologyResourceActionsMenu({
         )}
       >
         <DropdownList aria-label={`Actions for ${label}`}>
+          {onViewYaml ? (
+            <DropdownItem
+              itemId="view-yaml"
+              icon={<CodeIcon aria-hidden />}
+              onClick={() => {
+                onViewYaml();
+                onOpenChange(false);
+              }}
+            >
+              View YAML
+            </DropdownItem>
+          ) : null}
           {onConfigure ? (
             <DropdownItem
               itemId="configure"
@@ -105,6 +124,18 @@ export default function TopologyResourceActionsMenu({
               }}
             >
               {configureLabel}
+            </DropdownItem>
+          ) : null}
+          {onAssessDeleteImpact ? (
+            <DropdownItem
+              itemId="assess-delete-impact"
+              icon={<RhUiAiInfoIcon aria-hidden />}
+              onClick={() => {
+                onAssessDeleteImpact();
+                onOpenChange(false);
+              }}
+            >
+              Assess delete impact with AI
             </DropdownItem>
           ) : null}
           {canLifecycle ? (

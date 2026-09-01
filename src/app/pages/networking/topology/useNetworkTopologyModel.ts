@@ -12,8 +12,10 @@ import {
   RESOURCE_KIND_LABELS,
   visibleTopologyGroupIds,
   type NetworkNodeAssignments,
+  type NetResource,
   type StandaloneTopologyResource,
   type TopologyCrossEdge,
+  type TopologyDataScale,
   type WorkerNodeGroup,
 } from "../networkTopologyData";
 import { installStatusToNodeStatus } from "./statusMap";
@@ -36,14 +38,21 @@ import {
   type TopologyResourceFilter,
 } from "./topologyPerspective";
 import type { TopologyLayoutId } from "./topologyLayouts";
+import { shapeForResourceNode } from "./topologyNodeShapes";
+import {
+  isHostResourceUnhealthy,
+  isLogicalNetworkUnhealthy,
+  isManagementPortResource,
+  isUnhealthyWorkloadStatus,
+} from "./topologyTroubleshoot";
 
 /** Standard PF topology circular badge diameter (matches console topology). */
 const RESOURCE_SIZE = 75;
 const LOGICAL_SIZE = 75;
 const WORKLOAD_SIZE = 64;
 
-function shapeForKind(_kind: string): NodeShape {
-  return NodeShape.circle;
+function shapeForKind(kind: string, hostRole?: ReturnType<typeof hostRoleForResource>): NodeShape {
+  return shapeForResourceNode(kind, hostRole);
 }
 
 export type UseNetworkTopologyModelArgs = {
@@ -56,6 +65,8 @@ export type UseNetworkTopologyModelArgs = {
   filterKind?: TopologyResourceFilter;
   layoutName: TopologyLayoutId;
   perspective?: TopologyPerspective;
+  dataScale?: TopologyDataScale;
+  hideManagementPorts?: boolean;
 };
 
 export function useNetworkTopologyModel({
@@ -68,6 +79,8 @@ export function useNetworkTopologyModel({
   filterKind = "all",
   layoutName,
   perspective = "host",
+  dataScale = "scale",
+  hideManagementPorts = false,
 }: UseNetworkTopologyModelArgs): Model {
   return useMemo(() => {
     const visibleIds = visibleTopologyGroupIds(networkNodeAssignments, revealedGroupIds);
@@ -84,8 +97,25 @@ export function useNetworkTopologyModel({
     const matchesFilter = (
       label: string,
       kind: string,
-      extra?: { hostRole?: ReturnType<typeof hostRoleForResource>; attachmentKind?: string },
+      extra?: {
+        hostRole?: ReturnType<typeof hostRoleForResource>;
+        attachmentKind?: string;
+        resource?: NetResource;
+        groupId?: string;
+        logicalResource?: StandaloneTopologyResource;
+        workloadStatus?: "Running" | "Pending" | "Failed";
+      },
     ) => {
+      if (filterKind === "unhealthy") {
+        if (extra?.workloadStatus && isUnhealthyWorkloadStatus(extra.workloadStatus)) return !query || label.toLowerCase().includes(query);
+        if (extra?.logicalResource && isLogicalNetworkUnhealthy(extra.logicalResource)) {
+          return !query || label.toLowerCase().includes(query);
+        }
+        if (extra?.resource && extra.groupId && isHostResourceUnhealthy(extra.resource, extra.groupId)) {
+          return !query || label.toLowerCase().includes(query) || kind.toLowerCase().includes(query);
+        }
+        return false;
+      }
       if (
         !resourceMatchesFilter(filterKind, perspective, {
           kind,
@@ -108,10 +138,21 @@ export function useNetworkTopologyModel({
       logicalStandalones.forEach((resource) => {
         if (!resourceVisibleInPerspective(resource, perspective)) return;
         if (isWorkloadTypeFilter) {
-          const hasMatch = attachmentsForNetwork(resource.label, resource.id).some((a) => a.kind === filterKind);
+          const hasMatch = attachmentsForNetwork(resource.label, resource.id, dataScale).some((a) => a.kind === filterKind);
           if (!hasMatch) return;
           if (query && !resource.label.toLowerCase().includes(query)) return;
-        } else if (!matchesFilter(resource.label, resource.kind, { hostRole: hostRoleForResource(resource) })) {
+        } else if (filterKind === "unhealthy") {
+          const hasUnhealthyWorkload = attachmentsForNetwork(resource.label, resource.id, dataScale).some((a) =>
+            isUnhealthyWorkloadStatus(a.status)
+          );
+          if (!isLogicalNetworkUnhealthy(resource) && !hasUnhealthyWorkload) return;
+          if (query && !resource.label.toLowerCase().includes(query)) return;
+        } else if (
+          !matchesFilter(resource.label, resource.kind, {
+            hostRole: hostRoleForResource(resource),
+            logicalResource: resource,
+          })
+        ) {
           return;
         }
         logicalChildren.push(resource.id);
@@ -130,7 +171,7 @@ export function useNetworkTopologyModel({
           label: resource.label,
           width: LOGICAL_SIZE,
           height: LOGICAL_SIZE,
-          shape: shapeForKind(resource.kind),
+          shape: shapeForKind(resource.kind, hostRoleForResource(resource)),
           status: installStatusToNodeStatus(resource.status),
           data,
         });
@@ -155,7 +196,13 @@ export function useNetworkTopologyModel({
       otherStandalones.forEach((resource) => {
         if (!resourceVisibleInPerspective(resource, perspective)) return;
         if (isWorkloadTypeFilter) return;
-        if (!matchesFilter(resource.label, resource.kind, { hostRole: hostRoleForResource(resource) })) return;
+        if (
+          !matchesFilter(resource.label, resource.kind, {
+            hostRole: hostRoleForResource(resource),
+            logicalResource: resource,
+          })
+        )
+          return;
         labelById.set(resource.id, resource.label);
         const data: LogicalNetworkNodeData = {
           nodeKind: "logical-network",
@@ -171,7 +218,7 @@ export function useNetworkTopologyModel({
           label: resource.label,
           width: RESOURCE_SIZE,
           height: RESOURCE_SIZE,
-          shape: shapeForKind(resource.kind),
+          shape: shapeForKind(resource.kind, hostRoleForResource(resource)),
           status: installStatusToNodeStatus(resource.status),
           data,
         });
@@ -183,8 +230,16 @@ export function useNetworkTopologyModel({
         const childIds: string[] = [];
         group.resources.forEach((resource) => {
           if (!resourceVisibleInPerspective(resource, perspective)) return;
+          if (hideManagementPorts && isManagementPortResource(resource)) return;
           if (isWorkloadTypeFilter) return;
-          if (!matchesFilter(resource.label, resource.kind, { hostRole: hostRoleForResource(resource) })) return;
+          if (
+            !matchesFilter(resource.label, resource.kind, {
+              hostRole: hostRoleForResource(resource),
+              resource,
+              groupId: group.id,
+            })
+          )
+            return;
           childIds.push(resource.id);
           labelById.set(resource.id, resource.label);
           const data: ResourceNodeData = {
@@ -203,7 +258,7 @@ export function useNetworkTopologyModel({
             label: resource.label,
             width: RESOURCE_SIZE,
             height: RESOURCE_SIZE,
-            shape: shapeForKind(resource.kind),
+            shape: shapeForKind(resource.kind, hostRoleForResource(resource)),
             status: installStatusToNodeStatus(resource.status),
             data,
           });
@@ -285,9 +340,11 @@ export function useNetworkTopologyModel({
           : bridgeFallback.slice(0, 3);
 
       attachTargets.forEach((networkNode) => {
-        const attachments = attachmentsForNetwork(networkNode.label ?? networkNode.id, networkNode.id);
+        const attachments = attachmentsForNetwork(networkNode.label ?? networkNode.id, networkNode.id, dataScale);
         attachments.forEach((attachment) => {
-          if (filterKind === "pod" || filterKind === "vm") {
+          if (filterKind === "unhealthy") {
+            if (!isUnhealthyWorkloadStatus(attachment.status)) return;
+          } else if (filterKind === "pod" || filterKind === "vm") {
             if (attachment.kind !== filterKind) return;
           }
           if (query && !attachment.label.toLowerCase().includes(query) && !attachment.kind.includes(query)) {
@@ -362,6 +419,8 @@ export function useNetworkTopologyModel({
     filterKind,
     layoutName,
     perspective,
+    dataScale,
+    hideManagementPorts,
   ]);
 }
 

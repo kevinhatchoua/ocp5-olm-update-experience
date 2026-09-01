@@ -3,6 +3,7 @@ import {
   Button,
   Divider,
   Dropdown,
+  Label,
   MenuToggle,
   Radio,
   SearchInput,
@@ -20,7 +21,6 @@ import {
 } from "@patternfly/react-core";
 import BookOpenIcon from "@patternfly/react-icons/dist/esm/icons/book-open-icon";
 import FilterIcon from "@patternfly/react-icons/dist/esm/icons/filter-icon";
-import PlusCircleIcon from "@patternfly/react-icons/dist/esm/icons/plus-circle-icon";
 import QuestionCircleIcon from "@patternfly/react-icons/dist/esm/icons/question-circle-icon";
 import { type NncProfile } from "../networkTopologyData";
 import TopologyViewToggle from "../TopologyViewToggle";
@@ -37,8 +37,13 @@ type UnifiedToolbarProps = {
   onSearchTermChange: (value: string) => void;
   filterKind: TopologyResourceFilter;
   onFilterKindChange: (kind: TopologyResourceFilter) => void;
+  filterCounts?: Partial<Record<TopologyResourceFilter, number>>;
   displayLabels: boolean;
   onDisplayLabelsChange: (value: boolean) => void;
+  hideManagementPorts?: boolean;
+  onHideManagementPortsChange?: (value: boolean) => void;
+  topologyScale?: "compact" | "scale";
+  onTopologyScaleChange?: (scale: "compact" | "scale") => void;
   layoutId: TopologyLayoutId;
   onLayoutIdChange: (layout: TopologyLayoutId) => void;
   onResetLayout?: () => void;
@@ -48,7 +53,6 @@ type UnifiedToolbarProps = {
   showCreateActions?: boolean;
   isCreateEnabled: boolean;
   onCreateSelect: (resource: NetworkCreateResource) => void;
-  onOpenWorkerNodeModal?: () => void;
   showNncSwitcher: boolean;
   physicalNetworkName?: string;
   nncProfiles: NncProfile[];
@@ -62,7 +66,7 @@ type UnifiedToolbarProps = {
 /**
  * Single OCP-style topology toolbar:
  * Left: Host | Workloads | Cluster · Filter by resource · Search
- * Right: Display options · View shortcuts · Topology/Table · Create · Add worker
+ * Right: Display options · View shortcuts · Topology/Table · Create
  */
 export function TopologyUnifiedToolbar({
   perspective,
@@ -71,8 +75,13 @@ export function TopologyUnifiedToolbar({
   onSearchTermChange,
   filterKind,
   onFilterKindChange,
+  filterCounts,
   displayLabels,
   onDisplayLabelsChange,
+  hideManagementPorts = false,
+  onHideManagementPortsChange,
+  topologyScale,
+  onTopologyScaleChange,
   layoutId,
   onLayoutIdChange,
   onResetLayout,
@@ -81,7 +90,6 @@ export function TopologyUnifiedToolbar({
   onShowShortcuts,
   isCreateEnabled,
   onCreateSelect,
-  onOpenWorkerNodeModal,
   showCreateActions = true,
   showNncSwitcher,
   physicalNetworkName,
@@ -96,6 +104,22 @@ export function TopologyUnifiedToolbar({
   const perspectiveMeta = TOPOLOGY_PERSPECTIVES.find((p) => p.id === perspective);
   const filterOptions = filterOptionsForPerspective(perspective);
   const selectedFilterLabel = filterOptions.find((option) => option.id === filterKind)?.label;
+  const selectedFilterCount = filterKind !== "all" ? filterCounts?.[filterKind] : undefined;
+
+  const renderFilterOption = (option: { id: TopologyResourceFilter; label: string }) => {
+    const count = filterCounts?.[option.id] ?? 0;
+    const isUnhealthy = option.id === "unhealthy";
+    return (
+      <span className="ocs-pf-topo-filter-option">
+        <span>{option.label}</span>
+        {count > 0 ? (
+          <Label isCompact color={isUnhealthy ? "orange" : undefined} className="ocs-pf-topo-filter-option__count">
+            {count}
+          </Label>
+        ) : null}
+      </span>
+    );
+  };
 
   const filterGroup = (
       <ToolbarGroup variant="filter-group" className="ocs-pf-topo-toolbar-group ocs-pf-topo-view-toolbar__filters">
@@ -139,7 +163,11 @@ export function TopologyUnifiedToolbar({
                         : `Resource filter: ${selectedFilterLabel}`
                     }
                   >
-                    {filterKind === "all" ? "Filter by resource" : selectedFilterLabel}
+                    {filterKind === "all"
+                        ? "Filter by resource"
+                        : selectedFilterCount && selectedFilterCount > 0
+                          ? `${selectedFilterLabel} (${selectedFilterCount})`
+                          : selectedFilterLabel}
                   </MenuToggle>
                 )}
               >
@@ -147,7 +175,7 @@ export function TopologyUnifiedToolbar({
                   <SelectOption value="all">All types</SelectOption>
                   {filterOptions.map((option) => (
                     <SelectOption key={option.id} value={option.id}>
-                      {option.label}
+                      {renderFilterOption(option)}
                     </SelectOption>
                   ))}
                 </SelectList>
@@ -223,10 +251,38 @@ export function TopologyUnifiedToolbar({
                     isChecked={displayLabels}
                     onChange={(_e, checked) => onDisplayLabelsChange(checked)}
                   />
+                  {onHideManagementPortsChange ? (
+                    <Switch
+                      id="topo-display-hide-mgmt-ports"
+                      label="Hide management ports"
+                      description="Hide OVN management ports and Geneve tunnels"
+                      isChecked={hideManagementPorts}
+                      onChange={(_e, checked) => onHideManagementPortsChange(checked)}
+                    />
+                  ) : null}
+                  {onTopologyScaleChange ? (
+                    <Switch
+                      id="topo-display-compact-scale"
+                      label="Compact view"
+                      aria-label="Compact view — fewer workers and networks for demos"
+                      description={
+                        topologyScale === "compact"
+                          ? "Showing ~5 workers and ~4 logical networks"
+                          : "Showing full-scale cluster (48 workers)"
+                      }
+                      isChecked={topologyScale === "compact"}
+                      onChange={(_e, checked) => onTopologyScaleChange(checked ? "compact" : "scale")}
+                    />
+                  ) : null}
                   <Divider />
                   <div className="ocs-pf-topo-display-menu__section" id="topo-layout-heading">
                     Layout
                   </div>
+                  {perspective !== "host" ? (
+                    <p className="ocs-pf-topo-display-menu__hint">
+                      Layout applies to the current {perspective === "cluster" ? "Cluster" : "Workloads"} view.
+                    </p>
+                  ) : null}
                   <div className="ocs-pf-topo-display-menu__layouts" role="radiogroup" aria-labelledby="topo-layout-heading">
                     {TOPOLOGY_LAYOUTS.map((layout) => (
                       <Radio
@@ -288,15 +344,6 @@ export function TopologyUnifiedToolbar({
                 </span>
               </Tooltip>
             </ToolbarItem>
-            {onOpenWorkerNodeModal ? (
-              <ToolbarItem>
-                <Tooltip content="Add worker nodes to the topology view">
-                  <Button variant="link" icon={<PlusCircleIcon />} onClick={onOpenWorkerNodeModal}>
-                    Add worker node
-                  </Button>
-                </Tooltip>
-              </ToolbarItem>
-            ) : null}
           </>
         ) : null}
       </ToolbarGroup>

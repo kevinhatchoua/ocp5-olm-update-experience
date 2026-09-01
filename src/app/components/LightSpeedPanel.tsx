@@ -31,6 +31,7 @@ import {
   getPreflightRemediationResponse,
   getUpdateStatusResponse,
 } from "./LightSpeedPanelResponses";
+import { getTopologyLightspeedResponse } from "../pages/networking/topology/topologyLightspeedResponses";
 import {
   LightspeedHeaderNotice,
   LightspeedWelcomeNotice,
@@ -129,6 +130,8 @@ export default function LightSpeedPanel({ isOpen, onClose, dockTop = null }: Lig
       report = getPreflightRemediationResponse();
     } else if (chatContext === "ols-preflight-apply-remediation") {
       report = getApplyRemediationResponse();
+    } else if (chatContext.startsWith("ols-topology:")) {
+      report = getTopologyLightspeedResponse(chatContext);
     }
 
     if (!report) return undefined;

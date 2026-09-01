@@ -7,15 +7,19 @@ import {
   type Layout,
   type LayoutFactory,
 } from "@patternfly/react-topology";
+import { ClusterPerspectiveLayout } from "./ClusterPerspectiveLayout";
 import { GroupsGridLayout } from "./GroupsGridLayout";
 
-/** Compact dagre spacing so Hierarchical (LR) and Tree (TB) stay scannable at scale. */
+/** Slot/grid layouts: never run force simulation on drag — only explicit graph.layout(). */
+const MANUAL_LAYOUT = { layoutOnDrag: false, respectManualPositions: true };
+
+/** Dagre: keep drag off so positioned nodes stay put; dagre runs on full layout only. */
 const DAGRE_COMPACT = {
   layoutOnDrag: false,
   ranker: "tight-tree" as const,
-  edgesep: 16,
-  marginx: 24,
-  marginy: 24,
+  edgesep: 24,
+  marginx: 32,
+  marginy: 32,
 };
 
 export const networkTopologyLayoutFactory: LayoutFactory = (
@@ -27,28 +31,30 @@ export const networkTopologyLayoutFactory: LayoutFactory = (
       return new DagreLayout(graph, {
         ...DAGRE_COMPACT,
         rankdir: "TB",
-        ranksep: 56,
-        nodesep: 40,
+        ranksep: 64,
+        nodesep: 48,
       });
     case "ColaGroups":
       return new ColaGroupsLayout(graph, {
-        layoutOnDrag: false,
+        ...MANUAL_LAYOUT,
         maxTicks: 400,
         linkDistance: 72,
         nodeDistance: 48,
         groupDistance: 80,
       });
+    case "ClusterPerspective":
+      return new ClusterPerspectiveLayout(graph, MANUAL_LAYOUT);
     case "GroupsGrid":
-      return new GroupsGridLayout(graph, { layoutOnDrag: false });
+      return new GroupsGridLayout(graph, MANUAL_LAYOUT);
     case "Concentric":
       return new ConcentricLayout(graph, {
-        layoutOnDrag: false,
+        ...MANUAL_LAYOUT,
         nodeDistance: 56,
         splitLevel: 4,
       });
     case "Force":
       return new ForceLayout(graph, {
-        layoutOnDrag: false,
+        ...MANUAL_LAYOUT,
         linkDistance: 80,
         nodeDistance: 52,
         chargeStrength: -80,
@@ -58,8 +64,8 @@ export const networkTopologyLayoutFactory: LayoutFactory = (
       return new DagreLayout(graph, {
         ...DAGRE_COMPACT,
         rankdir: "LR",
-        ranksep: 48,
-        nodesep: 44,
+        ranksep: 56,
+        nodesep: 52,
       });
   }
 };

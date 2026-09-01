@@ -18,6 +18,7 @@ import {
   createTopologyControlButtons,
   defaultControlButtonsOptions,
   GRAPH_LAYOUT_END_EVENT,
+  Point,
   SELECTION_EVENT,
   TopologyControlBar,
   TopologySideBar,
@@ -38,6 +39,7 @@ import {
   type NncProfile,
   type StandaloneTopologyResource,
   type TopologyCrossEdge,
+  type TopologyDataScale,
   type WorkerNodeGroup,
 } from "../networkTopologyData";
 import type { TopologyStep } from "../networkTopologyTypes";
@@ -71,9 +73,13 @@ import {
 import { TopologyUnifiedToolbar } from "./TopologyToolbars";
 import { resolveConfigurePath } from "./topologyConfigureNavigate";
 import { useNetworkTopologyModel } from "./useNetworkTopologyModel";
-import { type TopologyPerspective, type TopologyResourceFilter } from "./topologyPerspective";
+import { type TopologyPerspective, type TopologyResourceFilter, computeFilterCounts } from "./topologyPerspective";
 import { DEFAULT_TOPOLOGY_LAYOUT, type TopologyLayoutId } from "./topologyLayouts";
-import { KIND_BADGE } from "./topologyBadges";
+import { focusTopologySelection } from "./topologyFocus";
+import TopologyMinimap from "./TopologyMinimap";
+import { TopologyLightSpeedAction } from "./TopologyLightSpeedAction";
+import { topologyLightspeedContext } from "./topologyLightspeed";
+import { TopologyKindIcon } from "./topologyKindIcons";
 import {
   hasActivePath,
   resolveTopologyPathHighlight,
@@ -128,74 +134,36 @@ export type NetworkTopologyPanelProps = {
   highlightResourceSuffix?: string;
   viewMode?: NodeNetworkViewMode;
   onViewModeChange?: (mode: NodeNetworkViewMode) => void;
-  /** Hide Create / Add worker in the canvas toolbar when they are shown next to the page title. */
+  /** Hide Create in the canvas toolbar when it is shown next to the page title. */
   hideToolbarCreateActions?: boolean;
   activeCreateResource?: NetworkCreateResource | null;
   onActiveCreateResourceChange?: (resource: NetworkCreateResource | null) => void;
+  topologyScale?: TopologyDataScale;
+  onTopologyScaleChange?: (scale: TopologyDataScale) => void;
 };
 
 type ResourceFilterValue = TopologyResourceFilter;
 
-const LEGEND_RESOURCES: {
-  badge: string;
-  color: "blue" | "green" | "purple" | "orange" | "teal";
-  title: string;
-  blurb: string;
-}[] = [
-  {
-    badge: "NIC",
-    color: "green",
-    title: "NIC",
-    blurb: "Physical or virtual host interface (ens, eth, eno).",
-  },
-  {
-    badge: KIND_BADGE.bridge,
-    color: "blue",
-    title: "Bridge",
-    blurb: "Linux bridge that attaches NICs, bonds, and VLANs.",
-  },
-  {
-    badge: "DVS",
-    color: "purple",
-    title: "DVSwitch",
-    blurb: "OVS/OVN virtual switch (br-int, br-ex) for overlay and external traffic.",
-  },
-  {
-    badge: KIND_BADGE.tunnel,
-    color: "orange",
-    title: "Tunnel",
-    blurb: "Geneve or VXLAN overlay used by OVN.",
-  },
-  {
-    badge: KIND_BADGE.cudn,
-    color: "teal",
-    title: "Logical network",
-    blurb: "UserDefinedNetwork or ClusterUserDefinedNetwork.",
-  },
-  {
-    badge: "VM",
-    color: "blue",
-    title: "VM",
-    blurb: "Virtual machine attached to a network.",
-  },
-  {
-    badge: "POD",
-    color: "teal",
-    title: "Pod",
-    blurb: "Workload pod attached to a network.",
-  },
+const LEGEND_RESOURCES: { kind: string; title: string; blurb: string }[] = [
+  { kind: "interface", title: "NIC", blurb: "Physical or virtual host interface (ens, eth, eno)." },
+  { kind: "bridge", title: "Bridge", blurb: "Linux or OVS bridge (br-int, br-ex) for NICs, bonds, and VLANs." },
+  { kind: "tunnel", title: "Tunnel", blurb: "Geneve or VXLAN overlay used by OVN." },
+  { kind: "port", title: "Port", blurb: "Patch or OVS port connecting bridges and overlays." },
+  { kind: "cudn", title: "Logical network", blurb: "UserDefinedNetwork or ClusterUserDefinedNetwork." },
+  { kind: "vm", title: "VM", blurb: "Virtual machine attached to a network." },
+  { kind: "pod", title: "Pod", blurb: "Workload pod attached to a network." },
 ];
 
 function TopologyLegend() {
   return (
-    <Card className="ocs-pf-topo-legend pf-v6-theme-light" isCompact role="note" aria-label="Network resource types">
+    <Card className="ocs-pf-topo-legend" isCompact role="note" aria-label="Network resource types">
       <CardTitle>Network resources</CardTitle>
       <CardBody>
         {LEGEND_RESOURCES.map((item) => (
           <div key={item.title} className="ocs-pf-topo-legend__row">
-            <Label isCompact color={item.color}>
-              {item.badge}
-            </Label>
+            <span className="ocs-pf-topo-legend__icon" aria-hidden>
+              <TopologyKindIcon kind={item.kind} size={16} />
+            </span>
             <div className="ocs-pf-topo-legend__copy">
               <strong>{item.title}</strong>
               <span>{item.blurb}</span>
@@ -235,15 +203,19 @@ export default function NetworkTopologyView({
   hideToolbarCreateActions = false,
   activeCreateResource: activeCreateResourceProp,
   onActiveCreateResourceChange,
+  topologyScale = "scale",
+  onTopologyScaleChange,
 }: NetworkTopologyPanelProps) {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
+  const [debouncedSearchTerm, setDebouncedSearchTerm] = useState("");
   const [filterKind, setFilterKind] = useState<ResourceFilterValue>("all");
   const [showLegend, setShowLegend] = useState(false);
   const [layoutId, setLayoutId] = useState<TopologyLayoutId>(DEFAULT_TOPOLOGY_LAYOUT);
   const [displayLabels, setDisplayLabels] = useState(true);
+  const [hideManagementPorts, setHideManagementPorts] = useState(false);
   const [perspective, setPerspective] = useState<TopologyPerspective>("host");
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
   const [pathTraceActive, setPathTraceActive] = useState(false);
@@ -271,20 +243,71 @@ export default function NetworkTopologyView({
 
   const layoutName = layoutId;
 
+  const filterCounts = useMemo(
+    () =>
+      computeFilterCounts({
+        perspective,
+        groups,
+        standaloneResources,
+        networkNodeAssignments,
+        revealedGroupIds,
+        dataScale: topologyScale,
+      }),
+    [perspective, groups, standaloneResources, networkNodeAssignments, revealedGroupIds, topologyScale]
+  );
+
   const model = useNetworkTopologyModel({
     groups,
     standaloneResources,
     crossEdges,
     networkNodeAssignments,
     revealedGroupIds,
-    searchTerm,
+    searchTerm: debouncedSearchTerm,
     filterKind,
     layoutName,
     perspective,
+    dataScale: topologyScale,
+    hideManagementPorts,
   });
 
   const controllerRef = useRef<Visualization | null>(null);
   const fitAfterLayoutRef = useRef(true);
+  const layoutScopeRef = useRef(`${layoutName}-${perspective}`);
+  const prevPerspectiveRef = useRef<TopologyPerspective>(perspective);
+  const prevModelStructureKeyRef = useRef("");
+
+  const modelStructureKey = useMemo(() => {
+    const nodeKey =
+      model.nodes
+        ?.map((node) => {
+          const grouped = node.group ? "g" : "n";
+          const childCount = node.children?.length ?? 0;
+          return `${node.id}:${node.type ?? ""}:${grouped}:${childCount}`;
+        })
+        .sort()
+        .join("|") ?? "";
+    const edgeKey =
+      model.edges?.map((edge) => `${edge.id}:${edge.source}->${edge.target}`).sort().join("|") ?? "";
+    return `${nodeKey}::${edgeKey}`;
+  }, [model]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedSearchTerm(searchTerm), 200);
+    return () => window.clearTimeout(timer);
+  }, [searchTerm]);
+
+  useEffect(() => {
+    if (prevPerspectiveRef.current === perspective) {
+      return;
+    }
+    const fromPerspective = prevPerspectiveRef.current;
+    prevPerspectiveRef.current = perspective;
+    if (perspective !== "host" && fromPerspective === "host") {
+      setLayoutId((current) =>
+        current === "DagreLR" || current === "DagreTB" ? "ClusterPerspective" : current
+      );
+    }
+  }, [perspective]);
 
   const controller = useMemo(() => {
     const visualization = new Visualization();
@@ -309,22 +332,42 @@ export default function NetworkTopologyView({
   }, []);
 
   useEffect(() => {
-    fitAfterLayoutRef.current = true;
-    controller.fromModel(model, false);
+    const layoutScope = `${layoutName}-${perspective}`;
+    const shouldFit = layoutScopeRef.current !== layoutScope;
+    layoutScopeRef.current = layoutScope;
+    fitAfterLayoutRef.current = shouldFit;
+
+    const structureChanged = prevModelStructureKeyRef.current !== modelStructureKey;
+    prevModelStructureKeyRef.current = modelStructureKey;
+
+    controller.fromModel(model, true);
+    if (!structureChanged && !shouldFit) {
+      return;
+    }
+
+    const graph = controller.getGraph();
+    const savedScale = graph.getScale();
+    const savedPosition = new Point(graph.getPosition().x, graph.getPosition().y);
+
     requestAnimationFrame(() => {
       try {
-        const graph = controller.getGraph();
-        const type = graph.getLayout();
-        if (type) {
-          graph.setLayout(undefined);
-          graph.setLayout(type);
+        if (shouldFit) {
+          const type = graph.getLayout();
+          if (type) {
+            graph.setLayout(undefined);
+            graph.setLayout(type);
+          }
         }
         graph.layout();
+        if (!shouldFit) {
+          graph.setScale(savedScale);
+          graph.setPosition(savedPosition);
+        }
       } catch {
         /* graph may not be ready yet */
       }
     });
-  }, [controller, model]);
+  }, [controller, model, modelStructureKey, layoutName, perspective]);
 
   useEffect(() => {
     const state = controller.getState() as { selectedIds?: string[] };
@@ -375,17 +418,11 @@ export default function NetworkTopologyView({
     }
   }, [controller, model.nodes, searchParams, setSearchParams]);
 
-  const sideBarOpen = Boolean(selectedIds[0]);
-
   useEffect(() => {
     requestAnimationFrame(() => {
-      try {
-        controller.getGraph().fit(120);
-      } catch {
-        /* graph may not be ready yet */
-      }
+      focusTopologySelection(controller, selectedIds[0] ?? null);
     });
-  }, [controller, sideBarOpen]);
+  }, [controller, selectedIds]);
 
   const clearSelection = useCallback(() => {
     setSelectedIds([]);
@@ -442,6 +479,17 @@ export default function NetworkTopologyView({
     setPathTraceActive(false);
     clearPathHighlightIds();
   }, []);
+
+  const prevScaleRef = useRef<TopologyDataScale>(topologyScale);
+
+  useEffect(() => {
+    if (prevScaleRef.current === topologyScale) return;
+    prevScaleRef.current = topologyScale;
+    setSelectedIds([]);
+    setFilterKind("all");
+    clearPathTrace();
+    fitAfterLayoutRef.current = true;
+  }, [topologyScale, clearPathTrace]);
 
   const handleTracePath = useCallback(
     (selection: TopologyDetailSelection) => {
@@ -560,6 +608,46 @@ export default function NetworkTopologyView({
     [groups, onGroupsChange, notify]
   );
 
+  const handleUnassignInterface = useCallback(
+    (resourceId: string, interfaceId: string) => {
+      if (!onGroupsChange) {
+        notify({
+          title: `Interface removal requested (prototype): ${interfaceId} from ${resourceId}`,
+          variant: "info",
+        });
+        return;
+      }
+      let removedLabel = interfaceId;
+      const next = groups.map((group) => {
+        const resource = group.resources.find((r) => r.id === resourceId);
+        if (!resource) return group;
+        const iface = group.resources.find((r) => r.id === interfaceId || r.label === interfaceId);
+        if (iface) removedLabel = iface.label;
+        const ifaceId = iface?.id ?? interfaceId;
+        const ifaceLabel = iface?.label ?? interfaceId;
+        const related = (resource.related ?? []).filter((rel) => rel !== ifaceId && rel !== ifaceLabel);
+        const edges = group.edges.filter(
+          (edge) =>
+            !(
+              (edge.from === ifaceId && edge.to === resourceId) ||
+              (edge.to === ifaceId && edge.from === resourceId)
+            )
+        );
+        return {
+          ...group,
+          resources: group.resources.map((r) => (r.id === resourceId ? { ...r, related } : r)),
+          edges,
+        };
+      });
+      onGroupsChange(next);
+      notify({
+        title: `Removed ${removedLabel} from resource`,
+        variant: "success",
+      });
+    },
+    [groups, onGroupsChange, notify]
+  );
+
   const handleAttachWorkload = useCallback(
     (selection: TopologyDetailSelection) => {
       const path = resolveConfigurePath(selection);
@@ -658,12 +746,12 @@ export default function NetworkTopologyView({
       fitAfterLayoutRef.current = true;
       const graph = controller.getGraph();
       graph.reset();
-      const type = graph.getLayout() ?? layoutId;
+      const type = graph.getLayout() ?? layoutName;
       graph.setLayout(undefined);
       graph.setLayout(type);
       graph.layout();
     }),
-    [controller, layoutId]
+    [controller, layoutName]
   );
 
   const isCreateEnabled = Boolean(
@@ -684,17 +772,28 @@ export default function NetworkTopologyView({
     onSearchTermChange: setSearchTerm,
     filterKind,
     onFilterKindChange: setFilterKind,
+    filterCounts,
     viewMode,
     onViewModeChange,
     onShowShortcuts: () => setShortcutsOpen(true),
     displayLabels,
     onDisplayLabelsChange: setDisplayLabels,
+    hideManagementPorts,
+    onHideManagementPortsChange: setHideManagementPorts,
+    ...(onTopologyScaleChange
+      ? {
+          topologyScale,
+          onTopologyScaleChange,
+        }
+      : {}),
     layoutId,
-    onLayoutIdChange: setLayoutId,
+    onLayoutIdChange: (nextLayout: TopologyLayoutId) => {
+      fitAfterLayoutRef.current = true;
+      setLayoutId(nextLayout);
+    },
     onResetLayout: viewMode === "topology" ? resetLayout : undefined,
     isCreateEnabled,
     onCreateSelect: setActiveCreateResource,
-    onOpenWorkerNodeModal,
     showNncSwitcher,
     physicalNetworkName,
     nncProfiles,
@@ -718,9 +817,11 @@ export default function NetworkTopologyView({
         onConfigureResource={handleConfigureResource}
         onSelectNode={handleSelectNode}
         onAssignInterface={handleAssignInterface}
+        onUnassignInterface={handleUnassignInterface}
         onTracePath={handleTracePath}
         onAttachWorkload={handleAttachWorkload}
         onClose={clearSelection}
+        dataScale={topologyScale}
       />
     </TopologySideBar>
   );
@@ -731,7 +832,21 @@ export default function NetworkTopologyView({
         pathTraceActive ? " ocs-pf-topo-canvas-wrap--path-trace" : ""
       }`}
     >
-      {showLegend ? <TopologyLegend /> : null}
+      <TopologyView
+        contextToolbar={null}
+        viewToolbar={unifiedToolbar}
+        controlBar={<TopologyControlBar controlButtons={controlButtons} />}
+        sideBar={sideBar}
+        sideBarOpen={Boolean(selectedId)}
+        sideBarResizable
+        defaultSideBarSize="380px"
+        minSideBarSize="280px"
+        maxSideBarSize="480px"
+      >
+        <VisualizationProvider controller={controller}>
+          <VisualizationSurface state={{ selectedIds }} />
+        </VisualizationProvider>
+      </TopologyView>
       {pathTraceActive ? (
         <div className="ocs-pf-topo-trace-banner">
           <Label
@@ -743,21 +858,24 @@ export default function NetworkTopologyView({
           </Label>
         </div>
       ) : null}
-      <TopologyView
-        contextToolbar={null}
-        viewToolbar={unifiedToolbar}
-        controlBar={<TopologyControlBar controlButtons={controlButtons} />}
-        sideBar={sideBar}
-        sideBarOpen={sideBarOpen}
-        sideBarResizable
-        defaultSideBarSize="380px"
-        minSideBarSize="280px"
-        maxSideBarSize="480px"
-      >
-        <VisualizationProvider controller={controller}>
-          <VisualizationSurface state={{ selectedIds }} />
-        </VisualizationProvider>
-      </TopologyView>
+      {filterKind === "unhealthy" ? (
+        <div className="ocs-pf-topo-lightspeed-banner">
+          <TopologyLightSpeedAction
+            contextKey={topologyLightspeedContext("unhealthy-overview")}
+            intent="troubleshoot"
+            variant="secondary"
+            size="sm"
+          >
+            Triage unhealthy resources with LightSpeed
+          </TopologyLightSpeedAction>
+        </div>
+      ) : null}
+      {showLegend ? <TopologyLegend /> : null}
+      <TopologyMinimap
+        controller={controller}
+        selectedIds={selectedIds}
+        refreshKey={`${perspective}-${layoutId}-${modelStructureKey}`}
+      />
     </div>
   );
 
@@ -788,6 +906,7 @@ export default function NetworkTopologyView({
                         onConfigureResource={handleConfigureResource}
                         onSelectNode={handleSelectNode}
                         onAssignInterface={handleAssignInterface}
+        onUnassignInterface={handleUnassignInterface}
                         onTracePath={handleTracePath}
                         onAttachWorkload={handleAttachWorkload}
                         onClose={clearSelection}
@@ -861,7 +980,7 @@ export default function NetworkTopologyView({
               <kbd>⋮</kbd> or right-click for actions
             </li>
             <li>
-              <kbd>Drag</kbd> move nodes (freeform layout)
+              <kbd>Drag</kbd> move nodes and groups (hull outline or label)
             </li>
             <li>
               <kbd>Scroll</kbd> / control bar to zoom

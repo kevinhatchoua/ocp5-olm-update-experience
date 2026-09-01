@@ -13,31 +13,32 @@ export const KIND_BADGE: Record<NetResourceKind, string> = {
 export const WORKER_BADGE = "WN";
 export const LANE_BADGE = "NET";
 
-/** Badge fill colors via PF global tokens (accepted by DefaultNode badgeColor). */
+/**
+ * PatternFly 6 nonstatus blue Label tokens: light blue fill, black on-blue text.
+ */
+export const TYPE_BADGE_COLOR = "var(--pf-t--global--color--nonstatus--blue--default, #b9dafc)";
+export const TYPE_BADGE_TEXT = "var(--pf-t--global--text--color--nonstatus--on-blue--default, #151515)";
+export const TYPE_BADGE_BORDER = "var(--pf-t--global--border--color--nonstatus--blue--default, #004d99)";
+
 export const KIND_BADGE_COLOR: Record<NetResourceKind, string> = {
-  bridge: "var(--pf-t--global--color--brand--default)",
-  interface: "var(--pf-t--global--color--status--success--default)",
-  tunnel: "var(--pf-t--global--color--purple--default, var(--pf-t--global--icon--color--brand--default))",
-  port: "var(--pf-t--global--color--status--warning--default)",
-  cudn: "var(--pf-t--global--color--purple--default, var(--pf-t--global--icon--color--brand--default))",
-  udn: "var(--pf-t--global--color--status--info--default)",
+  bridge: TYPE_BADGE_COLOR,
+  interface: TYPE_BADGE_COLOR,
+  tunnel: TYPE_BADGE_COLOR,
+  port: TYPE_BADGE_COLOR,
+  cudn: TYPE_BADGE_COLOR,
+  udn: TYPE_BADGE_COLOR,
 };
 
-const ON_BRAND = "var(--pf-t--global--text--color--on-brand--regular, #fff)";
-const ON_WARNING = "var(--pf-t--global--text--color--status--on-warning--default, var(--pf-t--global--text--color--regular))";
-const ON_SUCCESS = "var(--pf-t--global--text--color--status--on-success--default, #fff)";
-
-/** Per-fill text so warning/yellow badges are not white-on-yellow. */
 export const KIND_BADGE_TEXT: Record<NetResourceKind, string> = {
-  bridge: ON_BRAND,
-  interface: ON_SUCCESS,
-  tunnel: ON_BRAND,
-  port: ON_WARNING,
-  cudn: ON_BRAND,
-  udn: ON_BRAND,
+  bridge: TYPE_BADGE_TEXT,
+  interface: TYPE_BADGE_TEXT,
+  tunnel: TYPE_BADGE_TEXT,
+  port: TYPE_BADGE_TEXT,
+  cudn: TYPE_BADGE_TEXT,
+  udn: TYPE_BADGE_TEXT,
 };
 
-export const LANE_BADGE_TEXT = ON_BRAND;
-export const WORKER_BADGE_TEXT = ON_SUCCESS;
-export const WORKER_BADGE_COLOR = "var(--pf-t--global--color--status--success--default)";
-export const LANE_BADGE_COLOR = "var(--pf-t--global--color--brand--default)";
+export const LANE_BADGE_TEXT = TYPE_BADGE_TEXT;
+export const WORKER_BADGE_TEXT = TYPE_BADGE_TEXT;
+export const WORKER_BADGE_COLOR = TYPE_BADGE_COLOR;
+export const LANE_BADGE_COLOR = TYPE_BADGE_COLOR;

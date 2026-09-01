@@ -130,25 +130,65 @@ const INITIAL_NAD_RECORDS: NadRecord[] = [
   },
 ];
 
-const INITIAL_UDN_RECORDS: UdnRecord[] = [
-  {
-    name: "cluster-udn-lime-giraffe",
+const INITIAL_UDN_RECORDS: UdnRecord[] = buildScaleUdnRecords();
+
+function buildScaleUdnRecords(): UdnRecord[] {
+  const cudnNames = [
+    "cluster-udn-lime-giraffe",
+    "cluster-udn-azure-manta",
+    "cluster-udn-coral-otter",
+    "cluster-udn-indigo-wolf",
+    "cluster-udn-jade-lynx",
+    "cluster-udn-amber-falcon",
+    "cluster-udn-slate-crane",
+    "cluster-udn-rose-ibis",
+    "cluster-udn-onyx-badger",
+    "cluster-udn-pearl-stoat",
+    "cluster-udn-cobalt-heron",
+    "cluster-udn-rust-condor",
+    "cluster-udn-mint-panda",
+    "cluster-udn-plum-okapi",
+    "cluster-udn-sand-viper",
+    "cluster-udn-fern-manatee",
+  ];
+  const udnNames = [
+    "project-udn-teal-walrus",
+    "project-udn-violet-fox",
+    "project-udn-crimson-hare",
+    "project-udn-gold-marten",
+    "project-udn-silver-kite",
+    "project-udn-bronze-newt",
+    "project-udn-copper-owl",
+    "project-udn-navy-puffin",
+    "project-udn-olive-quail",
+    "project-udn-ruby-wren",
+    "project-udn-ivory-loon",
+    "project-udn-graphite-mole",
+  ];
+  const topologies = ["Layer2", "Layer3"] as const;
+  const mtuValues = ["1500", "9000", "Not available"];
+
+  const cudns: UdnRecord[] = cudnNames.map((name, index) => ({
+    name,
     kind: "CUDN",
-    topology: "Layer2",
-    mtu: "Not available",
-    condition: "NetworkCreated=False",
-    description: "No description",
-  },
-  {
-    name: "project-udn-teal-walrus",
+    topology: topologies[index % topologies.length],
+    mtu: mtuValues[index % mtuValues.length],
+    condition: index % 9 === 0 ? "NetworkCreated=False" : "NetworkCreated=True",
+    description: "Cluster-scoped user-defined network for large-scale topology testing.",
+  }));
+
+  const udns: UdnRecord[] = udnNames.map((name, index) => ({
+    name,
     kind: "UDN",
     namespace: PROTOTYPE_NS,
-    topology: "Layer3",
-    mtu: "1500",
-    condition: "NetworkCreated=True",
-    description: "No description",
-  },
-];
+    topology: topologies[(index + 1) % topologies.length],
+    mtu: mtuValues[(index + 1) % mtuValues.length],
+    condition: index % 7 === 0 ? "NetworkCreated=False" : "NetworkCreated=True",
+    description: "Project-scoped user-defined network for large-scale topology testing.",
+  }));
+
+  return [...cudns, ...udns];
+}
 
 /** @deprecated Use getNadRecords() for live list data. */
 export const NAD_RECORDS: NadRecord[] = INITIAL_NAD_RECORDS;

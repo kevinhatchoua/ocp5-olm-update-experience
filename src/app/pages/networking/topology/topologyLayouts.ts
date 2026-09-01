@@ -16,6 +16,11 @@ export const TOPOLOGY_LAYOUTS = [
     description: "Force-directed clusters that keep worker groups together.",
   },
   {
+    id: "ClusterPerspective",
+    label: "Cluster map",
+    description: "Logical networks above worker grid with workloads below.",
+  },
+  {
     id: "GroupsGrid",
     label: "Grid",
     description: "Resources in a grid inside each group; groups packed in rows.",

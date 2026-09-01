@@ -1,11 +1,14 @@
 import {
   DefaultGroup,
   LabelPosition,
+  nodeDragSourceSpec,
   observer,
   withContextMenu,
+  withDragNode,
   withSelection,
   type Node,
   type WithContextMenuProps,
+  type WithDragNodeProps,
   type WithSelectionProps,
 } from "@patternfly/react-topology";
 import { LANE_BADGE, LANE_BADGE_COLOR, LANE_BADGE_TEXT } from "./topologyBadges";
@@ -14,14 +17,16 @@ import { buildNodeContextMenu } from "./topologyContextMenu";
 type LaneInnerProps = {
   element: Node;
 } & WithSelectionProps &
+  Partial<WithDragNodeProps> &
   Partial<WithContextMenuProps>;
 
 const LogicalLaneInner = observer(
-  ({ element, onSelect, selected, onContextMenu, contextMenuOpen }: LaneInnerProps) => (
+  ({ element, onSelect, selected, dragNodeRef, onContextMenu, contextMenuOpen }: LaneInnerProps) => (
     <DefaultGroup
       element={element}
       onSelect={onSelect}
       selected={selected}
+      dragNodeRef={dragNodeRef}
       onContextMenu={onContextMenu}
       contextMenuOpen={contextMenuOpen}
       className="ocs-pf-topo-logical-lane ocs-pf-topo-hull"
@@ -40,5 +45,5 @@ const LogicalLaneInner = observer(
 );
 
 export const CustomLogicalLaneGroup = withContextMenu(buildNodeContextMenu)(
-  withSelection()(LogicalLaneInner)
+  withDragNode(nodeDragSourceSpec("group"))(withSelection()(LogicalLaneInner))
 );

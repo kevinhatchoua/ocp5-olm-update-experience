@@ -91,6 +91,12 @@ export function isWorkloadNodeData(data: unknown): data is WorkloadNodeData {
   return Boolean(data && typeof data === "object" && (data as WorkloadNodeData).nodeKind === "workload");
 }
 
+export function isLogicalLaneNodeData(data: unknown): data is LogicalLaneNodeData {
+  return Boolean(
+    data && typeof data === "object" && (data as LogicalLaneNodeData).nodeKind === "logical-lane"
+  );
+}
+
 export function isConnectionEdgeData(data: unknown): data is ConnectionEdgeData {
   return Boolean(data && typeof data === "object" && (data as ConnectionEdgeData).edgeKind === "connection");
 }
