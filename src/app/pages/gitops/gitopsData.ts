@@ -16,6 +16,10 @@ export type RolloutRecord = {
   managedBy: GitOpsOwner;
 };
 
+export type ArgoCdComponent = "server" | "repo" | "redis" | "controller" | "sso";
+
+export const GITOPS_ALL_INSTANCES = "__all__";
+
 export type ArgoCdRecord = {
   name: string;
   ns: string;
@@ -24,7 +28,19 @@ export type ArgoCdRecord = {
   version: string;
   age: string;
   applications: string;
+  cpu: string;
+  memory: string;
+  created: string;
+  successfulSyncs: number;
+  failedSyncs24h: number;
+  clusterConnectivity: string;
+  repoPending: number;
+  components: Record<ArgoCdComponent, "Healthy" | "Degraded">;
 };
+
+export function instanceKeyOf(inst: Pick<ArgoCdRecord, "ns" | "name">) {
+  return `${inst.ns}/${inst.name}`;
+}
 
 export type ApplicationRecord = {
   name: string;
@@ -38,6 +54,8 @@ export type ApplicationRecord = {
   revision: string;
   destination: string;
   managedBy: GitOpsOwner;
+  instanceKey: string;
+  lastReconciled: string;
 };
 
 export type ApplicationSetRecord = {
@@ -107,15 +125,65 @@ extraNames.forEach((n, i) => {
   });
 });
 
+const ALL_COMPONENTS: ArgoCdRecord["components"] = {
+  server: "Healthy",
+  repo: "Healthy",
+  redis: "Healthy",
+  controller: "Healthy",
+  sso: "Healthy",
+};
+
 export const ARGO_INSTANCES: ArgoCdRecord[] = [
+  {
+    name: "argocd",
+    ns: "openshift-gitops-operator",
+    server: "https://argocd-server.apps.demo.red-chesterfield.com",
+    status: "Healthy",
+    version: "v2.14.3",
+    age: "17d",
+    applications: "0",
+    cpu: "1.1 cores",
+    memory: "1.6 Gi",
+    created: "17d ago",
+    successfulSyncs: 0,
+    failedSyncs24h: 0,
+    clusterConnectivity: "1/1",
+    repoPending: 0,
+    components: ALL_COMPONENTS,
+  },
   {
     name: "openshift-gitops",
     ns: "openshift-gitops",
     server: "https://openshift-gitops-server.apps.demo.example.com",
     status: "Healthy",
     version: "v2.14.3",
-    age: "45d",
-    applications: "18",
+    age: "77d",
+    applications: "3",
+    cpu: "1.9 cores",
+    memory: "2.4 Gi",
+    created: "77d ago",
+    successfulSyncs: 4,
+    failedSyncs24h: 0,
+    clusterConnectivity: "1/1",
+    repoPending: 0,
+    components: ALL_COMPONENTS,
+  },
+  {
+    name: "team-b",
+    ns: "team-b-gitops",
+    server: "https://team-b-server.apps.demo.example.com",
+    status: "Healthy",
+    version: "v2.13.1",
+    age: "97d",
+    applications: "1",
+    cpu: "0m",
+    memory: "0 Mi",
+    created: "97d ago",
+    successfulSyncs: 1,
+    failedSyncs24h: 0,
+    clusterConnectivity: "1/1",
+    repoPending: 0,
+    components: ALL_COMPONENTS,
   },
   {
     name: "gitops-spoke-east",
@@ -124,11 +192,102 @@ export const ARGO_INSTANCES: ArgoCdRecord[] = [
     status: "Healthy",
     version: "v2.13.1",
     age: "22d",
-    applications: "7",
+    applications: "1",
+    cpu: "800m",
+    memory: "1.1 Gi",
+    created: "22d ago",
+    successfulSyncs: 18,
+    failedSyncs24h: 0,
+    clusterConnectivity: "1/1",
+    repoPending: 0,
+    components: ALL_COMPONENTS,
+  },
+  {
+    name: "gitops-spoke-west",
+    ns: "gitops-spoke-west",
+    server: "https://argocd.spoke-west.example.com",
+    status: "Healthy",
+    version: "v2.13.1",
+    age: "19d",
+    applications: "0",
+    cpu: "720m",
+    memory: "980 Mi",
+    created: "19d ago",
+    successfulSyncs: 6,
+    failedSyncs24h: 0,
+    clusterConnectivity: "1/1",
+    repoPending: 0,
+    components: ALL_COMPONENTS,
+  },
+  {
+    name: "payments-gitops",
+    ns: "payments",
+    server: "https://argocd.payments.example.com",
+    status: "Degraded",
+    version: "v2.12.8",
+    age: "11d",
+    applications: "1",
+    cpu: "1.4 cores",
+    memory: "1.8 Gi",
+    created: "11d ago",
+    successfulSyncs: 9,
+    failedSyncs24h: 2,
+    clusterConnectivity: "0/1",
+    repoPending: 3,
+    components: { ...ALL_COMPONENTS, repo: "Degraded" },
+  },
+  {
+    name: "edge-lab",
+    ns: "edge-lab",
+    server: "https://argocd.edge-lab.example.com",
+    status: "Degraded",
+    version: "v2.11.4",
+    age: "40d",
+    applications: "0",
+    cpu: "400m",
+    memory: "512 Mi",
+    created: "40d ago",
+    successfulSyncs: 0,
+    failedSyncs24h: 1,
+    clusterConnectivity: "0/1",
+    repoPending: 1,
+    components: { ...ALL_COMPONENTS, server: "Degraded", sso: "Degraded" },
+  },
+  {
+    name: "platform-addons",
+    ns: "openshift-gitops",
+    server: "https://platform-addons.apps.demo.example.com",
+    status: "Healthy",
+    version: "v2.14.3",
+    age: "30d",
+    applications: "1",
+    cpu: "600m",
+    memory: "768 Mi",
+    created: "30d ago",
+    successfulSyncs: 22,
+    failedSyncs24h: 0,
+    clusterConnectivity: "1/1",
+    repoPending: 0,
+    components: ALL_COMPONENTS,
   },
 ];
 
 export const GITOPS_APPLICATIONS: ApplicationRecord[] = [
+  {
+    name: "team-b-guestbook",
+    ns: "team-b-gitops",
+    project: "default",
+    sync: "Synced",
+    health: "Healthy",
+    age: "97d",
+    repo: "https://github.com/argoproj/argocd-example-apps.git",
+    path: "guestbook",
+    revision: "8088f4c0d970abb09e250248cc97e35623447cb5",
+    destination: "team-b-apps",
+    managedBy: null,
+    instanceKey: "team-b-gitops/team-b",
+    lastReconciled: "3m ago",
+  },
   {
     name: "rollouts-demo",
     ns: "argocd",
@@ -141,6 +300,8 @@ export const GITOPS_APPLICATIONS: ApplicationRecord[] = [
     revision: "main",
     destination: "in-cluster / rollouts-demo",
     managedBy: null,
+    instanceKey: "openshift-gitops/openshift-gitops",
+    lastReconciled: "8m ago",
   },
   {
     name: "payments-api",
@@ -154,6 +315,8 @@ export const GITOPS_APPLICATIONS: ApplicationRecord[] = [
     revision: "release-1.4",
     destination: "in-cluster / payments",
     managedBy: null,
+    instanceKey: "payments/payments-gitops",
+    lastReconciled: "21m ago",
   },
   {
     name: "frontend-canary",
@@ -167,6 +330,23 @@ export const GITOPS_APPLICATIONS: ApplicationRecord[] = [
     revision: "main",
     destination: "in-cluster / demo-workloads",
     managedBy: { kind: "ApplicationSet", name: "tenant-workloads", ns: "argocd" },
+    instanceKey: "gitops-spoke-east/gitops-spoke-east",
+    lastReconciled: "4m ago",
+  },
+  {
+    name: "cluster-addons-core",
+    ns: "openshift-gitops",
+    project: "platform",
+    sync: "Synced",
+    health: "Healthy",
+    age: "20d",
+    repo: "https://github.com/demo/cluster-addons.git",
+    path: "sets/addons",
+    revision: "main",
+    destination: "in-cluster / openshift-gitops",
+    managedBy: { kind: "ApplicationSet", name: "cluster-addons", ns: "openshift-gitops" },
+    instanceKey: "openshift-gitops/platform-addons",
+    lastReconciled: "12m ago",
   },
 ];
 
@@ -251,6 +431,14 @@ export type PromotionPipelineRecord = {
 };
 
 export const GITOPS_APP_PROJECTS: AppProjectRecord[] = [
+  {
+    name: "default",
+    ns: "team-b-gitops",
+    description: "Default project for team-b workloads",
+    destinations: "team-b-apps",
+    sourceRepos: "https://github.com/argoproj/*",
+    age: "97d",
+  },
   {
     name: "default",
     ns: "argocd",
@@ -344,29 +532,29 @@ export const GITOPS_PROMOTION_PIPELINES: PromotionPipelineRecord[] = [
   },
 ];
 
-function buildDashboardMetrics(): DashboardMetrics {
-  const synced = GITOPS_APPLICATIONS.filter((a) => a.sync === "Synced").length;
-  const outOfSync = GITOPS_APPLICATIONS.filter((a) => a.sync === "OutOfSync").length;
-  const healthy = GITOPS_APPLICATIONS.filter((a) => a.health === "Healthy").length;
-  const degraded = GITOPS_APPLICATIONS.filter((a) => a.health === "Degraded").length;
-  const progressing = GITOPS_APPLICATIONS.filter((a) => a.health === "Progressing").length;
-  const total = GITOPS_APPLICATIONS.length || 1;
-  const needsAttention = GITOPS_APPLICATIONS.filter(
-    (a) => a.sync === "OutOfSync" || a.health === "Degraded" || a.health === "Progressing"
-  ).map((a) => ({
-    name: a.name,
-    ns: a.ns,
-    reason:
-      a.health === "Degraded"
-        ? "Health degraded"
-        : a.sync === "OutOfSync"
-          ? "Out of sync with desired revision"
-          : "Sync in progress",
-    severity: (a.health === "Degraded" ? "danger" : a.sync === "OutOfSync" ? "warning" : "info") as
-      | "warning"
-      | "danger"
-      | "info",
-  }));
+function buildDashboardMetrics(apps: ApplicationRecord[] = GITOPS_APPLICATIONS): DashboardMetrics {
+  const synced = apps.filter((a) => a.sync === "Synced").length;
+  const outOfSync = apps.filter((a) => a.sync === "OutOfSync").length;
+  const healthy = apps.filter((a) => a.health === "Healthy").length;
+  const degraded = apps.filter((a) => a.health === "Degraded").length;
+  const progressing = apps.filter((a) => a.health === "Progressing").length;
+  const total = apps.length || 1;
+  const needsAttention = apps
+    .filter((a) => a.sync === "OutOfSync" || a.health === "Degraded" || a.health === "Progressing")
+    .map((a) => ({
+      name: a.name,
+      ns: a.ns,
+      reason:
+        a.health === "Degraded"
+          ? "Health degraded"
+          : a.sync === "OutOfSync"
+            ? "Out of sync with desired revision"
+            : "Sync in progress",
+      severity: (a.health === "Degraded" ? "danger" : a.sync === "OutOfSync" ? "warning" : "info") as
+        | "warning"
+        | "danger"
+        | "info",
+    }));
   return {
     synced,
     outOfSync,
@@ -384,10 +572,127 @@ function buildDashboardMetrics(): DashboardMetrics {
 
 export const GITOPS_DASHBOARD_METRICS: DashboardMetrics = buildDashboardMetrics();
 
+export function dashboardMetricsForInstance(key: string) {
+  return buildDashboardMetrics(applicationsForInstance(key));
+}
+
 export const ARGO_INSTANCE_OPTIONS = ARGO_INSTANCES.map((inst) => ({
-  value: `${inst.ns}/${inst.name}`,
-  label: `${inst.name} (${inst.ns})`,
+  value: instanceKeyOf(inst),
+  label: instanceKeyOf(inst),
 }));
+
+export function applicationsForInstance(key: string) {
+  if (!key || key === GITOPS_ALL_INSTANCES) return GITOPS_APPLICATIONS;
+  return GITOPS_APPLICATIONS.filter((a) => a.instanceKey === key);
+}
+
+export function appProjectsForInstance(key: string) {
+  if (!key || key === GITOPS_ALL_INSTANCES) return GITOPS_APP_PROJECTS;
+  const ns = key.split("/")[0];
+  return GITOPS_APP_PROJECTS.filter((p) => p.ns === ns);
+}
+
+export function applicationSetsForInstance(key: string) {
+  if (!key || key === GITOPS_ALL_INSTANCES) return GITOPS_APPLICATION_SETS;
+  const ns = key.split("/")[0];
+  return GITOPS_APPLICATION_SETS.filter((s) => s.ns === ns);
+}
+
+export type RecentOperation = {
+  name: string;
+  ns: string;
+  phase: "Succeeded" | "Failed" | "Running";
+  message: string;
+  finished: string;
+};
+
+export const GITOPS_RECENT_OPERATIONS: RecentOperation[] = [
+  {
+    name: "team-b-guestbook",
+    ns: "team-b-gitops",
+    phase: "Succeeded",
+    message: "successfully synced (all tasks run)",
+    finished: "97d ago",
+  },
+  {
+    name: "rollouts-demo",
+    ns: "argocd",
+    phase: "Succeeded",
+    message: "successfully synced (all tasks run)",
+    finished: "12d ago",
+  },
+  {
+    name: "payments-api",
+    ns: "argocd",
+    phase: "Failed",
+    message: "ComparisonError: live manifest differs from desired",
+    finished: "21m ago",
+  },
+];
+
+export function recentOperationsForInstance(key: string) {
+  if (!key || key === GITOPS_ALL_INSTANCES) return GITOPS_RECENT_OPERATIONS;
+  const apps = new Set(applicationsForInstance(key).map((a) => `${a.ns}/${a.name}`));
+  return GITOPS_RECENT_OPERATIONS.filter((op) => apps.has(`${op.ns}/${op.name}`));
+}
+
+export const GITOPS_SETTINGS_REPOS = [
+  {
+    url: "https://github.com/argoproj/argocd-example-apps.git",
+    type: "git",
+    name: "argocd-example-apps",
+    applications: 2,
+    status: "Public",
+  },
+  {
+    url: "https://gitlab.example.com/payments/payments-api.git",
+    type: "git",
+    name: "payments-api",
+    applications: 1,
+    status: "Private",
+  },
+  {
+    url: "https://charts.example.com",
+    type: "helm",
+    name: "helm-charts",
+    applications: 0,
+    status: "Public",
+  },
+];
+
+export const GITOPS_SETTINGS_CLUSTERS = [
+  { name: "in-cluster", server: "https://kubernetes.default.svc", status: "Healthy" as const, apps: 4 },
+  { name: "spoke-east", server: "https://api.spoke-east.example.com", status: "Healthy" as const, apps: 1 },
+  { name: "edge-lab", server: "https://api.edge-lab.example.com", status: "Degraded" as const, apps: 0 },
+];
+
+export const GITOPS_SETTINGS_NOTIFICATIONS = [
+  { name: "slack-platform", type: "slack", trigger: "on-sync-failed", destination: "#gitops-alerts" },
+  { name: "email-payments", type: "email", trigger: "on-health-degraded", destination: "payments-oncall@example.com" },
+];
+
+export const GITOPS_SETTINGS_ROLLOUT_MANAGERS = [
+  { name: "openshift-gitops", ns: "openshift-gitops", status: "Healthy" as const, rollouts: 8 },
+  { name: "team-b", ns: "team-b-gitops", status: "Healthy" as const, rollouts: 1 },
+];
+
+export const GITOPS_SETTINGS_NAMESPACES = [
+  { name: "team-b-gitops", apps: 1, managed: true },
+  { name: "argocd", apps: 2, managed: true },
+  { name: "openshift-gitops", apps: 1, managed: true },
+  { name: "demo-workloads", apps: 1, managed: false },
+];
+
+export const GITOPS_SETTINGS_ANALYSIS_TEMPLATES = [
+  { name: "success-rate", ns: "argocd", provider: "prometheus", age: "12d" },
+  { name: "error-rate", ns: "team-b-gitops", provider: "prometheus", age: "30d" },
+];
+
+export const GITOPS_NOTIFICATION_HISTORY = [
+  { when: "2h ago", channel: "slack-platform", event: "SyncFailed", resource: "payments-api", result: "Delivered" },
+  { when: "1d ago", channel: "email-payments", event: "HealthDegraded", resource: "payments-api", result: "Delivered" },
+  { when: "4d ago", channel: "slack-platform", event: "SyncSucceeded", resource: "rollouts-demo", result: "Delivered" },
+];
 
 export const gitopsDetailPath = (
   kind:
@@ -415,7 +720,7 @@ export function findApplication(ns: string, name: string) {
 export function applicationsForNamespace(ns: string) {
   const suffix = ` / ${ns}`;
   return GITOPS_APPLICATIONS.filter(
-    (a) => a.destination.includes(ns) || a.destination.endsWith(suffix)
+    (a) => a.ns === ns || a.destination.includes(ns) || a.destination.endsWith(suffix)
   );
 }
 

@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useParams } from "react-router";
 import {
   Alert,
+  Button,
   CodeBlock,
   CodeBlockCode,
   Content,
@@ -26,12 +27,14 @@ import FavoriteButton from "../../components/FavoriteButton";
 import { OcsPrototypeListTable, PlainTableHeader } from "../../components/dataView/OcsPrototypeListTable";
 import {
   findApplication,
+  findAppProject,
   gitopsDetailPath,
   GITOPS_PROMOTION_PIPELINES,
   type ApplicationRecord,
 } from "./gitopsData";
 import { GitOpsNotFound } from "./GitOpsSimpleDetailPage";
-import { GitOpsEditDeleteMenu, HealthStatus, ManagedByCell, ResourceName } from "./gitopsShared";
+import { GitOpsEditDeleteMenu, GitOpsLink, HealthStatus, ManagedByCell, ResourceName } from "./gitopsShared";
+import { useToast } from "../../contexts/ToastContext";
 
 function promotionForApp(appName: string) {
   return GITOPS_PROMOTION_PIPELINES.find(
@@ -135,6 +138,7 @@ export default function GitOpsApplicationDetailRich() {
   const rec = findApplication(ns, appName);
   const [activeTab, setActiveTab] = useState("details");
   const [logContainer, setLogContainer] = useState<(typeof LOG_CONTAINERS)[number]>("application-controller");
+  const { pushToast } = useToast();
 
   const metrics = useMemo(() => (rec ? metricsFor(rec) : null), [rec]);
 
@@ -150,7 +154,7 @@ export default function GitOpsApplicationDetailRich() {
       <Breadcrumbs
         items={[
           { label: "Home", path: "/" },
-          { label: "GitOps", path: "/gitops/rollouts" },
+          { label: "GitOps", path: "/gitops/overview" },
           { label: "Applications", path: "/gitops/applications" },
           { label: rec.name },
         ]}
@@ -169,7 +173,16 @@ export default function GitOpsApplicationDetailRich() {
             </Flex>
             <Flex gap={{ default: "gapSm" }} alignItems={{ default: "alignItemsCenter" }}>
               <FavoriteButton name={rec.name} path={href} />
-              <GitOpsEditDeleteMenu kind="Application" name={rec.name} variant="secondary" />
+              <GitOpsEditDeleteMenu
+                kind="Application"
+                name={rec.name}
+                variant="secondary"
+                extraItems={[
+                  { id: "sync", label: "Sync" },
+                  { id: "refresh", label: "Refresh" },
+                  { id: "hard-refresh", label: "Hard refresh" },
+                ]}
+              />
             </Flex>
           </Flex>
 
@@ -179,11 +192,17 @@ export default function GitOpsApplicationDetailRich() {
             aria-label="Application details"
           >
             <Tab eventKey="details" title={<TabTitleText>Details</TabTitleText>} />
-            <Tab eventKey="logs" title={<TabTitleText>Logs</TabTitleText>} />
-            <Tab eventKey="diff" title={<TabTitleText>Diff</TabTitleText>} />
-            <Tab eventKey="metrics" title={<TabTitleText>Metrics</TabTitleText>} />
             <Tab eventKey="yaml" title={<TabTitleText>YAML</TabTitleText>} />
+            <Tab eventKey="configuration" title={<TabTitleText>Configuration</TabTitleText>} />
+            <Tab eventKey="diff" title={<TabTitleText>Diff</TabTitleText>} />
             <Tab eventKey="events" title={<TabTitleText>Events</TabTitleText>} />
+            <Tab eventKey="history" title={<TabTitleText>History</TabTitleText>} />
+            <Tab eventKey="logs" title={<TabTitleText>Logs</TabTitleText>} />
+            <Tab eventKey="metrics" title={<TabTitleText>Metrics</TabTitleText>} />
+            <Tab eventKey="promotion" title={<TabTitleText>Promotion</TabTitleText>} />
+            <Tab eventKey="resource-tree" title={<TabTitleText>Resource Tree</TabTitleText>} />
+            <Tab eventKey="resources" title={<TabTitleText>Resources</TabTitleText>} />
+            <Tab eventKey="summary" title={<TabTitleText>Summary</TabTitleText>} />
           </Tabs>
 
           {activeTab === "details" ? (
@@ -206,11 +225,43 @@ export default function GitOpsApplicationDetailRich() {
                 </DescriptionListGroup>
                 <DescriptionListGroup>
                   <DescriptionListTerm>Namespace</DescriptionListTerm>
-                  <DescriptionListDescription>{rec.ns}</DescriptionListDescription>
+                  <DescriptionListDescription>
+                    <ResourceName
+                      kind="Namespace"
+                      name={rec.ns}
+                      to={`/administration/namespaces/${encodeURIComponent(rec.ns)}`}
+                    />
+                  </DescriptionListDescription>
+                </DescriptionListGroup>
+                <DescriptionListGroup>
+                  <DescriptionListTerm>Labels</DescriptionListTerm>
+                  <DescriptionListDescription>
+                    <Flex alignItems={{ default: "alignItemsCenter" }} gap={{ default: "gapSm" }}>
+                      <span>No labels</span>
+                      <Button
+                        variant="link"
+                        isInline
+                        onClick={() => pushToast({ variant: "info", title: `Edit labels: ${rec.name}` })}
+                      >
+                        Edit
+                      </Button>
+                    </Flex>
+                  </DescriptionListDescription>
                 </DescriptionListGroup>
                 <DescriptionListGroup>
                   <DescriptionListTerm>Project</DescriptionListTerm>
-                  <DescriptionListDescription>{rec.project}</DescriptionListDescription>
+                  <DescriptionListDescription>
+                    {(() => {
+                      const project = findAppProject(rec.ns, rec.project) ?? findAppProject("argocd", rec.project);
+                      return project ? (
+                        <GitOpsLink to={gitopsDetailPath("appprojects", project.ns, project.name)}>
+                          {rec.project}
+                        </GitOpsLink>
+                      ) : (
+                        rec.project
+                      );
+                    })()}
+                  </DescriptionListDescription>
                 </DescriptionListGroup>
                 <DescriptionListGroup>
                   <DescriptionListTerm>Sync status</DescriptionListTerm>
@@ -373,6 +424,158 @@ export default function GitOpsApplicationDetailRich() {
                 </Tbody>
               </OcsPrototypeListTable>
             </div>
+          ) : null}
+
+          {activeTab === "configuration" ? (
+            <DescriptionList isHorizontal isCompact>
+              <DescriptionListGroup>
+                <DescriptionListTerm>Auto-sync</DescriptionListTerm>
+                <DescriptionListDescription>Disabled</DescriptionListDescription>
+              </DescriptionListGroup>
+              <DescriptionListGroup>
+                <DescriptionListTerm>Prune</DescriptionListTerm>
+                <DescriptionListDescription>false</DescriptionListDescription>
+              </DescriptionListGroup>
+              <DescriptionListGroup>
+                <DescriptionListTerm>Self-heal</DescriptionListTerm>
+                <DescriptionListDescription>false</DescriptionListDescription>
+              </DescriptionListGroup>
+              <DescriptionListGroup>
+                <DescriptionListTerm>Retry</DescriptionListTerm>
+                <DescriptionListDescription>Limit 5 · backoff 5s–3m</DescriptionListDescription>
+              </DescriptionListGroup>
+              <DescriptionListGroup>
+                <DescriptionListTerm>Ignore differences</DescriptionListTerm>
+                <DescriptionListDescription>None</DescriptionListDescription>
+              </DescriptionListGroup>
+            </DescriptionList>
+          ) : null}
+
+          {activeTab === "history" ? (
+            <OcsPrototypeListTable ariaLabel="Sync history">
+              <Thead>
+                <Tr>
+                  <Th dataLabel="Revision">
+                    <PlainTableHeader label="Revision" />
+                  </Th>
+                  <Th dataLabel="Deployed">
+                    <PlainTableHeader label="Deployed" />
+                  </Th>
+                  <Th dataLabel="Author">
+                    <PlainTableHeader label="Author" />
+                  </Th>
+                  <Th dataLabel="Message">
+                    <PlainTableHeader label="Message" />
+                  </Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                <Tr>
+                  <Td dataLabel="Revision">
+                    <code>{rec.revision.slice(0, 12)}</code>
+                  </Td>
+                  <Td dataLabel="Deployed">{rec.lastReconciled}</Td>
+                  <Td dataLabel="Author">gitops-controller</Td>
+                  <Td dataLabel="Message">Sync to desired revision</Td>
+                </Tr>
+              </Tbody>
+            </OcsPrototypeListTable>
+          ) : null}
+
+          {activeTab === "promotion" ? (
+            <Flex direction={{ default: "column" }} gap={{ default: "gapMd" }}>
+              {promotion ? (
+                <>
+                  <Alert variant="info" title={`${promotion.name} is ${promotion.status}`} isInline>
+                    Environments: {promotion.environments}. Gates: {promotion.gates}.
+                  </Alert>
+                  <GitOpsLink to={gitopsDetailPath("promotions", promotion.ns, promotion.name)}>
+                    Open promotion pipeline
+                  </GitOpsLink>
+                </>
+              ) : (
+                <>
+                  <Content component="p">No promotion pipeline is attached to this application.</Content>
+                  <GitOpsLink to="/gitops/promotions">View promotion pipelines</GitOpsLink>
+                </>
+              )}
+            </Flex>
+          ) : null}
+
+          {activeTab === "resource-tree" ? (
+            <Flex direction={{ default: "column" }} gap={{ default: "gapSm" }}>
+              <ResourceName kind="Application" name={rec.name} />
+              <Content component="p" className="pf-v6-u-ml-lg">
+                Deployment/{rec.name}
+              </Content>
+              <Content component="p" className="pf-v6-u-ml-2xl">
+                ReplicaSet/{rec.name}-6f8d9
+              </Content>
+              <Content component="p" className="pf-v6-u-ml-3xl">
+                Pod/{rec.name}-6f8d9-abc12
+              </Content>
+              <Content component="small" className="pf-v6-u-color-200">
+                Topology graph sidebars remain HPUX-1942. This tree is a clickable outline of live objects.
+              </Content>
+            </Flex>
+          ) : null}
+
+          {activeTab === "resources" ? (
+            <OcsPrototypeListTable ariaLabel="Live resources">
+              <Thead>
+                <Tr>
+                  <Th dataLabel="Kind">
+                    <PlainTableHeader label="Kind" />
+                  </Th>
+                  <Th dataLabel="Name">
+                    <PlainTableHeader label="Name" />
+                  </Th>
+                  <Th dataLabel="Status">
+                    <PlainTableHeader label="Status" />
+                  </Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                {[
+                  { kind: "Deployment", name: rec.name, status: rec.health },
+                  { kind: "Service", name: rec.name, status: "Healthy" },
+                  { kind: "Route", name: rec.name, status: "Healthy" },
+                ].map((row) => (
+                  <Tr key={`${row.kind}/${row.name}`}>
+                    <Td dataLabel="Kind">{row.kind}</Td>
+                    <Td dataLabel="Name">{row.name}</Td>
+                    <Td dataLabel="Status">
+                      <HealthStatus status={row.status} />
+                    </Td>
+                  </Tr>
+                ))}
+              </Tbody>
+            </OcsPrototypeListTable>
+          ) : null}
+
+          {activeTab === "summary" ? (
+            <DescriptionList isHorizontal isCompact>
+              <DescriptionListGroup>
+                <DescriptionListTerm>Sync</DescriptionListTerm>
+                <DescriptionListDescription>
+                  <HealthStatus status={rec.sync} />
+                </DescriptionListDescription>
+              </DescriptionListGroup>
+              <DescriptionListGroup>
+                <DescriptionListTerm>Health</DescriptionListTerm>
+                <DescriptionListDescription>
+                  <HealthStatus status={rec.health} />
+                </DescriptionListDescription>
+              </DescriptionListGroup>
+              <DescriptionListGroup>
+                <DescriptionListTerm>Last reconciled</DescriptionListTerm>
+                <DescriptionListDescription>{rec.lastReconciled}</DescriptionListDescription>
+              </DescriptionListGroup>
+              <DescriptionListGroup>
+                <DescriptionListTerm>Destination</DescriptionListTerm>
+                <DescriptionListDescription>{rec.destination}</DescriptionListDescription>
+              </DescriptionListGroup>
+            </DescriptionList>
           ) : null}
 
           <Content component="small" className="pf-v6-u-color-200">

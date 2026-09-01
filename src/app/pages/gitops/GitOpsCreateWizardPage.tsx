@@ -23,6 +23,8 @@ const KIND_LABEL: Record<string, string> = {
   applicationset: "ApplicationSet",
   appproject: "AppProject",
   rollout: "Rollout",
+  argocd: "Argo CD",
+  imageupdater: "ImageUpdater",
 };
 
 export default function GitOpsCreateWizardPage() {
@@ -38,7 +40,11 @@ export default function GitOpsCreateWizardPage() {
         ? "/gitops/applicationsets"
         : kind === "appproject"
           ? "/gitops/appprojects"
-          : "/gitops/applications";
+          : kind === "argocd"
+            ? "/gitops/argocd"
+            : kind === "imageupdater"
+              ? "/gitops/imageupdaters"
+              : "/gitops/applications";
 
   return (
     <div className="ocs-app-page-outer h-full min-h-0 overflow-y-auto">

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { type ReactNode, useState } from "react";
 import { Link } from "react-router";
 import {
   Button,
@@ -17,6 +17,13 @@ import ExclamationCircleIcon from "@patternfly/react-icons/dist/esm/icons/exclam
 import SyncIcon from "@patternfly/react-icons/dist/esm/icons/sync-icon";
 import type { GitOpsHealth, GitOpsOwner } from "./gitopsData";
 import { gitopsDetailPath } from "./gitopsData";
+import { useToast } from "../../contexts/ToastContext";
+
+export type GitOpsActionItem = {
+  id: string;
+  label: string;
+  isDanger?: boolean;
+};
 
 const KIND_ABBREV: Record<string, string> = {
   Application: "A",
@@ -74,6 +81,14 @@ export function ResourceName({
         <span>{name}</span>
       )}
     </Flex>
+  );
+}
+
+export function GitOpsLink({ to, children }: { to: string; children: ReactNode }) {
+  return (
+    <Link to={to} className="pf-v6-c-button pf-m-link pf-m-inline" onClick={(e) => e.stopPropagation()}>
+      {children}
+    </Link>
   );
 }
 
@@ -146,12 +161,20 @@ export function GitOpsEditDeleteMenu({
   kind,
   name,
   variant = "plain",
+  extraItems = [],
 }: {
   kind: string;
   name: string;
   variant?: "plain" | "secondary";
+  extraItems?: GitOpsActionItem[];
 }) {
   const [open, setOpen] = useState(false);
+  const { pushToast } = useToast();
+  const items: GitOpsActionItem[] = [
+    ...extraItems,
+    { id: "edit", label: `Edit ${kind}` },
+    { id: "delete", label: `Delete ${kind}`, isDanger: true },
+  ];
   return (
     <Dropdown
       isOpen={open}
@@ -174,12 +197,22 @@ export function GitOpsEditDeleteMenu({
       )}
     >
       <DropdownList>
-        <DropdownItem itemId="edit" onClick={(e) => e.stopPropagation()}>
-          Edit
-        </DropdownItem>
-        <DropdownItem itemId="delete" isDanger onClick={(e) => e.stopPropagation()}>
-          Delete
-        </DropdownItem>
+        {items.map((item) => (
+          <DropdownItem
+            key={item.id}
+            itemId={item.id}
+            isDanger={item.isDanger}
+            onClick={(e) => {
+              e.stopPropagation();
+              pushToast({
+                variant: item.isDanger ? "danger" : "success",
+                title: `${item.label}: ${name}`,
+              });
+            }}
+          >
+            {item.label}
+          </DropdownItem>
+        ))}
       </DropdownList>
     </Dropdown>
   );

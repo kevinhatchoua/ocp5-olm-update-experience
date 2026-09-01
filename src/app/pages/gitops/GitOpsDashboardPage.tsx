@@ -1,54 +1,119 @@
-import { useEffect, useState } from "react";
-import { Link } from "react-router";
+import { type ReactNode } from "react";
+import { Link, useNavigate } from "react-router";
 import {
   Card,
   CardBody,
   CardTitle,
   Content,
   Flex,
-  FormGroup,
   Gallery,
   GalleryItem,
+  Grid,
+  GridItem,
   Label,
-  Progress,
   Title,
 } from "@patternfly/react-core";
 import { Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
+import CheckCircleIcon from "@patternfly/react-icons/dist/esm/icons/check-circle-icon";
+import {
+  Line,
+  LineChart,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from "recharts";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import FavoriteButton from "../../components/FavoriteButton";
 import { OcsPrototypeListTable, PlainTableHeader } from "../../components/dataView/OcsPrototypeListTable";
-import { useToast } from "../../contexts/ToastContext";
-import { GITOPS_DASHBOARD_METRICS, gitopsDetailPath } from "./gitopsData";
+import {
+  ARGO_INSTANCES,
+  GITOPS_ALL_INSTANCES,
+  GITOPS_APPLICATION_SETS,
+  GITOPS_ROLLOUTS,
+  applicationSetsForInstance,
+  applicationsForInstance,
+  appProjectsForInstance,
+  dashboardMetricsForInstance,
+  gitopsDetailPath,
+  recentOperationsForInstance,
+} from "./gitopsData";
 import GitOpsInstancePicker, { useGitOpsInstance } from "./GitOpsInstancePicker";
-import { ResourceName } from "./gitopsShared";
+import { HealthStatus, ResourceName } from "./gitopsShared";
 
-function sparklineText(values: number[]) {
-  return values.map((v) => `${v}%`).join(" · ");
+function Donut({
+  percent,
+  label,
+  countLabel,
+}: {
+  percent: number;
+  label: string;
+  countLabel: string;
+}) {
+  const r = 36;
+  const c = 2 * Math.PI * r;
+  const offset = c - (Math.min(100, Math.max(0, percent)) / 100) * c;
+  return (
+    <Flex direction={{ default: "column" }} alignItems={{ default: "alignItemsCenter" }} gap={{ default: "gapSm" }}>
+      <svg width="110" height="110" viewBox="0 0 110 110" aria-hidden>
+        <circle cx="55" cy="55" r={r} fill="none" stroke="var(--pf-t--global--border--color--default)" strokeWidth="10" />
+        <circle
+          cx="55"
+          cy="55"
+          r={r}
+          fill="none"
+          stroke="var(--pf-t--global--color--status--success--default)"
+          strokeWidth="10"
+          strokeDasharray={c}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          transform="rotate(-90 55 55)"
+        />
+        <text
+          x="55"
+          y="52"
+          textAnchor="middle"
+          fill="currentColor"
+          fontSize="16"
+          fontWeight={600}
+        >
+          {percent}%
+        </text>
+        <text x="55" y="70" textAnchor="middle" fill="currentColor" fontSize="11">
+          {label}
+        </text>
+      </svg>
+      <Content component="small">{countLabel}</Content>
+    </Flex>
+  );
 }
 
+const RECONCILE_SERIES = [
+  { t: "0h", v: 8 },
+  { t: "4h", v: 14 },
+  { t: "8h", v: 11 },
+  { t: "12h", v: 18 },
+  { t: "16h", v: 16 },
+  { t: "20h", v: 19 },
+  { t: "24h", v: 17 },
+];
+
 export default function GitOpsDashboardPage() {
-  const { pushToast } = useToast();
-  const { instance } = useGitOpsInstance();
-  const [prevInstance, setPrevInstance] = useState(instance);
-  const metrics = GITOPS_DASHBOARD_METRICS;
-
-  useEffect(() => {
-    pushToast({
-      variant: "info",
-      title: "Prototype scopes lists to selected Argo CD instance",
-    });
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- toast once on mount
-  }, []);
-
-  useEffect(() => {
-    if (instance !== prevInstance) {
-      setPrevInstance(instance);
-      pushToast({
-        variant: "info",
-        title: "Prototype scopes lists to selected Argo CD instance",
-      });
-    }
-  }, [instance, prevInstance, pushToast]);
+  const navigate = useNavigate();
+  const { instance, setInstance } = useGitOpsInstance();
+  const apps = applicationsForInstance(instance);
+  const metrics = dashboardMetricsForInstance(instance);
+  const projects = appProjectsForInstance(instance);
+  const appSets = applicationSetsForInstance(instance);
+  const operations = recentOperationsForInstance(instance);
+  const instances =
+    instance === GITOPS_ALL_INSTANCES
+      ? ARGO_INSTANCES
+      : ARGO_INSTANCES.filter((a) => `${a.ns}/${a.name}` === instance);
+  const totalApps = apps.length;
+  const syncedPct = totalApps === 0 ? 100 : metrics.syncSuccessRate;
+  const healthyPct = totalApps === 0 ? 100 : Math.round((metrics.healthy / totalApps) * 100);
+  const connected = instances.filter((i) => i.clusterConnectivity.startsWith("1")).length;
 
   return (
     <div className="ocs-app-page-outer w-full">
@@ -68,135 +133,311 @@ export default function GitOpsDashboardPage() {
           >
             <Flex alignItems={{ default: "alignItemsCenter" }} gap={{ default: "gapSm" }}>
               <Title headingLevel="h1" size="2xl">
-                Overview
+                GitOps Overview
               </Title>
               <FavoriteButton name="GitOps Overview" path="/gitops/overview" />
             </Flex>
-            <FormGroup label="Argo CD instance" fieldId="gitops-instance-picker">
-              <GitOpsInstancePicker />
-            </FormGroup>
+            <GitOpsInstancePicker instance={instance} setInstance={setInstance} />
           </Flex>
 
-          <Content component="p" className="pf-v6-u-color-200">
-            Fleet sync and health for the selected Argo CD instance (GITOPS-10917 / HPUX-2073). Instance
-            picker scopes this overview — manage instances on{" "}
-            <Link to="/gitops/argocd">Argo CD</Link> (HPUX-1941), do not replace that list here.
-          </Content>
+          <Flex
+            alignItems={{ default: "alignItemsCenter" }}
+            justifyContent={{ default: "justifyContentSpaceBetween" }}
+            flexWrap={{ default: "wrap" }}
+            gap={{ default: "gapLg" }}
+          >
+            <Flex gap={{ default: "gapXl" }} flexWrap={{ default: "wrap" }}>
+              <div>
+                <Title headingLevel="h2" size="2xl">
+                  {totalApps}
+                </Title>
+                <Content component="small">Applications</Content>
+              </div>
+              <div>
+                <Title headingLevel="h2" size="xl">
+                  {syncedPct}% Synced
+                </Title>
+                <Content component="small">Sync status</Content>
+              </div>
+              <div>
+                <Title headingLevel="h2" size="xl">
+                  {healthyPct}% Healthy
+                </Title>
+                <Content component="small">Health status</Content>
+              </div>
+              <div>
+                <Title headingLevel="h2" size="xl">
+                  {metrics.needsAttention.length}
+                </Title>
+                <Content component="small">Needs attention</Content>
+              </div>
+            </Flex>
+            <Flex gap={{ default: "gapMd" }} flexWrap={{ default: "wrap" }}>
+              <ButtonLink to="/gitops/applicationsets">{appSets.length} AppSets</ButtonLink>
+              <ButtonLink to="/gitops/appprojects">{projects.length} Projects</ButtonLink>
+              <ButtonLink to="/gitops/argocd">{instances.length} Instances</ButtonLink>
+            </Flex>
+          </Flex>
 
-          <Gallery hasGutter minWidths={{ default: "160px" }}>
-            {[
-              { label: "Synced", value: metrics.synced, color: "green" as const },
-              { label: "Out of sync", value: metrics.outOfSync, color: "orange" as const },
-              { label: "Healthy", value: metrics.healthy, color: "green" as const },
-              { label: "Degraded", value: metrics.degraded, color: "red" as const },
-              { label: "Progressing", value: metrics.progressing, color: "blue" as const },
-            ].map((card) => (
-              <GalleryItem key={card.label}>
-                <Card isCompact>
-                  <CardTitle>{card.label}</CardTitle>
-                  <CardBody>
-                    <Flex alignItems={{ default: "alignItemsCenter" }} gap={{ default: "gapSm" }}>
-                      <Title headingLevel="h2" size="xl">
-                        {card.value}
-                      </Title>
-                      <Label color={card.color} isCompact>
-                        {card.label}
-                      </Label>
-                    </Flex>
-                  </CardBody>
-                </Card>
-              </GalleryItem>
-            ))}
-          </Gallery>
+          <Grid hasGutter>
+            <GridItem md={4}>
+              <Card isFullHeight>
+                <CardTitle>Sync status</CardTitle>
+                <CardBody>
+                  <Donut percent={syncedPct} label="Synced" countLabel={`${metrics.synced}/${totalApps || 0} Synced`} />
+                </CardBody>
+              </Card>
+            </GridItem>
+            <GridItem md={4}>
+              <Card isFullHeight>
+                <CardTitle>Health status</CardTitle>
+                <CardBody>
+                  <Donut
+                    percent={healthyPct}
+                    label="Healthy"
+                    countLabel={`${metrics.healthy}/${totalApps || 0} Healthy`}
+                  />
+                </CardBody>
+              </Card>
+            </GridItem>
+            <GridItem md={4}>
+              <Card isFullHeight>
+                <CardTitle>Operational metrics</CardTitle>
+                <CardBody>
+                  <Flex direction={{ default: "column" }} gap={{ default: "gapSm" }}>
+                    <MetricRow label="Sync success rate" value={`${syncedPct}%`} />
+                    <MetricRow label="Failed syncs (24h)" value={String(metrics.gitFetchFailures)} tone="success" />
+                    <MetricRow
+                      label="Reconciliations (1h)"
+                      value={<Label color="blue" isCompact>{Math.max(8, Math.round(metrics.reconciliations24h / 8))}</Label>}
+                    />
+                    <MetricRow
+                      label="Cluster connectivity"
+                      value={
+                        <Label color={connected === instances.length ? "green" : "orange"} isCompact>
+                          {connected}/{instances.length || 0}
+                        </Label>
+                      }
+                    />
+                    <MetricRow label="Repo queue" value="0" tone="success" />
+                    <MetricRow label="Git fetch failures (24h)" value={String(metrics.gitFetchFailures)} />
+                  </Flex>
+                </CardBody>
+              </Card>
+            </GridItem>
+            <GridItem md={6}>
+              <Card isFullHeight>
+                <CardTitle>Sync activity (24h)</CardTitle>
+                <CardBody>
+                  {metrics.outOfSync === 0 && operations.every((o) => o.phase === "Succeeded") ? (
+                    <Content component="p" className="pf-v6-u-color-200">
+                      No sync operations in the last 24 hours.
+                    </Content>
+                  ) : (
+                    <Content component="p">
+                      {metrics.outOfSync} application{metrics.outOfSync === 1 ? "" : "s"} currently out of sync.
+                    </Content>
+                  )}
+                </CardBody>
+              </Card>
+            </GridItem>
+            <GridItem md={6}>
+              <Card isFullHeight>
+                <CardTitle>Reconciliation activity (24h)</CardTitle>
+                <CardBody>
+                  <div style={{ height: 160 }}>
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={RECONCILE_SERIES}>
+                        <XAxis dataKey="t" tick={{ fontSize: 11 }} />
+                        <YAxis domain={[0, 24]} tick={{ fontSize: 11 }} width={32} />
+                        <Tooltip />
+                        <Line type="monotone" dataKey="v" stroke="var(--pf-t--global--color--brand--default)" dot={false} />
+                      </LineChart>
+                    </ResponsiveContainer>
+                  </div>
+                </CardBody>
+              </Card>
+            </GridItem>
+          </Grid>
 
           <Flex direction={{ default: "column" }} gap={{ default: "gapMd" }}>
             <Title headingLevel="h2" size="lg">
-              Sync & reconciliation
+              Recent operations
             </Title>
-            <Progress
-              value={metrics.syncSuccessRate}
-              title={`Sync success rate (${metrics.syncSuccessRate}%)`}
-              measureLocation="outside"
-            />
-            <Content component="small" className="pf-v6-u-color-200">
-              Sync sparkline (24h): {sparklineText(metrics.sparklineSync)}
-            </Content>
-            <Progress
-              value={Math.min(100, Math.round((metrics.reconciliations24h / 200) * 100))}
-              title={`Reconciliations (24h): ${metrics.reconciliations24h}`}
-              measureLocation="outside"
-            />
-            <Content component="small" className="pf-v6-u-color-200">
-              Reconcile sparkline: {sparklineText(metrics.sparklineReconcile)} · Git fetch failures:{" "}
-              {metrics.gitFetchFailures}
-            </Content>
-          </Flex>
-
-          <Flex direction={{ default: "column" }} gap={{ default: "gapMd" }}>
-            <Title headingLevel="h2" size="lg">
-              Needs attention
-            </Title>
-            <OcsPrototypeListTable ariaLabel="Applications needing attention">
+            <OcsPrototypeListTable ariaLabel="Recent GitOps operations">
               <Thead>
                 <Tr>
                   <Th dataLabel="Name">
                     <PlainTableHeader label="Name" />
                   </Th>
-                  <Th dataLabel="Namespace">
-                    <PlainTableHeader label="Namespace" />
+                  <Th dataLabel="Phase">
+                    <PlainTableHeader label="Phase" />
                   </Th>
-                  <Th dataLabel="Reason">
-                    <PlainTableHeader label="Reason" />
+                  <Th dataLabel="Message">
+                    <PlainTableHeader label="Message" />
                   </Th>
-                  <Th dataLabel="Severity">
-                    <PlainTableHeader label="Severity" />
+                  <Th dataLabel="Finished">
+                    <PlainTableHeader label="Finished" />
                   </Th>
                 </Tr>
               </Thead>
               <Tbody>
-                {metrics.needsAttention.length === 0 ? (
+                {operations.length === 0 ? (
                   <Tr>
-                    <Td colSpan={4}>No applications need attention.</Td>
+                    <Td colSpan={4}>No recent operations.</Td>
                   </Tr>
                 ) : (
-                  metrics.needsAttention.map((row) => {
-                    const href = gitopsDetailPath("applications", row.ns, row.name);
-                    return (
-                      <Tr key={`${row.ns}/${row.name}`}>
-                        <Td dataLabel="Name">
-                          <ResourceName kind="Application" name={row.name} to={href} />
-                        </Td>
-                        <Td dataLabel="Namespace">
-                          <ResourceName kind="Namespace" name={row.ns} />
-                        </Td>
-                        <Td dataLabel="Reason">{row.reason}</Td>
-                        <Td dataLabel="Severity">
-                          <Label
-                            color={
-                              row.severity === "danger"
-                                ? "red"
-                                : row.severity === "warning"
-                                  ? "orange"
-                                  : "blue"
-                            }
-                            isCompact
-                          >
-                            {row.severity}
-                          </Label>
-                        </Td>
-                      </Tr>
-                    );
-                  })
+                  operations.map((op) => (
+                    <Tr
+                      key={`${op.ns}/${op.name}`}
+                      onClick={() => navigate(gitopsDetailPath("applications", op.ns, op.name))}
+                    >
+                      <Td dataLabel="Name">
+                        <ResourceName
+                          kind="Application"
+                          name={op.name}
+                          to={gitopsDetailPath("applications", op.ns, op.name)}
+                        />
+                      </Td>
+                      <Td dataLabel="Phase">
+                        <Label color={op.phase === "Succeeded" ? "green" : op.phase === "Failed" ? "red" : "blue"} isCompact>
+                          {op.phase}
+                        </Label>
+                      </Td>
+                      <Td dataLabel="Message">{op.message}</Td>
+                      <Td dataLabel="Finished">{op.finished}</Td>
+                    </Tr>
+                  ))
                 )}
               </Tbody>
             </OcsPrototypeListTable>
-            <Content component="small" className="pf-v6-u-color-200">
-              Linked names open Application detail stubs. See also{" "}
-              <Link to="/gitops/applications">Applications</Link>.
-            </Content>
           </Flex>
+
+          <Flex direction={{ default: "column" }} gap={{ default: "gapMd" }}>
+            <Title headingLevel="h2" size="lg">
+              Applications ({apps.length})
+            </Title>
+            <OcsPrototypeListTable ariaLabel="Applications on this instance">
+              <Thead>
+                <Tr>
+                  <Th dataLabel="Name">
+                    <PlainTableHeader label="Name" />
+                  </Th>
+                  <Th dataLabel="Project">
+                    <PlainTableHeader label="Project" />
+                  </Th>
+                  <Th dataLabel="Sync status">
+                    <PlainTableHeader label="Sync status" />
+                  </Th>
+                  <Th dataLabel="Health">
+                    <PlainTableHeader label="Health" />
+                  </Th>
+                  <Th dataLabel="Destination">
+                    <PlainTableHeader label="Destination" />
+                  </Th>
+                  <Th dataLabel="Last reconciled">
+                    <PlainTableHeader label="Last reconciled" />
+                  </Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+                {apps.map((app) => {
+                  const href = gitopsDetailPath("applications", app.ns, app.name);
+                  const project = projects.find((p) => p.name === app.project && p.ns === app.ns);
+                  const projectHref = project
+                    ? gitopsDetailPath("appprojects", project.ns, project.name)
+                    : "/gitops/appprojects";
+                  return (
+                    <Tr key={`${app.ns}/${app.name}`} onClick={() => navigate(href)}>
+                      <Td dataLabel="Name">
+                        <ResourceName kind="Application" name={app.name} to={href} />
+                      </Td>
+                      <Td dataLabel="Project">
+                        <ButtonLink to={projectHref}>{app.project}</ButtonLink>
+                      </Td>
+                      <Td dataLabel="Sync status">
+                        <HealthStatus status={app.sync} />
+                      </Td>
+                      <Td dataLabel="Health">
+                        <HealthStatus status={app.health} />
+                      </Td>
+                      <Td dataLabel="Destination">{app.destination}</Td>
+                      <Td dataLabel="Last reconciled">{app.lastReconciled}</Td>
+                    </Tr>
+                  );
+                })}
+              </Tbody>
+            </OcsPrototypeListTable>
+          </Flex>
+
+          <Title headingLevel="h2" size="lg">
+            Infrastructure
+          </Title>
+          <Gallery hasGutter minWidths={{ default: "220px" }}>
+            <GalleryItem>
+              <Card isClickable onClick={() => navigate("/gitops/settings")}>
+                <CardTitle>GitOps Operator</CardTitle>
+                <CardBody>
+                  <Label color="green" isCompact>
+                    Available
+                  </Label>
+                  <Content component="p" className="pf-v6-u-mt-sm">
+                    {ARGO_INSTANCES.length} instances registered. Open Settings.
+                  </Content>
+                </CardBody>
+              </Card>
+            </GalleryItem>
+            <GalleryItem>
+              <Card isClickable onClick={() => navigate("/gitops/rollouts")}>
+                <CardTitle>Rollout Managers</CardTitle>
+                <CardBody>
+                  <Content component="p">{GITOPS_ROLLOUTS.length} rollouts across this cluster.</Content>
+                </CardBody>
+              </Card>
+            </GalleryItem>
+            <GalleryItem>
+              <Card isClickable onClick={() => navigate("/gitops/applicationsets")}>
+                <CardTitle>ApplicationSets</CardTitle>
+                <CardBody>
+                  <Content component="p">{GITOPS_APPLICATION_SETS.length} generators managing tenant apps.</Content>
+                </CardBody>
+              </Card>
+            </GalleryItem>
+          </Gallery>
         </Flex>
       </Breadcrumbs>
     </div>
+  );
+}
+
+function ButtonLink({ to, children }: { to: string; children: ReactNode }) {
+  return (
+    <Link to={to} className="pf-v6-c-button pf-m-link pf-m-inline" onClick={(e) => e.stopPropagation()}>
+      {children}
+    </Link>
+  );
+}
+
+function MetricRow({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: ReactNode;
+  tone?: "success";
+}) {
+  return (
+    <Flex justifyContent={{ default: "justifyContentSpaceBetween" }} gap={{ default: "gapMd" }}>
+      <Content component="small">{label}</Content>
+      {typeof value === "string" ? (
+        <Flex alignItems={{ default: "alignItemsCenter" }} gap={{ default: "gapXs" }}>
+          {tone === "success" ? <CheckCircleIcon color="var(--pf-t--global--color--status--success--default)" /> : null}
+          <strong>{value}</strong>
+        </Flex>
+      ) : (
+        value
+      )}
+    </Flex>
   );
 }

@@ -29,7 +29,7 @@ import {
   GITOPS_APP_PROJECTS,
   gitopsDetailPath,
 } from "./gitopsData";
-import { GitOpsEditDeleteMenu, ResourceName } from "./gitopsShared";
+import { GitOpsEditDeleteMenu, GitOpsLink, ResourceName } from "./gitopsShared";
 
 export default function GitOpsAppProjectsPage() {
   return (
@@ -95,7 +95,7 @@ function AppProjectDetailBody({
       <Breadcrumbs
         items={[
           { label: "Home", path: "/" },
-          { label: "GitOps", path: "/gitops/rollouts" },
+          { label: "GitOps", path: "/gitops/overview" },
           { label: "AppProjects", path: "/gitops/appprojects" },
           { label: rec.name },
         ]}
@@ -110,7 +110,15 @@ function AppProjectDetailBody({
             <ResourceName kind="AppProject" name={rec.name} />
             <Flex gap={{ default: "gapSm" }} alignItems={{ default: "alignItemsCenter" }}>
               <FavoriteButton name={rec.name} path={href} />
-              <GitOpsEditDeleteMenu kind="AppProject" name={rec.name} variant="secondary" />
+              <GitOpsEditDeleteMenu
+                kind="AppProject"
+                name={rec.name}
+                variant="secondary"
+                extraItems={[
+                  { id: "edit-labels", label: "Edit labels" },
+                  { id: "edit-annotations", label: "Edit annotations" },
+                ]}
+              />
             </Flex>
           </Flex>
 
@@ -121,8 +129,13 @@ function AppProjectDetailBody({
           >
             <Tab eventKey="details" title={<TabTitleText>Details</TabTitleText>} />
             <Tab eventKey="yaml" title={<TabTitleText>YAML</TabTitleText>} />
-            <Tab eventKey="events" title={<TabTitleText>Events</TabTitleText>} />
             <Tab eventKey="access" title={<TabTitleText>Access Test</TabTitleText>} />
+            <Tab eventKey="configuration" title={<TabTitleText>Configuration</TabTitleText>} />
+            <Tab eventKey="destinations" title={<TabTitleText>Destinations</TabTitleText>} />
+            <Tab eventKey="roles" title={<TabTitleText>Roles</TabTitleText>} />
+            <Tab eventKey="source-repos" title={<TabTitleText>Source Repos</TabTitleText>} />
+            <Tab eventKey="summary" title={<TabTitleText>Summary</TabTitleText>} />
+            <Tab eventKey="sync-windows" title={<TabTitleText>Sync Windows</TabTitleText>} />
           </Tabs>
 
           {activeTab === "details" ? (
@@ -133,7 +146,13 @@ function AppProjectDetailBody({
               </DescriptionListGroup>
               <DescriptionListGroup>
                 <DescriptionListTerm>Namespace</DescriptionListTerm>
-                <DescriptionListDescription>{rec.ns}</DescriptionListDescription>
+                <DescriptionListDescription>
+                  <ResourceName
+                    kind="Namespace"
+                    name={rec.ns}
+                    to={`/administration/namespaces/${encodeURIComponent(rec.ns)}`}
+                  />
+                </DescriptionListDescription>
               </DescriptionListGroup>
               <DescriptionListGroup>
                 <DescriptionListTerm>Description</DescriptionListTerm>
@@ -160,10 +179,66 @@ function AppProjectDetailBody({
             </DescriptionList>
           ) : null}
 
-          {activeTab === "yaml" || activeTab === "events" ? (
+          {activeTab === "yaml" ? (
             <Content component="p" className="pf-v6-u-color-200">
-              {activeTab} view is a prototype stub.
+              YAML view is a prototype stub.
             </Content>
+          ) : null}
+
+          {activeTab === "configuration" ? (
+            <DescriptionList isHorizontal isCompact>
+              <DescriptionListGroup>
+                <DescriptionListTerm>Allow empty</DescriptionListTerm>
+                <DescriptionListDescription>false</DescriptionListDescription>
+              </DescriptionListGroup>
+              <DescriptionListGroup>
+                <DescriptionListTerm>Orphaned resources</DescriptionListTerm>
+                <DescriptionListDescription>Warn</DescriptionListDescription>
+              </DescriptionListGroup>
+              <DescriptionListGroup>
+                <DescriptionListTerm>Cluster resource whitelist</DescriptionListTerm>
+                <DescriptionListDescription>Namespaces, CustomResourceDefinitions</DescriptionListDescription>
+              </DescriptionListGroup>
+            </DescriptionList>
+          ) : null}
+
+          {activeTab === "destinations" ? (
+            <Content component="p">{rec.destinations}</Content>
+          ) : null}
+
+          {activeTab === "roles" ? (
+            <Content component="p">
+              Default project role: <code>admin</code> (get, create, update, delete applications).
+            </Content>
+          ) : null}
+
+          {activeTab === "source-repos" ? (
+            <Content component="p">{rec.sourceRepos}</Content>
+          ) : null}
+
+          {activeTab === "summary" ? (
+            <DescriptionList isHorizontal isCompact>
+              <DescriptionListGroup>
+                <DescriptionListTerm>Applications in namespace</DescriptionListTerm>
+                <DescriptionListDescription>
+                  {appsInNs.length === 0 ? (
+                    "None"
+                  ) : (
+                    <Flex gap={{ default: "gapSm" }} flexWrap={{ default: "wrap" }}>
+                      {appsInNs.map((a) => (
+                        <GitOpsLink key={a.name} to={gitopsDetailPath("applications", a.ns, a.name)}>
+                          {a.name}
+                        </GitOpsLink>
+                      ))}
+                    </Flex>
+                  )}
+                </DescriptionListDescription>
+              </DescriptionListGroup>
+            </DescriptionList>
+          ) : null}
+
+          {activeTab === "sync-windows" ? (
+            <Content component="p">No sync windows configured. Applications may sync at any time.</Content>
           ) : null}
 
           {activeTab === "access" ? (

@@ -16,7 +16,7 @@ import {
 import Breadcrumbs from "../../components/Breadcrumbs";
 import FavoriteButton from "../../components/FavoriteButton";
 import { gitopsDetailPath } from "./gitopsData";
-import { GitOpsEditDeleteMenu, HealthStatus, ResourceName } from "./gitopsShared";
+import { GitOpsEditDeleteMenu, HealthStatus, ResourceName, type GitOpsActionItem } from "./gitopsShared";
 
 type Field = { term: string; value: ReactNode };
 
@@ -31,6 +31,7 @@ export default function GitOpsSimpleDetailPage({
   status,
   fields,
   footnote,
+  extraActions,
 }: {
   kindLabel: string;
   listPath: string;
@@ -42,6 +43,7 @@ export default function GitOpsSimpleDetailPage({
   status?: string;
   fields: Field[];
   footnote?: ReactNode;
+  extraActions?: GitOpsActionItem[];
 }) {
   const [activeTab, setActiveTab] = useState("details");
   const href = gitopsDetailPath(detailKind, ns, title);
@@ -68,7 +70,12 @@ export default function GitOpsSimpleDetailPage({
             </Flex>
             <Flex gap={{ default: "gapSm" }} alignItems={{ default: "alignItemsCenter" }}>
               <FavoriteButton name={title} path={href} />
-              <GitOpsEditDeleteMenu kind={kindLabel} name={title} variant="secondary" />
+              <GitOpsEditDeleteMenu
+                kind={kindLabel}
+                name={title}
+                variant="secondary"
+                extraItems={extraActions}
+              />
             </Flex>
           </Flex>
           <Tabs activeKey={activeTab} onSelect={(_e, key) => setActiveTab(String(key))} aria-label={`${kindLabel} details`}>

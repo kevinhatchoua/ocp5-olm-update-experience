@@ -124,16 +124,16 @@ export const ADMINISTRATION_SUB: SubNavEntry[] = [
 
 /** GitOps surfaces (HPUX-1943 / HPUX-2073 / GITOPS-10917). */
 export const GITOPS_SUB: SubNavEntry[] = [
-  { path: "/gitops/overview", label: "Overview" },
+  { path: "/gitops/overview", label: "Dashboard" },
+  { path: "/gitops/argocd", label: "ArgoCD Instances" },
   { path: "/gitops/applications", label: "Applications" },
   { path: "/gitops/applicationsets", label: "ApplicationSets" },
-  { path: "/gitops/appprojects", label: "AppProjects" },
-  { path: "/gitops/rollouts", label: "Rollouts" },
-  { path: "/gitops/imageupdaters", label: "Image Updater" },
   { path: "/gitops/promotions", label: "Promotion Pipelines" },
-  { path: "/gitops/agents", label: "Connected Agents" },
-  { path: "/gitops/argocd", label: "Argo CD" },
+  { path: "/gitops/rollouts", label: "Rollouts" },
+  { path: "/gitops/appprojects", label: "AppProjects" },
   { path: "/gitops/settings", label: "Settings" },
+  { path: "/gitops/imageupdaters", label: "Image Updater" },
+  { path: "/gitops/agents", label: "Connected Agents" },
 ];
 
 /** Paths that should render {@link ConsoleStubPage} (plus any ad-hoc additions in routes). */

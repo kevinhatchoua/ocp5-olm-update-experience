@@ -71,7 +71,9 @@ export function GitOpsSimpleListPage<T extends { name: string; ns: string }>({
                         ? "imageupdater"
                         : kind === "Promotion"
                           ? "promotion"
-                          : "application";
+                          : kind === "ArgoCD"
+                            ? "argocd"
+                            : "application";
                 navigate(`/gitops/create?kind=${kindParam}`);
               }}
             >
