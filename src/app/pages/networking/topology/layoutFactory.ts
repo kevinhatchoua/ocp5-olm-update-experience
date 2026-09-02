@@ -17,9 +17,9 @@ const MANUAL_LAYOUT = { layoutOnDrag: false, respectManualPositions: true };
 const DAGRE_COMPACT = {
   layoutOnDrag: false,
   ranker: "tight-tree" as const,
-  edgesep: 24,
-  marginx: 32,
-  marginy: 32,
+  edgesep: 40,
+  marginx: 48,
+  marginy: 48,
 };
 
 export const networkTopologyLayoutFactory: LayoutFactory = (
@@ -31,16 +31,17 @@ export const networkTopologyLayoutFactory: LayoutFactory = (
       return new DagreGroupsLayout(graph, {
         ...DAGRE_COMPACT,
         rankdir: "TB",
-        ranksep: 64,
-        nodesep: 48,
+        ranksep: 160,
+        nodesep: 80,
       });
     case "ColaGroups":
       return new ColaGroupsLayout(graph, {
-        ...MANUAL_LAYOUT,
+        layoutOnDrag: false,
+        respectManualPositions: false,
         maxTicks: 400,
-        linkDistance: 72,
-        nodeDistance: 48,
-        groupDistance: 80,
+        linkDistance: 90,
+        nodeDistance: 64,
+        groupDistance: 140,
       });
     case "ClusterPerspective":
       return new ClusterPerspectiveLayout(graph, MANUAL_LAYOUT);
@@ -64,8 +65,8 @@ export const networkTopologyLayoutFactory: LayoutFactory = (
       return new DagreGroupsLayout(graph, {
         ...DAGRE_COMPACT,
         rankdir: "LR",
-        ranksep: 56,
-        nodesep: 52,
+        ranksep: 140,
+        nodesep: 80,
       });
   }
 };

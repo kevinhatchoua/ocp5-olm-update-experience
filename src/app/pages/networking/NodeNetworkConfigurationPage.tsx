@@ -7,7 +7,7 @@ import {
 import { useToast } from "../../contexts/ToastContext";
 import { IoDataViewFiltersWithMidActions } from "../../components/dataView/IoDataViewFiltersWithMidActions";
 import NodeNetworkConfigurationWizard from "./NodeNetworkConfigurationWizard";
-import NodeNetworkConfigurationStage from "./NodeNetworkConfigurationStage";
+import NodeNmStatePanel from "./NodeNmStatePanel";
 import { NetworkingPageShell } from "./networkingShared";
 import { useNodeNetworkConfigurationCreate } from "./useNodeNetworkConfigurationCreate";
 
@@ -90,7 +90,7 @@ export default function NodeNetworkConfigurationPage() {
             isCreating={isCreating}
           />
         ) : (
-          <NodeNetworkConfigurationStage pushToast={pushToast} dismissToast={dismissToast} />
+          <NodeNmStatePanel nameFilter={filters.name} />
         )}
       </NetworkingPageShell>
     </>

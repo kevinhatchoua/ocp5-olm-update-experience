@@ -75,7 +75,7 @@ import { resolveConfigurePath } from "./topologyConfigureNavigate";
 import { useNetworkTopologyModel } from "./useNetworkTopologyModel";
 import { type TopologyPerspective, type TopologyResourceFilter, computeFilterCounts } from "./topologyPerspective";
 import { DEFAULT_TOPOLOGY_LAYOUT, type TopologyLayoutId } from "./topologyLayouts";
-import { packGraphGroupChildren } from "./topologyGroupLayout";
+import { clearGraphEdgeBendpoints } from "./topologyGroupLayout";
 import { focusTopologySelection } from "./topologyFocus";
 import TopologyMinimap from "./TopologyMinimap";
 import { TopologyLightSpeedAction } from "./TopologyLightSpeedAction";
@@ -86,6 +86,10 @@ import {
   resolveTopologyPathHighlight,
   type TopologyPathHighlight,
 } from "../topologyPathHighlight";
+import {
+  resolveTableResourceConnections,
+  resolveTopologyDetailSelection,
+} from "./topologyTableSupport";
 import "./topologyStyles.css";
 
 function flattenPathHighlightIds(highlight: TopologyPathHighlight, modelNodeIds: string[]): Set<string> {
@@ -306,7 +310,7 @@ export default function NetworkTopologyView({
     });
     visualization.addEventListener(GRAPH_LAYOUT_END_EVENT, () => {
       try {
-        packGraphGroupChildren(visualization.getGraph());
+        clearGraphEdgeBendpoints(visualization.getGraph());
       } catch {
         /* graph may not be ready yet */
       }
@@ -349,7 +353,7 @@ export default function NetworkTopologyView({
         graph.setLayout(type);
         fitAfterLayoutRef.current = shouldFit;
         graph.layout();
-        packGraphGroupChildren(graph);
+        clearGraphEdgeBendpoints(graph);
         if (shouldFit) {
           try {
             graph.fit(120);
@@ -428,32 +432,14 @@ export default function NetworkTopologyView({
   const selectedId = selectedIds[0] ?? null;
   const selectedData = useMemo((): TopologyDetailSelection | null => {
     if (!selectedId) return null;
-    const node = model.nodes?.find((n) => n.id === selectedId);
-    if (node?.data) {
-      return {
-        id: selectedId,
-        data: node.data as NetworkTopologyNodeData,
-      };
-    }
-    const edge = model.edges?.find((e) => e.id === selectedId);
-    if (edge?.data && isConnectionEdgeData(edge.data)) {
-      return {
-        id: selectedId,
-        edgeData: edge.data as ConnectionEdgeData,
-        edgeSourceId: typeof edge.source === "string" ? edge.source : undefined,
-        edgeTargetId: typeof edge.target === "string" ? edge.target : undefined,
-      };
-    }
-    // List mode can select workers that are not currently on the graph.
-    const group = groups.find((entry) => entry.id === selectedId);
-    if (group) {
-      return {
-        id: selectedId,
-        data: { nodeKind: "worker-group" as const, group },
-      };
-    }
-    return { id: selectedId, data: undefined };
-  }, [model.nodes, model.edges, selectedId, groups]);
+    return resolveTopologyDetailSelection(selectedId, model, groups, standaloneResources);
+  }, [model, selectedId, groups, standaloneResources]);
+
+  const getTableResourceConnections = useCallback(
+    (groupId: string, resourceId: string) =>
+      resolveTableResourceConnections(groupId, resourceId, groups, standaloneResources, crossEdges),
+    [groups, standaloneResources, crossEdges]
+  );
 
   const handleConfigureResource = useCallback(
     (selection: TopologyDetailSelection) => {
@@ -936,7 +922,7 @@ export default function NetworkTopologyView({
                     onSelectWorkerGroup={(group) => setSelectedIds([group.id])}
                     onSelectResource={(_group, resourceId) => setSelectedIds([resourceId])}
                     onSelectPeer={(peerId) => setSelectedIds([peerId])}
-                    getResourceConnections={() => []}
+                    getResourceConnections={getTableResourceConnections}
                     onResourceLifecycleAction={onResourceLifecycleAction}
                     onNotice={notify}
                     onResourceDeleted={() => clearSelection()}

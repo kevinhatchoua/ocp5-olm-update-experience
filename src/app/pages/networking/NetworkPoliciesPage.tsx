@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { Button, Content, Flex, Tab, Tabs, TabTitleText } from "@patternfly/react-core";
+import { Content, Flex, Tab, Tabs, TabTitleText } from "@patternfly/react-core";
+import PrototypeCreateButton from "../../components/prototype/PrototypeCreateButton";
 import { NetworkingEmptyState, NetworkingPageShell } from "./networkingShared";
 
 export default function NetworkPoliciesPage() {
@@ -10,6 +11,7 @@ export default function NetworkPoliciesPage() {
       title="NetworkPolicies"
       path="/networking/networkpolicies"
       createLabel="Create NetworkPolicy"
+      createTo="/networking/networkpolicies/create"
       extraHeader={
         <Tabs
           activeKey={activeTab}
@@ -40,7 +42,7 @@ export default function NetworkPoliciesPage() {
             <Content component="p" className="pf-v6-u-text-align-center">
               No MultiNetworkPolicy found
             </Content>
-            <Button variant="primary">Create MultiNetworkPolicy</Button>
+            <PrototypeCreateButton>Create MultiNetworkPolicy</PrototypeCreateButton>
           </Flex>
         </div>
       )}

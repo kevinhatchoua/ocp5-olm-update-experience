@@ -134,6 +134,7 @@ const INITIAL_UDN_RECORDS: UdnRecord[] = buildScaleUdnRecords();
 
 function buildScaleUdnRecords(): UdnRecord[] {
   const cudnNames = [
+    "cluster-udn-fuchsia-wombat",
     "cluster-udn-lime-giraffe",
     "cluster-udn-azure-manta",
     "cluster-udn-coral-otter",

@@ -15,6 +15,8 @@ import {
 } from "@patternfly/react-data-view";
 import { Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
 import FavoriteButton from "../../components/FavoriteButton";
+import PrototypeCreateButton from "../../components/prototype/PrototypeCreateButton";
+import PrototypeResourceLink from "../../components/prototype/PrototypeResourceLink";
 import { IoDataViewFiltersWithMidActions } from "../../components/dataView/IoDataViewFiltersWithMidActions";
 import {
   OCS_PROTOTYPE_DATAVIEW_CLASS,
@@ -109,7 +111,7 @@ export default function ResourceQuotasPage() {
             </Title>
             <FavoriteButton name="ResourceQuotas" path="/administration/resource-quotas" />
           </Flex>
-          <Button variant="primary">Create ResourceQuota</Button>
+          <PrototypeCreateButton>Create ResourceQuota</PrototypeCreateButton>
         </Flex>
 
         <Content component="p">
@@ -205,9 +207,11 @@ export default function ResourceQuotasPage() {
                   paginated.map((quota) => (
                     <Tr key={quota.name}>
                       <Td dataLabel="Name">
-                        <Button variant="link" isInline>
-                          {quota.name}
-                        </Button>
+                        <PrototypeResourceLink
+                          listKey="resource-quotas"
+                          name={quota.name}
+                          namespace={quota.namespace}
+                        />
                       </Td>
                       <Td dataLabel="Namespace">
                         <Content component="small">{quota.namespace}</Content>

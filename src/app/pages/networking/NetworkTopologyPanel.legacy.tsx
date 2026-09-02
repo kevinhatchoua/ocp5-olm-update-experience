@@ -1868,6 +1868,9 @@ export default function NetworkTopologyPanel({
   crossEdges = [],
   networkNodeAssignments = {},
   revealedGroupIds = [],
+  variant = "full",
+  nameFilter = "",
+  toolbarActions,
   onStandaloneResourcesChange,
   onCrossEdgesChange,
   onWorkerAssignmentChange,
@@ -1896,6 +1899,11 @@ export default function NetworkTopologyPanel({
   crossEdges?: TopologyCrossEdge[];
   networkNodeAssignments?: NetworkNodeAssignments;
   revealedGroupIds?: string[];
+  /** NMState node network configuration — canvas only, no side panels or logical networks. */
+  variant?: "full" | "nmstate";
+  /** External name filter (hostname / interface) when variant is nmstate. */
+  nameFilter?: string;
+  toolbarActions?: React.ReactNode;
   onStandaloneResourcesChange?: (resources: StandaloneTopologyResource[]) => void;
   onCrossEdgesChange?: (edges: TopologyCrossEdge[] | ((prev: TopologyCrossEdge[]) => TopologyCrossEdge[])) => void;
   onWorkerAssignmentChange?: (logicalId: string, workerId: string, assigned: boolean) => void;
@@ -2096,14 +2104,16 @@ export default function NetworkTopologyPanel({
     [networkNodeAssignments, revealedGroupIds]
   );
 
+  const isNmstate = variant === "nmstate";
+
   const visibleGroups = useMemo(
-    () => groups.filter((group) => assignedIds.has(group.id)),
-    [groups, assignedIds]
+    () => (isNmstate ? groups : groups.filter((group) => assignedIds.has(group.id))),
+    [groups, assignedIds, isNmstate]
   );
 
   const resourceVisible = useCallback(
     (resource: NetResource) => {
-      const q = searchTerm.trim().toLowerCase();
+      const q = (isNmstate ? nameFilter : searchTerm).trim().toLowerCase();
       const matchesSearch =
         !q ||
         resource.label.toLowerCase().includes(q) ||
@@ -2112,7 +2122,7 @@ export default function NetworkTopologyPanel({
       const matchesKind = filterKind === "all" || resource.kind === filterKind;
       return matchesSearch && matchesKind;
     },
-    [searchTerm, filterKind]
+    [isNmstate, nameFilter, searchTerm, filterKind]
   );
 
   const standaloneVisible = useCallback(
@@ -2131,8 +2141,14 @@ export default function NetworkTopologyPanel({
   );
 
   const visibleGroupsFiltered = useMemo(
-    () => visibleGroups.filter((g) => g.resources.some(resourceVisible)),
-    [visibleGroups, resourceVisible]
+    () =>
+      visibleGroups.filter((group) => {
+        const q = isNmstate ? nameFilter.trim().toLowerCase() : "";
+        const hostnameMatch =
+          !q || group.hostname.toLowerCase().includes(q) || group.shortName.toLowerCase().includes(q);
+        return hostnameMatch && group.resources.some(resourceVisible);
+      }),
+    [visibleGroups, resourceVisible, isNmstate, nameFilter]
   );
 
   const visibleStandalones = useMemo(
@@ -2412,6 +2428,12 @@ export default function NetworkTopologyPanel({
     });
     return () => cancelAnimationFrame(frame);
   }, [fitContentToken, fitToContent]);
+
+  useEffect(() => {
+    if (!isNmstate || visibleGroupsFiltered.length === 0) return undefined;
+    const frame = requestAnimationFrame(() => fitToContent());
+    return () => cancelAnimationFrame(frame);
+  }, [isNmstate, fitToContent, visibleGroupsFiltered.length]);
 
   const clientToCanvas = useCallback(
     (clientX: number, clientY: number) => {
@@ -3050,6 +3072,7 @@ export default function NetworkTopologyPanel({
   );
 
   const createPanelContent = useMemo(() => {
+    if (isNmstate) return null;
     if (!activeCreateResource) return undefined;
     return (
       <NetworkTopologyCreatePanel
@@ -3065,6 +3088,7 @@ export default function NetworkTopologyPanel({
   }, [
     activeCreateResource,
     closeCreateDrawer,
+    isNmstate,
     nncWizard,
     onNadCreated,
     onUdnCreated,
@@ -3073,7 +3097,7 @@ export default function NetworkTopologyPanel({
   ]);
 
   const detailPanelContent = useMemo(() => {
-    if (!selection) return undefined;
+    if (isNmstate || !selection) return undefined;
     return (
       <DrawerPanelContent
         isPlain
@@ -3123,6 +3147,7 @@ export default function NetworkTopologyPanel({
     );
   }, [
     selection,
+    isNmstate,
     positions,
     edgesByGroup,
     standaloneEdges,
@@ -3141,7 +3166,7 @@ export default function NetworkTopologyPanel({
   const isDetailDrawerExpanded = Boolean(detailPanelContent);
 
   return (
-    <div className="ocs-net-topo-panel">
+    <div className={`ocs-net-topo-panel${isNmstate ? " ocs-net-topo-panel--nmstate" : ""}`}>
       {actionNotice ? (
         <Alert
           variant={actionNotice.variant}
@@ -3152,6 +3177,15 @@ export default function NetworkTopologyPanel({
           timeout={5000}
         />
       ) : null}
+      {isNmstate ? (
+        toolbarActions ? (
+          <div className="ocs-net-topo-panel__toolbar ocs-net-topo-panel__toolbar--nmstate">
+            <Flex justifyContent={{ default: "justifyContentFlexEnd" }} alignItems={{ default: "alignItemsCenter" }}>
+              {toolbarActions}
+            </Flex>
+          </div>
+        ) : null
+      ) : (
       <div className="ocs-net-topo-panel__toolbar">
         <Flex
           alignItems={{ default: "alignItemsCenter" }}
@@ -3266,9 +3300,10 @@ export default function NetworkTopologyPanel({
           </Flex>
         </Flex>
       </div>
+      )}
 
       <div className="ocs-net-topo-panel__stage">
-        {viewMode === "table" ? (
+        {!isNmstate && viewMode === "table" ? (
           <Drawer isExpanded={isDetailDrawerExpanded} isInline position="end">
             <DrawerContent panelContent={detailPanelContent}>
               <DrawerContentBody className="ocs-net-topo-panel__drawer-body ocs-net-topo-panel__drawer-body--table">
@@ -3612,7 +3647,7 @@ export default function NetworkTopologyPanel({
                       className="ocs-net-topo-resource-stack"
                       style={{ left: pos.x, top: pos.y - underlayOffset }}
                     >
-                      {resource.kind === "bridge" ? (
+                      {resource.kind === "bridge" && !isNmstate ? (
                         <PhysicalUnderlayChain bridgeResourceId={resource.id} highlighted={onPath} />
                       ) : null}
                       <div
@@ -3654,10 +3689,13 @@ export default function NetworkTopologyPanel({
                         <ResourceIcon kind={resource.kind} />
                       </span>
                       <span className="ocs-net-topo-resource__label">{resource.label}</span>
-                      <span className="ocs-net-topo-resource__status-row">
-                        <ResourceStatusIcon status={resource.status} />
-                        <span className="ocs-net-topo-resource__status">{statusLabel}</span>
-                      </span>
+                      {!isNmstate ? (
+                        <span className="ocs-net-topo-resource__status-row">
+                          <ResourceStatusIcon status={resource.status} />
+                          <span className="ocs-net-topo-resource__status">{statusLabel}</span>
+                        </span>
+                      ) : null}
+                      {!isNmstate ? (
                       <button
                         type="button"
                         className="ocs-net-topo-resource__connector"
@@ -3666,6 +3704,7 @@ export default function NetworkTopologyPanel({
                       >
                         <span aria-hidden>›</span>
                       </button>
+                      ) : null}
                     </div>
                     </div>
                   );
@@ -3693,7 +3732,7 @@ export default function NetworkTopologyPanel({
                     onResetLayout={() => resetGroupLayout(group)}
                     onNotice={setActionNotice}
                     onRemoveFromTopology={
-                      onRequestRemoveWorkerGroup
+                      !isNmstate && onRequestRemoveWorkerGroup
                         ? () =>
                             onRequestRemoveWorkerGroup({
                               id: group.id,
@@ -3708,7 +3747,7 @@ export default function NetworkTopologyPanel({
             );
             })}
 
-            {logicalLaneLayout ? (
+            {logicalLaneLayout && !isNmstate ? (
               <div
                 className="ocs-net-topo-logical-lane"
                 style={{
@@ -3817,7 +3856,7 @@ export default function NetworkTopologyPanel({
           )}
 
             </div>
-                {canvasContextMenu && onOpenWorkerNodeModal ? (
+                {canvasContextMenu && onOpenWorkerNodeModal && !isNmstate ? (
                   <CanvasContextMenu
                     x={canvasContextMenu.x}
                     y={canvasContextMenu.y}

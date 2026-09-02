@@ -1,5 +1,6 @@
-import { Button, Flex, Label } from "@patternfly/react-core";
+import { Flex, Label } from "@patternfly/react-core";
 import { Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
+import PrototypeResourceLink from "../../components/prototype/PrototypeResourceLink";
 import { OcsNamedResourceDataView, PlainTableHeader } from "../../components/dataView/OcsPrototypeListTable";
 import { TEMPLATES } from "./virtualizationMockData";
 import { VirtListEmptyPanel, VirtResourceTableShell } from "./virtualizationShared";
@@ -48,9 +49,7 @@ export default function TemplatesPage() {
               {rows.map((row) => (
                 <Tr key={row.name}>
                   <Td dataLabel="Name">
-                    <Button variant="link" isInline>
-                      {row.name}
-                    </Button>
+                    <PrototypeResourceLink listKey="templates" name={row.name} namespace={row.namespace} />
                   </Td>
                   <Td dataLabel="Namespace">
                     <Flex alignItems={{ default: "alignItemsCenter" }} gap={{ default: "gapSm" }}>

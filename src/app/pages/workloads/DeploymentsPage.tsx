@@ -21,6 +21,8 @@ import SyncIcon from "@patternfly/react-icons/dist/esm/icons/sync-icon";
 import { Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import FavoriteButton from "../../components/FavoriteButton";
+import PrototypeCreateButton from "../../components/prototype/PrototypeCreateButton";
+import PrototypeResourceLink from "../../components/prototype/PrototypeResourceLink";
 import { IoDataViewFiltersWithMidActions } from "../../components/dataView/IoDataViewFiltersWithMidActions";
 import {
   OCS_PROTOTYPE_DATAVIEW_CLASS,
@@ -33,6 +35,7 @@ import {
   useTableSort,
   type SortDirection,
 } from "../../components/dataView/OcsPrototypeListTable";
+import { usePrototypeListItems } from "../../lib/prototypeListStore";
 
 interface Deployment {
   name: string;
@@ -89,14 +92,30 @@ function sortDeployments(rows: Deployment[], column: SortColumn, direction: Sort
 }
 
 export default function DeploymentsPage() {
+  const created = usePrototypeListItems("deployments");
+  const allDeployments = useMemo(() => {
+    const createdRows: Deployment[] = created.map((item) => ({
+      name: item.name,
+      namespace: item.namespace,
+      ready: "0/0",
+      upToDate: "0",
+      available: "0",
+      age: "Just now",
+    }));
+    const seed = DEPLOYMENTS.filter(
+      (row) => !createdRows.some((createdRow) => createdRow.name === row.name && createdRow.namespace === row.namespace)
+    );
+    return [...createdRows, ...seed];
+  }, [created]);
+
   const { filters, onSetFilters, clearAllFilters } = useDataViewFilters<DeploymentFilters>({
     filters: { name: "", namespace: "" },
   });
   const { sortColumn, sortDirection, toggleSort } = useTableSort<SortColumn>("name");
 
   const filteredRows = useMemo(
-    () => DEPLOYMENTS.filter((row) => rowMatchesFilters(row, filters)),
-    [filters]
+    () => allDeployments.filter((row) => rowMatchesFilters(row, filters)),
+    [allDeployments, filters]
   );
   const sortedRows = useMemo(
     () => sortDeployments(filteredRows, sortColumn, sortDirection),
@@ -132,7 +151,7 @@ export default function DeploymentsPage() {
               </Title>
               <FavoriteButton name="Deployments" path="/workloads/deployments" />
             </Flex>
-            <Button variant="primary">Create Deployment</Button>
+            <PrototypeCreateButton>Create Deployment</PrototypeCreateButton>
           </Flex>
 
           <div className="ocs-pods-list__panel">
@@ -273,9 +292,11 @@ export default function DeploymentsPage() {
                     paginated.map((deployment) => (
                       <Tr key={`${deployment.namespace}/${deployment.name}`}>
                         <Td dataLabel="Name">
-                          <Button variant="link" isInline>
-                            {deployment.name}
-                          </Button>
+                          <PrototypeResourceLink
+                            listKey="deployments"
+                            name={deployment.name}
+                            namespace={deployment.namespace}
+                          />
                         </Td>
                         <Td dataLabel="Namespace">
                           <Content component="small">{deployment.namespace}</Content>

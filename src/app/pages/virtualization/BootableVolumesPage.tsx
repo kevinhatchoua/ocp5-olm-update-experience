@@ -1,5 +1,4 @@
-import { Button } from "@patternfly/react-core";
-import { Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
+import PrototypeResourceLink from "../../components/prototype/PrototypeResourceLink";
 import { OcsNamedResourceDataView, PlainTableHeader } from "../../components/dataView/OcsPrototypeListTable";
 import { BOOT_VOLUMES } from "./virtualizationMockData";
 import { VirtResourceTableShell } from "./virtualizationShared";
@@ -44,9 +43,11 @@ export default function BootableVolumesPage() {
               {rows.map((row) => (
                 <Tr key={row.name}>
                   <Td dataLabel="Name">
-                    <Button variant="link" isInline>
-                      {row.name}
-                    </Button>
+                    <PrototypeResourceLink
+                      listKey="bootablevolumes"
+                      name={row.name}
+                      namespace={"namespace" in row ? String(row.namespace) : "openshift-virtualization"}
+                    />
                   </Td>
                   <Td dataLabel="Operating system">{row.operatingSystem}</Td>
                   <Td dataLabel="Storage class">{row.storageClass}</Td>

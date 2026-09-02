@@ -15,6 +15,8 @@ import {
 } from "@patternfly/react-data-view";
 import { Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
 import FavoriteButton from "../../components/FavoriteButton";
+import PrototypeCreateButton from "../../components/prototype/PrototypeCreateButton";
+import PrototypeResourceLink from "../../components/prototype/PrototypeResourceLink";
 import { IoDataViewFiltersWithMidActions } from "../../components/dataView/IoDataViewFiltersWithMidActions";
 import {
   OCS_PROTOTYPE_DATAVIEW_CLASS,
@@ -130,7 +132,7 @@ export default function LimitRangesPage() {
             </Title>
             <FavoriteButton name="LimitRanges" path="/administration/limit-ranges" />
           </Flex>
-          <Button variant="primary">Create LimitRange</Button>
+          <PrototypeCreateButton>Create LimitRange</PrototypeCreateButton>
         </Flex>
 
         <Content component="p">
@@ -232,9 +234,11 @@ export default function LimitRangesPage() {
                   paginated.map((limitRange) => (
                     <Tr key={limitRange.name}>
                       <Td dataLabel="Name">
-                        <Button variant="link" isInline>
-                          {limitRange.name}
-                        </Button>
+                        <PrototypeResourceLink
+                          listKey="limit-ranges"
+                          name={limitRange.name}
+                          namespace={limitRange.namespace}
+                        />
                       </Td>
                       <Td dataLabel="Namespace">
                         <Content component="small">{limitRange.namespace}</Content>

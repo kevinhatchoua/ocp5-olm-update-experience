@@ -25,6 +25,7 @@ import SyncIcon from "@patternfly/react-icons/dist/esm/icons/sync-icon";
 import { Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import FavoriteButton from "../../components/FavoriteButton";
+import PrototypeCreateButton from "../../components/prototype/PrototypeCreateButton";
 import { IoDataViewFiltersWithMidActions } from "../../components/dataView/IoDataViewFiltersWithMidActions";
 import {
   OCS_PROTOTYPE_DATAVIEW_CLASS,
@@ -134,7 +135,7 @@ export default function NamespacesPage() {
               </Title>
               <FavoriteButton name="Namespaces" path="/administration/namespaces" />
             </Flex>
-            <Button variant="primary">Create Namespace</Button>
+            <PrototypeCreateButton>Create Namespace</PrototypeCreateButton>
           </Flex>
 
           <div className="ocs-pods-list__panel">

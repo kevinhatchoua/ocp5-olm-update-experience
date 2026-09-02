@@ -527,10 +527,6 @@
   padding-block-end: var(--pf-t--global--spacer--xs);
 }
 
-.ocs-pf-topo-sidepanel__alerts .ocs-pf-topo-sidepanel__status-strip {
-  padding-inline: 0;
-}
-
 .ocs-pf-topo-sidepanel__alert-list {
   margin: 0;
   padding-inline-start: var(--pf-t--global--spacer--lg);
@@ -549,8 +545,7 @@
 }
 
 .ocs-pf-topo-sidepanel__lightspeed-observe,
-.ocs-pf-topo-sidepanel__lightspeed-inline,
-.ocs-pf-topo-sidepanel__lightspeed-quick {
+.ocs-pf-topo-sidepanel__lightspeed-inline {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
@@ -600,14 +595,6 @@
 .ocs-pf-topo-sidepanel__health {
   flex-shrink: 0;
   margin-block-end: 0;
-}
-
-.ocs-pf-topo-sidepanel__status-strip {
-  display: flex;
-  flex-direction: column;
-  gap: var(--pf-t--global--spacer--xs);
-  flex-shrink: 0;
-  padding-inline: var(--pf-t--global--spacer--md);
 }
 
 .ocs-pf-topo-sidepanel__bond-health {
@@ -664,6 +651,25 @@
 .ocs-pf-topo-canvas-wrap .pf-topology__node__label__badge text,
 .ocs-pf-topo-canvas-wrap .pf-topology__group__label .pf-topology__node__label__badge text {
   fill: var(--pf-t--global--text--color--nonstatus--on-blue--default, #151515);
+}
+
+/* Selected warning/danger nodes: on-status text tokens for label contrast. */
+.ocs-pf-topo-canvas-wrap .pf-topology__node.pf-m-selected.pf-m-warning {
+  --pf-topology__node--m-selected--node__label__text--Fill: var(--pf-t--global--text--color--status--on-warning--default);
+  --pf-topology__node--m-selected--node__label__text--m-secondary--Fill: var(--pf-t--global--text--color--status--on-warning--default);
+  --pf-topology__node__action-icon__icon--Color: var(--pf-t--global--icon--color--status--on-warning--default);
+}
+
+.ocs-pf-topo-canvas-wrap .pf-topology__node.pf-m-selected.pf-m-danger {
+  --pf-topology__node--m-selected--node__label__text--Fill: var(--pf-t--global--text--color--status--on-danger--default);
+  --pf-topology__node--m-selected--node__label__text--m-secondary--Fill: var(--pf-t--global--text--color--status--on-danger--default);
+  --pf-topology__node__action-icon__icon--Color: var(--pf-t--global--icon--color--status--on-danger--default);
+}
+
+.ocs-pf-topo-sidepanel__status-value {
+  display: inline-flex;
+  flex-direction: column;
+  gap: var(--pf-t--global--spacer--xs);
 }
 
 .ocs-pf-topo-sidepanel__tab {

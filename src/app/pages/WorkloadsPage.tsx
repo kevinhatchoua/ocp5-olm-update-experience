@@ -1,4 +1,5 @@
 import { useEffect, useMemo } from "react";
+import { Link } from "react-router";
 import {
   Button,
   Content,
@@ -40,6 +41,8 @@ import {
   useTableSort,
   type SortDirection,
 } from "../components/dataView/OcsPrototypeListTable";
+import { prototypeDetailPath, type PrototypeListKey } from "../lib/prototypeListStore";
+import { podDetailPath } from "./workloads/podListData";
 
 interface Workload {
   name: string;
@@ -60,6 +63,22 @@ type WorkloadFilters = {
 };
 
 type SortColumn = "name" | "namespace" | "type" | "status" | "ready" | "restarts" | "age";
+
+const WORKLOAD_TYPE_TO_LIST_KEY: Partial<Record<Workload["type"], PrototypeListKey>> = {
+  Deployment: "deployments",
+  StatefulSet: "statefulsets",
+  DaemonSet: "daemonsets",
+  Job: "jobs",
+  CronJob: "cronjobs",
+};
+
+function workloadDetailPath(workload: Workload): string {
+  if (workload.type === "Pod") {
+    return podDetailPath(workload.namespace, workload.name);
+  }
+  const listKey = WORKLOAD_TYPE_TO_LIST_KEY[workload.type];
+  return listKey ? prototypeDetailPath(listKey, workload.namespace, workload.name) : "/workloads";
+}
 
 const WORKLOADS: Workload[] = [
   { name: "nginx-deployment-7d8c9f6b-4xk2p", namespace: "production", type: "Pod", status: "Running", ready: "1/1", restarts: 0, age: "12d", image: "nginx:1.21" },
@@ -363,7 +382,7 @@ export default function WorkloadsPage() {
                     paginated.map((workload) => (
                       <Tr key={`${workload.namespace}/${workload.name}`}>
                         <Td dataLabel="Name">
-                          <Button variant="link" isInline>
+                          <Button variant="link" isInline component={Link} to={workloadDetailPath(workload)}>
                             {workload.name}
                           </Button>
                         </Td>

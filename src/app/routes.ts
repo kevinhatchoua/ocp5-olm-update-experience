@@ -17,7 +17,10 @@ import TopologyPage from "./pages/workloads/TopologyPage";
 import ServicesPage from "./pages/networking/ServicesPage";
 import RoutesPage from "./pages/networking/RoutesPage";
 import IngressesPage from "./pages/networking/IngressesPage";
-import PhysicalNetworksPage from "./pages/networking/PhysicalNetworksPage";
+import ServiceDetailPage from "./pages/networking/ServiceDetailPage";
+import RouteDetailPage from "./pages/networking/RouteDetailPage";
+import IngressDetailPage from "./pages/networking/IngressDetailPage";
+import NetworkPolicyDetailPage from "./pages/networking/NetworkPolicyDetailPage";
 import NetworkPoliciesPage from "./pages/networking/NetworkPoliciesPage";
 import NodeNetworkConfigurationPolicyPage from "./pages/networking/NodeNetworkConfigurationPolicyPage";
 import NncpDetailPage from "./pages/networking/NncpDetailPage";
@@ -27,6 +30,12 @@ import UserDefinedNetworksPage from "./pages/networking/UserDefinedNetworksPage"
 import UdnDetailPage from "./pages/networking/UdnDetailPage";
 import NodeNetworkConfigurationPage from "./pages/networking/NodeNetworkConfigurationPage";
 import NetworkTopologyPage from "./pages/networking/NetworkTopologyPage";
+import CreateRoutePage from "./pages/networking/CreateRoutePage";
+import CreateServicePage from "./pages/networking/CreateServicePage";
+import CreateIngressPage from "./pages/networking/CreateIngressPage";
+import PrototypeGenericCreatePage from "./pages/PrototypeGenericCreatePage";
+import { createResourceCreatePage } from "./pages/createPageFactory";
+import { createPrototypeResourceDetailPage } from "./pages/createDetailPageFactory";
 import CreateVirtualMachinePage from "./pages/virtualization/CreateVirtualMachinePage";
 import VirtualMachinesPage from "./pages/virtualization/VirtualMachinesPage";
 import VirtualMachineDetailPage from "./pages/virtualization/VirtualMachineDetailPage";
@@ -121,12 +130,23 @@ export const router = createBrowserRouter([
           { path: "ecosystem/helm", Component: HelmPage },
           { path: "workloads", Component: WorkloadsPage },
           { path: "workloads/pods", Component: PodsPage },
+          { path: "workloads/pods/create", Component: createResourceCreatePage("Pod") },
           { path: "workloads/pods/:namespace/:podName", Component: PodDetailPage },
           { path: "workloads/deployments", Component: DeploymentsPage },
+          { path: "workloads/deployments/create", Component: createResourceCreatePage("Deployment") },
+          { path: "workloads/deployments/:namespace/:name", Component: createPrototypeResourceDetailPage("deployments") },
           { path: "workloads/statefulsets", Component: StatefulSetsPage },
+          { path: "workloads/statefulsets/create", Component: createResourceCreatePage("StatefulSet") },
+          { path: "workloads/statefulsets/:namespace/:name", Component: createPrototypeResourceDetailPage("statefulsets") },
           { path: "workloads/daemonsets", Component: DaemonSetsPage },
+          { path: "workloads/daemonsets/create", Component: createResourceCreatePage("DaemonSet") },
+          { path: "workloads/daemonsets/:namespace/:name", Component: createPrototypeResourceDetailPage("daemonsets") },
           { path: "workloads/jobs", Component: JobsPage },
+          { path: "workloads/jobs/create", Component: createResourceCreatePage("Job") },
+          { path: "workloads/jobs/:namespace/:name", Component: createPrototypeResourceDetailPage("jobs") },
           { path: "workloads/cronjobs", Component: CronJobsPage },
+          { path: "workloads/cronjobs/create", Component: createResourceCreatePage("CronJob") },
+          { path: "workloads/cronjobs/:namespace/:name", Component: createPrototypeResourceDetailPage("cronjobs") },
           { path: "workloads/topology", Component: TopologyPage },
           { path: "gitops", loader: () => redirect("/gitops/overview") },
           { path: "gitops/overview", Component: GitOpsDashboardPage },
@@ -148,11 +168,18 @@ export const router = createBrowserRouter([
           { path: "gitops/ns/:namespace/imageupdaters/:name", Component: GitOpsImageUpdaterDetailPage },
           { path: "gitops/ns/:namespace/promotions/:name", Component: GitOpsPromotionDetailPage },
           { path: "networking", Component: ServicesPage },
+          { path: "networking/services/create", Component: CreateServicePage },
+          { path: "networking/services/:namespace/:name", Component: ServiceDetailPage },
           { path: "networking/topology", Component: NetworkTopologyPage },
           { path: "networking/routes", Component: RoutesPage },
+          { path: "networking/routes/create", Component: CreateRoutePage },
+          { path: "networking/routes/:namespace/:name", Component: RouteDetailPage },
           { path: "networking/ingresses", Component: IngressesPage },
-          { path: "networking/physical-networks", Component: PhysicalNetworksPage },
+          { path: "networking/ingresses/create", Component: CreateIngressPage },
+          { path: "networking/ingresses/:namespace/:name", Component: IngressDetailPage },
           { path: "networking/networkpolicies", Component: NetworkPoliciesPage },
+          { path: "networking/networkpolicies/create", Component: createResourceCreatePage("NetworkPolicy") },
+          { path: "networking/networkpolicies/:namespace/:name", Component: NetworkPolicyDetailPage },
           { path: "networking/nodenetworkconfigurationpolicy", Component: NodeNetworkConfigurationPolicyPage },
           {
             path: "networking/nodenetworkconfigurationpolicy/:name",
@@ -171,18 +198,30 @@ export const router = createBrowserRouter([
           { path: "virtualization/virtualmachines/create", Component: CreateVirtualMachinePage },
           { path: "virtualization/virtualmachines/:namespace/:name", Component: VirtualMachineDetailPage },
           { path: "virtualization/templates", Component: TemplatesPage },
+          { path: "virtualization/templates/create", Component: createResourceCreatePage("Template") },
+          { path: "virtualization/templates/:namespace/:name", Component: createPrototypeResourceDetailPage("templates") },
           { path: "virtualization/bootablevolumes", Component: BootableVolumesPage },
+          { path: "virtualization/bootablevolumes/create", Component: createResourceCreatePage("BootableVolume") },
+          { path: "virtualization/bootablevolumes/:namespace/:name", Component: createPrototypeResourceDetailPage("bootablevolumes") },
           { path: "virtualization/instancetypes", Component: InstanceTypesPage },
           { path: "virtualization/virtualmachinenetworks", Component: VirtualMachineNetworksPage },
           { path: "virtualization/migrationpolicies", Component: MigrationPoliciesPage },
+          { path: "virtualization/migrationpolicies/create", Component: createResourceCreatePage("MigrationPolicy") },
+          { path: "virtualization/migrationpolicies/:name", Component: createPrototypeResourceDetailPage("migrationpolicies") },
           { path: "virtualization/checkups", Component: CheckupsPage },
           { path: "virtualization/settings", Component: VirtSettingsPage },
           { path: "storage", Component: StoragePage },
+          { path: "storage/create", Component: createResourceCreatePage("Volume") },
+          { path: "storage/:namespace/:name", Component: createPrototypeResourceDetailPage("storage") },
           { path: "builds", Component: BuildsPage },
+          { path: "builds/create", Component: createResourceCreatePage("Build") },
+          { path: "builds/:namespace/:name", Component: createPrototypeResourceDetailPage("builds") },
           { path: "observe", Component: ObservePage },
           { path: "compute", Component: ComputePage },
           { path: "compute/nodes/:nodeName", Component: NodeDetailPage },
           { path: "user-management", Component: UserManagementPage },
+          { path: "user-management/create", Component: createResourceCreatePage("User") },
+          { path: "user-management/:name", Component: createPrototypeResourceDetailPage("users") },
           { path: "agentic-runs", Component: AgenticRunsPage },
           { path: "agentic-runs/:runId", Component: AgenticRunDetailPage },
           { path: "administration/cluster-update", Component: ClusterUpdatePage },
@@ -198,16 +237,30 @@ export const router = createBrowserRouter([
           { path: "administration/cluster-update/agent-mode", Component: AgentModePage },
           { path: "administration/cluster-settings", Component: ClusterSettingsPage },
           { path: "administration/namespaces", Component: NamespacesPage },
+          { path: "administration/namespaces/create", Component: createResourceCreatePage("Namespace") },
           { path: "administration/namespaces/:name", Component: NamespaceDetailPage },
           { path: "administration/resource-quotas", Component: ResourceQuotasPage },
+          { path: "administration/resource-quotas/create", Component: createResourceCreatePage("ResourceQuota") },
+          { path: "administration/resource-quotas/:namespace/:name", Component: createPrototypeResourceDetailPage("resource-quotas") },
           { path: "administration/limit-ranges", Component: LimitRangesPage },
+          { path: "administration/limit-ranges/create", Component: createResourceCreatePage("LimitRange") },
+          { path: "administration/limit-ranges/:namespace/:name", Component: createPrototypeResourceDetailPage("limit-ranges") },
           { path: "administration/custom-resource-definitions", Component: CustomResourceDefinitionsPage },
+          {
+            path: "administration/custom-resource-definitions/create",
+            Component: createResourceCreatePage("CRD"),
+          },
+          {
+            path: "administration/custom-resource-definitions/:name",
+            Component: createPrototypeResourceDetailPage("crds"),
+          },
           { path: "administration/dynamic-plugins", Component: DynamicPluginsPage },
           { path: "user-preferences", Component: UserPreferencesPage },
           { path: "settings", loader: () => redirect("/administration/cluster-settings") },
           { path: "alerts", Component: AlertsPage },
           { path: "activity/:id", Component: ActivityDetailsPage },
           { path: "inventory", Component: ClusterInventoryPage },
+          { path: "create/:kind", Component: PrototypeGenericCreatePage },
           ...consoleStubRoutes,
         ],
       },

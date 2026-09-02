@@ -19,6 +19,7 @@ import EllipsisVIcon from "@patternfly/react-icons/dist/esm/icons/ellipsis-v-ico
 import ListIcon from "@patternfly/react-icons/dist/esm/icons/list-icon";
 import SyncIcon from "@patternfly/react-icons/dist/esm/icons/sync-icon";
 import { Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
+import PrototypeResourceLink from "../../components/prototype/PrototypeResourceLink";
 import { IoDataViewFiltersWithMidActions } from "../../components/dataView/IoDataViewFiltersWithMidActions";
 import {
   OCS_PROTOTYPE_DATAVIEW_CLASS,
@@ -31,6 +32,7 @@ import {
   useTableSort,
   type SortDirection,
 } from "../../components/dataView/OcsPrototypeListTable";
+import { usePrototypeListItems } from "../../lib/prototypeListStore";
 import { NetworkingPageShell, NetworkingTablePanel } from "./networkingShared";
 
 type ServiceFilters = { name: string };
@@ -39,6 +41,7 @@ type SortColumn = "name" | "labels" | "podSelector" | "location";
 
 interface Service {
   name: string;
+  namespace: string;
   labels: { key: string; value: string }[];
   podSelector: string;
   location: string;
@@ -47,6 +50,7 @@ interface Service {
 const SERVICES: Service[] = [
   {
     name: "kubernetes",
+    namespace: "default",
     labels: [
       { key: "component", value: "apiserver" },
       { key: "provider", value: "kubernetes" },
@@ -56,6 +60,7 @@ const SERVICES: Service[] = [
   },
   {
     name: "openshift",
+    namespace: "default",
     labels: [],
     podSelector: "All pods within default",
     location: "",
@@ -89,14 +94,27 @@ function sortServices(rows: Service[], column: SortColumn, direction: SortDirect
 }
 
 export default function ServicesPage() {
+  const created = usePrototypeListItems("services");
+  const allServices = useMemo(() => {
+    const createdRows: Service[] = created.map((item) => ({
+      name: item.name,
+      namespace: item.namespace,
+      labels: [],
+      podSelector: item.fields.selector || `app=${item.name}`,
+      location: item.fields.port ? `:${item.fields.port}` : "",
+    }));
+    const seed = SERVICES.filter((svc) => !createdRows.some((row) => row.name === svc.name));
+    return [...createdRows, ...seed];
+  }, [created]);
+
   const { filters, onSetFilters, clearAllFilters } = useDataViewFilters<ServiceFilters>({
     filters: { name: "" },
   });
   const { sortColumn, sortDirection, toggleSort } = useTableSort<SortColumn>("name");
 
   const filtered = useMemo(
-    () => SERVICES.filter((s) => rowMatchesFilters(s, filters)),
-    [filters]
+    () => allServices.filter((s) => rowMatchesFilters(s, filters)),
+    [allServices, filters]
   );
   const sorted = useMemo(
     () => sortServices(filtered, sortColumn, sortDirection),
@@ -111,7 +129,7 @@ export default function ServicesPage() {
   const colSpan = 5;
 
   return (
-    <NetworkingPageShell title="Services" path="/networking" createLabel="Create Service">
+    <NetworkingPageShell title="Services" path="/networking" createLabel="Create Service" createTo="/networking/services/create">
       <NetworkingTablePanel>
         <DataView ouiaId="services-data-view" className={OCS_PROTOTYPE_DATAVIEW_CLASS}>
           <DataViewToolbar
@@ -223,15 +241,13 @@ export default function ServicesPage() {
                 </Tr>
               ) : (
                 paginated.map((svc) => (
-                  <Tr key={svc.name}>
+                  <Tr key={`${svc.namespace}/${svc.name}`}>
                     <Td dataLabel="Name">
                       <Flex alignItems={{ default: "alignItemsCenter" }} gap={{ default: "gapSm" }}>
                         <Label color="green" isCompact className="ocs-resource-label">
                           S
                         </Label>
-                        <Button variant="link" isInline>
-                          {svc.name}
-                        </Button>
+                        <PrototypeResourceLink listKey="services" name={svc.name} namespace={svc.namespace} />
                       </Flex>
                     </Td>
                     <Td dataLabel="Labels">

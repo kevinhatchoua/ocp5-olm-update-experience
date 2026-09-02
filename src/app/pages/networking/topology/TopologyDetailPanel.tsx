@@ -27,6 +27,7 @@ import {
   TabTitleText,
   Tabs,
   Title,
+  Tooltip,
 } from "@patternfly/react-core";
 import ExternalLinkAltIcon from "@patternfly/react-icons/dist/esm/icons/external-link-alt-icon";
 import PlusCircleIcon from "@patternfly/react-icons/dist/esm/icons/plus-circle-icon";
@@ -81,6 +82,31 @@ import {
 } from "./topologyTroubleshoot";
 
 const NNCP_LIST_PATH = "/networking/nodenetworkconfigurationpolicy";
+
+function configurationPolicyLinkLabel(policyName?: string): string {
+  return policyName ? `Review policy: ${policyName}` : "Review configuration policy";
+}
+
+function ResourceStatusField({
+  status,
+  connectivity,
+}: {
+  status: ResourceInstallStatus;
+  connectivity: ConnectivitySummary;
+}) {
+  return (
+    <Tooltip content={connectivity.reason}>
+      <span className="ocs-pf-topo-sidepanel__status-value">
+        <Label isCompact color={connectivity.color}>
+          {RESOURCE_INSTALL_STATUS_LABELS[status]}
+        </Label>
+        <Content component="small" className="ocs-pf-topo-sidepanel__muted pf-v6-u-display-block">
+          {connectivity.label}
+        </Content>
+      </span>
+    </Tooltip>
+  );
+}
 const NAMESPACES_PATH = "/administration/namespaces";
 
 const EDGE_LINK_TYPE_LABEL: Record<ConnectionEdgeData["linkType"], string> = {
@@ -297,16 +323,53 @@ function QuickActions({
   );
 }
 
-function StatusSummaryStrip({ connectivity }: { connectivity: ConnectivitySummary }) {
+function StatusHealthBanner({
+  status,
+  label,
+  policyPath,
+  policyName,
+  troubleshootContextKey,
+}: {
+  status: ResourceInstallStatus;
+  label: string;
+  policyPath?: string;
+  policyName?: string;
+  troubleshootContextKey?: string;
+}) {
+  if (status === "configured") return null;
+  const isFailed = status === "failed";
   return (
-    <div className="ocs-pf-topo-sidepanel__status-strip" aria-label="Resource health summary">
-      <Label isCompact color={connectivity.color}>
-        {connectivity.label}
-      </Label>
-      <Content component="small" className="ocs-pf-topo-sidepanel__muted">
-        {connectivity.reason}
-      </Content>
-    </div>
+    <Alert
+      isInline
+      variant={isFailed ? "danger" : "warning"}
+      title={isFailed ? "Configuration failed" : "Configuration pending"}
+      className="ocs-pf-topo-sidepanel__health"
+    >
+      {isFailed
+        ? `${label} reports a failed configuration state.`
+        : `${label} is not fully configured yet (${RESOURCE_INSTALL_STATUS_LABELS[status]}).`}
+      <Flex spaceItems={{ default: "spaceItemsSm" }} className="pf-v6-u-mt-sm" flexWrap={{ default: "wrap" }}>
+        {policyPath ? (
+          <FlexItem>
+            <Link to={policyPath} className="pf-v6-c-button pf-m-link pf-m-inline">
+              {configurationPolicyLinkLabel(policyName)}
+            </Link>
+          </FlexItem>
+        ) : null}
+        {troubleshootContextKey ? (
+          <FlexItem>
+            <TopologyLightSpeedAction
+              contextKey={troubleshootContextKey}
+              intent="troubleshoot"
+              variant="link"
+              isInline
+            >
+              Troubleshoot with LightSpeed
+            </TopologyLightSpeedAction>
+          </FlexItem>
+        ) : null}
+      </Flex>
+    </Alert>
   );
 }
 
@@ -342,7 +405,7 @@ function MtuMismatchAlerts({
       {diagnoseContextKey ? (
         <div className="ocs-pf-topo-sidepanel__lightspeed-inline pf-v6-u-mt-sm">
           <TopologyLightSpeedAction contextKey={diagnoseContextKey} intent="troubleshoot" variant="link" isInline>
-            Diagnose MTU with LightSpeed
+            Troubleshoot with LightSpeed
           </TopologyLightSpeedAction>
         </div>
       ) : null}
@@ -383,54 +446,6 @@ function BondHealthPanel({ model }: { model: BondHealthModel }) {
   );
 }
 
-
-function StatusHealthBanner({
-  status,
-  label,
-  showNncpAction,
-  troubleshootContextKey,
-}: {
-  status: ResourceInstallStatus;
-  label: string;
-  showNncpAction?: boolean;
-  troubleshootContextKey?: string;
-}) {
-  if (status === "configured") return null;
-  const isFailed = status === "failed";
-  return (
-    <Alert
-      isInline
-      variant={isFailed ? "danger" : "warning"}
-      title={isFailed ? "Configuration failed" : "Configuration pending"}
-      className="ocs-pf-topo-sidepanel__health"
-    >
-      {isFailed
-        ? `${label} reports a failed configuration state.`
-        : `${label} is not fully configured yet (${RESOURCE_INSTALL_STATUS_LABELS[status]}).`}
-      <Flex spaceItems={{ default: "spaceItemsSm" }} className="pf-v6-u-mt-sm" flexWrap={{ default: "wrap" }}>
-        {showNncpAction ? (
-          <FlexItem>
-            <Link to={NNCP_LIST_PATH} className="pf-v6-c-button pf-m-link pf-m-inline">
-              Open NNCP
-            </Link>
-          </FlexItem>
-        ) : null}
-        {isFailed && troubleshootContextKey ? (
-          <FlexItem>
-            <TopologyLightSpeedAction
-              contextKey={troubleshootContextKey}
-              intent="troubleshoot"
-              variant="link"
-              isInline
-            >
-              Explain failure with LightSpeed
-            </TopologyLightSpeedAction>
-          </FlexItem>
-        ) : null}
-      </Flex>
-    </Alert>
-  );
-}
 
 function ConnectedInterfacesList({
   related,
@@ -701,15 +716,9 @@ export default function TopologyDetailPanel({
     observe: React.ReactNode;
     networkPath?: React.ReactNode;
     health?: React.ReactNode;
-    statusStrip?: React.ReactNode;
   }) => (
     <div className="ocs-pf-topo-sidepanel__body">
-      {body.statusStrip || body.health ? (
-        <div className="ocs-pf-topo-sidepanel__alerts">
-          {body.statusStrip}
-          {body.health}
-        </div>
-      ) : null}
+      {body.health ? <div className="ocs-pf-topo-sidepanel__alerts">{body.health}</div> : null}
       <Tabs
         className="ocs-pf-topo-sidepanel__tabs"
         activeKey={activeTab}
@@ -910,7 +919,7 @@ export default function TopologyDetailPanel({
                   <DescriptionListTerm>Policy / NNCP</DescriptionListTerm>
                   <DescriptionListDescription>
                     <Link to={NNCP_LIST_PATH} className="pf-v6-c-button pf-m-link pf-m-inline">
-                      Edit via NNCP / Configure link
+                      Review configuration policy
                     </Link>
                   </DescriptionListDescription>
                 </DescriptionListGroup>
@@ -1033,15 +1042,15 @@ export default function TopologyDetailPanel({
         />
         {renderTabs({
           networkPath: networkPathTab,
-          statusStrip: <StatusSummaryStrip connectivity={connectivity} />,
           health: (
             <>
               {needsHealth ? (
                 <StatusHealthBanner
                   status={data.status}
                   label={data.resource.label}
-                  showNncpAction
-                  troubleshootContextKey={data.status === "failed" ? configFailedContext : undefined}
+                  policyPath={nncpLineage?.nncpPath ?? NNCP_LIST_PATH}
+                  policyName={nncpLineage?.nncpName}
+                  troubleshootContextKey={configFailedContext}
                 />
               ) : null}
               {bondUnhealthy && bondHealth ? (
@@ -1061,7 +1070,7 @@ export default function TopologyDetailPanel({
                         variant="link"
                         isInline
                       >
-                        Diagnose bond with LightSpeed
+                        Troubleshoot with LightSpeed
                       </TopologyLightSpeedAction>
                     </div>
                   ) : null}
@@ -1080,7 +1089,9 @@ export default function TopologyDetailPanel({
                 </DescriptionListGroup>
                 <DescriptionListGroup>
                   <DescriptionListTerm>Status</DescriptionListTerm>
-                  <DescriptionListDescription>{RESOURCE_INSTALL_STATUS_LABELS[data.status]}</DescriptionListDescription>
+                  <DescriptionListDescription>
+                    <ResourceStatusField status={data.status} connectivity={connectivity} />
+                  </DescriptionListDescription>
                 </DescriptionListGroup>
                 <DescriptionListGroup>
                   <DescriptionListTerm>Host role</DescriptionListTerm>
@@ -1147,29 +1158,12 @@ export default function TopologyDetailPanel({
                   </DescriptionListGroup>
                 ) : null}
               </DescriptionList>
-              {(needsHealth || bondUnhealthy || mtuWarnings.length > 0) ? (
-                <div className="ocs-pf-topo-sidepanel__lightspeed-quick pf-v6-u-mb-md">
-                  <TopologyLightSpeedAction
-                    contextKey={
-                      mtuWarnings.length > 0
-                        ? mtuDiagnoseContext
-                        : bondUnhealthy && bondDiagnoseContext
-                          ? bondDiagnoseContext
-                          : configFailedContext
-                    }
-                    intent="troubleshoot"
-                    variant="secondary"
-                  >
-                    Troubleshoot with LightSpeed
-                  </TopologyLightSpeedAction>
-                </div>
-              ) : null}
               <QuickActions
                 items={[
                   ...(needsHealth
                     ? [
                         {
-                          label: "Open NNCP",
+                          label: configurationPolicyLinkLabel(nncpLineage?.nncpName),
                           onClick: () => navigate(nncpLineage?.nncpPath ?? NNCP_LIST_PATH),
                         },
                       ]
@@ -1246,7 +1240,9 @@ export default function TopologyDetailPanel({
                       to={nncpLineage?.nncpPath ?? nncpDetailPath("nncp-br-localnet")}
                       className="pf-v6-c-button pf-m-link pf-m-inline"
                     >
-                      {nncpLineage?.nncpName ?? "Open NNCP"}
+                      {nncpLineage?.nncpName
+                        ? configurationPolicyLinkLabel(nncpLineage.nncpName)
+                        : "Review configuration policy"}
                     </Link>
                   </DescriptionListDescription>
                 </DescriptionListGroup>
@@ -1343,7 +1339,6 @@ export default function TopologyDetailPanel({
         />
         {renderTabs({
           networkPath: networkPathTab,
-          statusStrip: <StatusSummaryStrip connectivity={connectivity} />,
           health: (
             <>
               {needsHealth ? (
@@ -1357,6 +1352,16 @@ export default function TopologyDetailPanel({
                 >
                   {resource.label} is {RESOURCE_INSTALL_STATUS_LABELS[data.status].toLowerCase()}. Assign workers and
                   verify bridges before production use.
+                  <div className="ocs-pf-topo-sidepanel__lightspeed-inline pf-v6-u-mt-sm">
+                    <TopologyLightSpeedAction
+                      contextKey={topologyLightspeedContext("config-failed", resource.label, data.status)}
+                      intent="troubleshoot"
+                      variant="link"
+                      isInline
+                    >
+                      Troubleshoot with LightSpeed
+                    </TopologyLightSpeedAction>
+                  </div>
                 </Alert>
               ) : null}
               <MtuMismatchAlerts warnings={mtuWarnings} diagnoseContextKey={networkMtuContext} />
@@ -1371,7 +1376,9 @@ export default function TopologyDetailPanel({
                 </DescriptionListGroup>
                 <DescriptionListGroup>
                   <DescriptionListTerm>Status</DescriptionListTerm>
-                  <DescriptionListDescription>{RESOURCE_INSTALL_STATUS_LABELS[data.status]}</DescriptionListDescription>
+                  <DescriptionListDescription>
+                    <ResourceStatusField status={data.status} connectivity={connectivity} />
+                  </DescriptionListDescription>
                 </DescriptionListGroup>
                 {data.topologyMode ? (
                   <DescriptionListGroup>
@@ -1562,7 +1569,6 @@ export default function TopologyDetailPanel({
         />
         {renderTabs({
           networkPath: networkPathTab,
-          statusStrip: <StatusSummaryStrip connectivity={connectivity} />,
           health:
             attachment.status !== "Running" ? (
               <Alert
@@ -1572,6 +1578,16 @@ export default function TopologyDetailPanel({
                 className="ocs-pf-topo-sidepanel__health"
               >
                 {attachment.label} is {attachment.status.toLowerCase()} on {attachment.networkLabel}.
+                <div className="ocs-pf-topo-sidepanel__lightspeed-inline pf-v6-u-mt-sm">
+                  <TopologyLightSpeedAction
+                    contextKey={topologyLightspeedContext("config-failed", attachment.label, attachment.status)}
+                    intent="troubleshoot"
+                    variant="link"
+                    isInline
+                  >
+                    Troubleshoot with LightSpeed
+                  </TopologyLightSpeedAction>
+                </div>
               </Alert>
             ) : null,
           details: (
@@ -1608,7 +1624,27 @@ export default function TopologyDetailPanel({
                 </DescriptionListGroup>
                 <DescriptionListGroup>
                   <DescriptionListTerm>Status</DescriptionListTerm>
-                  <DescriptionListDescription>{attachment.status}</DescriptionListDescription>
+                  <DescriptionListDescription>
+                    <Tooltip content={connectivity.reason}>
+                      <span className="ocs-pf-topo-sidepanel__status-value">
+                        <Label
+                          isCompact
+                          color={
+                            attachment.status === "Running"
+                              ? "green"
+                              : attachment.status === "Failed"
+                                ? "red"
+                                : "orange"
+                          }
+                        >
+                          {attachment.status}
+                        </Label>
+                        <Content component="small" className="ocs-pf-topo-sidepanel__muted pf-v6-u-display-block">
+                          {connectivity.label}
+                        </Content>
+                      </span>
+                    </Tooltip>
+                  </DescriptionListDescription>
                 </DescriptionListGroup>
                 <DescriptionListGroup>
                   <DescriptionListTerm>Network</DescriptionListTerm>

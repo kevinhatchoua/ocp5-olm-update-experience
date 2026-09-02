@@ -18,6 +18,7 @@ import FolderIcon from "@patternfly/react-icons/dist/esm/icons/folder-icon";
 import CubesIcon from "@patternfly/react-icons/dist/esm/icons/cubes-icon";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import FavoriteButton from "../../components/FavoriteButton";
+import { prototypeCreatePath } from "../../components/prototype/prototypeCreatePaths";
 import { vmDetailPath } from "../networking/networkingMockData";
 import { getProjectVmCounts, getVmsForProject, VIRT_CRUMB, VIRT_PROJECTS } from "./virtualizationMockData";
 
@@ -36,6 +37,8 @@ export function VirtualizationPageShell({
   createTo?: string;
   createMenu?: ReactNode;
 }) {
+  const createToPath = createLabel ? prototypeCreatePath(createLabel) : undefined;
+
   return (
     <div className="ocs-app-page-outer ocs-virt-page w-full">
       <Breadcrumbs items={[{ label: "Home", path: "/" }, VIRT_CRUMB, { label: title, path }]}>
@@ -55,6 +58,10 @@ export function VirtualizationPageShell({
             {createMenu ??
               (createLabel && createTo ? (
                 <Button variant="primary" component={Link} to={createTo}>
+                  {createLabel}
+                </Button>
+              ) : createLabel && createToPath ? (
+                <Button variant="primary" component={Link} to={createToPath}>
                   {createLabel}
                 </Button>
               ) : null)}
@@ -179,11 +186,13 @@ export function VirtualizationEmptyState({
   description,
   actionLabel,
   actionTo,
+  onAction,
 }: {
   title: string;
   description: ReactNode;
   actionLabel: string;
-  actionTo: string;
+  actionTo?: string;
+  onAction?: () => void;
 }) {
   return (
     <div className="ocs-virt-empty">
@@ -201,25 +210,34 @@ export function VirtualizationEmptyState({
         <Content component="p" className="pf-v6-u-text-align-center ocs-networking-empty__desc">
           {description}
         </Content>
-        <Button variant="primary" component={Link} to={actionTo}>
-          {actionLabel}
-        </Button>
+        {onAction ? (
+          <Button variant="primary" onClick={onAction}>
+            {actionLabel}
+          </Button>
+        ) : (
+          <Button variant="primary" component={Link} to={actionTo ?? "#"}>
+            {actionLabel}
+          </Button>
+        )}
       </Flex>
     </div>
   );
 }
 
 export function VirtListEmptyPanel({ resource, createLabel }: { resource: string; createLabel?: string }) {
+  const label = createLabel ?? `Create ${resource}`;
+  const createTo = prototypeCreatePath(label);
+
   return (
     <VirtualizationEmptyState
       title={`No ${resource} found`}
       description={
         <>
-          Click <strong>{createLabel ?? `Create ${resource}`}</strong> to create your first {resource}.
+          Click <strong>{label}</strong> to create your first {resource}.
         </>
       }
-      actionLabel={createLabel ?? `Create ${resource}`}
-      actionTo="#"
+      actionLabel={label}
+      actionTo={createTo}
     />
   );
 }

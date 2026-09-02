@@ -21,6 +21,8 @@ import SyncIcon from "@patternfly/react-icons/dist/esm/icons/sync-icon";
 import { Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import FavoriteButton from "../../components/FavoriteButton";
+import PrototypeCreateButton from "../../components/prototype/PrototypeCreateButton";
+import PrototypeResourceLink from "../../components/prototype/PrototypeResourceLink";
 import { IoDataViewFiltersWithMidActions } from "../../components/dataView/IoDataViewFiltersWithMidActions";
 import {
   OCS_PROTOTYPE_DATAVIEW_CLASS,
@@ -150,7 +152,7 @@ export default function DaemonSetsPage() {
               </Title>
               <FavoriteButton name="DaemonSets" path="/workloads/daemonsets" />
             </Flex>
-            <Button variant="primary">Create DaemonSet</Button>
+            <PrototypeCreateButton>Create DaemonSet</PrototypeCreateButton>
           </Flex>
 
           <div className="ocs-pods-list__panel">
@@ -261,9 +263,7 @@ export default function DaemonSetsPage() {
                     paginated.map((ds) => (
                       <Tr key={`${ds.namespace}/${ds.name}`}>
                         <Td dataLabel="Name">
-                          <Button variant="link" isInline>
-                            {ds.name}
-                          </Button>
+                          <PrototypeResourceLink listKey="daemonsets" name={ds.name} namespace={ds.namespace} />
                         </Td>
                         <Td dataLabel="Namespace">
                           <Content component="small">{ds.namespace}</Content>

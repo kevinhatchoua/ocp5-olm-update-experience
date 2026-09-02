@@ -21,6 +21,8 @@ import SyncIcon from "@patternfly/react-icons/dist/esm/icons/sync-icon";
 import { Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import FavoriteButton from "../../components/FavoriteButton";
+import PrototypeCreateButton from "../../components/prototype/PrototypeCreateButton";
+import PrototypeResourceLink from "../../components/prototype/PrototypeResourceLink";
 import { IoDataViewFiltersWithMidActions } from "../../components/dataView/IoDataViewFiltersWithMidActions";
 import {
   OCS_PROTOTYPE_DATAVIEW_CLASS,
@@ -131,7 +133,7 @@ export default function StatefulSetsPage() {
               </Title>
               <FavoriteButton name="StatefulSets" path="/workloads/statefulsets" />
             </Flex>
-            <Button variant="primary">Create StatefulSet</Button>
+            <PrototypeCreateButton>Create StatefulSet</PrototypeCreateButton>
           </Flex>
 
           <div className="ocs-pods-list__panel">
@@ -263,9 +265,7 @@ export default function StatefulSetsPage() {
                     paginated.map((ss) => (
                       <Tr key={`${ss.namespace}/${ss.name}`}>
                         <Td dataLabel="Name">
-                          <Button variant="link" isInline>
-                            {ss.name}
-                          </Button>
+                          <PrototypeResourceLink listKey="statefulsets" name={ss.name} namespace={ss.namespace} />
                         </Td>
                         <Td dataLabel="Namespace">
                           <Content component="small">{ss.namespace}</Content>

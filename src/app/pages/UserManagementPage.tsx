@@ -23,6 +23,7 @@ import SyncIcon from "@patternfly/react-icons/dist/esm/icons/sync-icon";
 import { Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
 import Breadcrumbs from "../components/Breadcrumbs";
 import FavoriteButton from "../components/FavoriteButton";
+import PrototypeCreateButton from "../components/prototype/PrototypeCreateButton";
 import ImpersonateUserModal from "../components/ImpersonateUserModal";
 import { IoDataViewFiltersWithMidActions } from "../components/dataView/IoDataViewFiltersWithMidActions";
 import { usePermissions } from "../contexts/PermissionsContext";
@@ -165,7 +166,7 @@ export default function UserManagementPage() {
               </Title>
               <FavoriteButton name="User Management" path="/user-management" />
             </Flex>
-            <Button variant="primary">Create User</Button>
+            <PrototypeCreateButton>Create User</PrototypeCreateButton>
           </Flex>
 
           {impersonatedUser ? (

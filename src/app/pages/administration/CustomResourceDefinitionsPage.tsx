@@ -22,6 +22,8 @@ import SyncIcon from "@patternfly/react-icons/dist/esm/icons/sync-icon";
 import { Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import FavoriteButton from "../../components/FavoriteButton";
+import PrototypeCreateButton from "../../components/prototype/PrototypeCreateButton";
+import PrototypeResourceLink from "../../components/prototype/PrototypeResourceLink";
 import { IoDataViewFiltersWithMidActions } from "../../components/dataView/IoDataViewFiltersWithMidActions";
 import {
   OCS_PROTOTYPE_DATAVIEW_CLASS,
@@ -120,7 +122,7 @@ export default function CustomResourceDefinitionsPage() {
               </Title>
               <FavoriteButton name="CustomResourceDefinitions" path="/administration/custom-resource-definitions" />
             </Flex>
-            <Button variant="primary">Create CRD</Button>
+            <PrototypeCreateButton>Create CRD</PrototypeCreateButton>
           </Flex>
 
           <Content component="p">
@@ -220,9 +222,7 @@ export default function CustomResourceDefinitionsPage() {
                     paginated.map((crd) => (
                       <Tr key={crd.name}>
                         <Td dataLabel="Name">
-                          <Button variant="link" isInline>
-                            {crd.name}
-                          </Button>
+                          <PrototypeResourceLink listKey="crds" name={crd.name} namespace="" />
                         </Td>
                         <Td dataLabel="Group">
                           <Content component="small">{crd.group}</Content>

@@ -15,8 +15,21 @@ export type LayoutLeaf = {
   x: number;
   y: number;
   update: () => void;
+  setFixed?: (fixed: boolean) => void;
+  setPosition?: (x: number, y: number) => void;
   element?: { isPositioned(): boolean };
 };
+
+export function applyLeafPosition(node: LayoutLeaf, x: number, y: number) {
+  node.setFixed?.(false);
+  node.x = x;
+  node.y = y;
+  if (node.setPosition) {
+    node.setPosition(x, y);
+    return;
+  }
+  node.update();
+}
 
 function resourceSuffixFromNodeId(nodeId: string): string {
   const match = nodeId.match(/^worker-\d+-(.+)$/);
@@ -43,9 +56,7 @@ export function layoutGroupChildren(
   if (mode === "lane") {
     leaves.forEach((node, index) => {
       if (shouldKeepManualPosition(node, respectManualPositions)) return;
-      node.x = originX + index * (Math.max(node.width, 64) + LOGICAL_H_SPACING);
-      node.y = originY;
-      node.update();
+      applyLeafPosition(node, originX + index * (Math.max(node.width, 64) + LOGICAL_H_SPACING), originY);
     });
     return;
   }
@@ -68,9 +79,7 @@ export function layoutGroupChildren(
       const slot = preferred && !occupied.has(slotKey(preferred)) ? preferred : nextFreeSlot(index);
       occupied.add(slotKey(slot));
       const pos = resourceGridPos(slot.col, slot.row);
-      node.x = originX + pos.x;
-      node.y = originY + pos.y;
-      node.update();
+      applyLeafPosition(node, originX + pos.x, originY + pos.y);
     });
     return;
   }
@@ -80,9 +89,11 @@ export function layoutGroupChildren(
     if (shouldKeepManualPosition(node, respectManualPositions)) return;
     const col = index % cols;
     const row = Math.floor(index / cols);
-    node.x = originX + col * (Math.max(node.width, 75) + INNER_GAP);
-    node.y = originY + row * (Math.max(node.height, 75) + INNER_GAP);
-    node.update();
+    applyLeafPosition(
+      node,
+      originX + col * (Math.max(node.width, 75) + INNER_GAP),
+      originY + row * (Math.max(node.height, 75) + INNER_GAP)
+    );
   });
 }
 
@@ -125,5 +136,14 @@ export function packGraphGroupChildren(graph: Graph) {
       return leaf;
     });
     layoutGroupChildren(group.getId(), leaves, layoutModeForGroup(group.getId()));
+  });
+}
+
+/** Drop Dagre/Force spline points so edges follow live node anchors, not empty space. */
+export function clearGraphEdgeBendpoints(graph: Graph) {
+  graph.getEdges().forEach((edge) => {
+    if (edge.getBendpoints().length > 0) {
+      edge.setBendpoints([]);
+    }
   });
 }

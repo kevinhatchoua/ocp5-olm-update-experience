@@ -4138,3 +4138,89 @@ html.dark .ocs-net-topo-panel__canvas {
   background: #f5f5f5;
   color: #151515;
 }
+
+/* Networking resource detail — route metrics tab */
+.ocs-net-detail-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--pf-t--global--spacer--lg);
+}
+
+.ocs-net-detail-metrics-card:nth-child(3) {
+  grid-column: 1 / -1;
+}
+
+.ocs-net-detail-metrics-card {
+  border: 1px solid var(--pf-t--global--border--color--default);
+  border-radius: var(--pf-t--global--border--radius--medium);
+  padding: var(--pf-t--global--spacer--md);
+  background: var(--pf-t--global--background--color--secondary--default);
+}
+
+.ocs-net-detail-metrics-card__title {
+  margin: 0 0 var(--pf-t--global--spacer--sm);
+  font-size: var(--pf-t--global--font--size--heading--sm);
+}
+
+.ocs-net-detail-metrics-card__chart {
+  height: 10rem;
+  border-radius: var(--pf-t--global--border--radius--small);
+  background:
+    linear-gradient(
+      to top,
+      color-mix(in srgb, var(--pf-t--global--color--brand--default) 35%, transparent),
+      transparent 70%
+    ),
+    repeating-linear-gradient(
+      to right,
+      color-mix(in srgb, var(--pf-t--global--border--color--default) 55%, transparent) 0,
+      color-mix(in srgb, var(--pf-t--global--border--color--default) 55%, transparent) 1px,
+      transparent 1px,
+      transparent 3rem
+    );
+}
+
+/* Node network configuration — NMState operator graph (distinct from full Topology) */
+.ocs-nnc-stage--graph,
+.ocs-nnc-stage--table {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100dvh - 14rem);
+}
+
+.ocs-nnc-stage--graph .ocs-net-topo-panel--nmstate {
+  flex: 1;
+  min-height: 0;
+  border: none;
+  background: transparent;
+}
+
+.ocs-net-topo-panel--nmstate .ocs-net-topo-panel__toolbar--nmstate {
+  border-bottom: 1px solid var(--pf-t--global--border--color--default);
+  padding-block: var(--pf-t--global--spacer--sm);
+}
+
+.ocs-net-topo-panel--nmstate .ocs-net-topo-panel__stage {
+  flex: 1;
+  min-height: 0;
+}
+
+.ocs-net-topo-panel--nmstate .ocs-net-topo-panel__canvas {
+  min-height: 100%;
+}
+
+.ocs-net-topo-panel--nmstate .ocs-net-topo-resource {
+  cursor: grab;
+}
+
+.ocs-net-topo-panel--nmstate .ocs-net-topo-resource--dragging {
+  cursor: grabbing;
+}
+
+.ocs-net-topo-panel--nmstate .ocs-net-topo-group__hull-path {
+  cursor: grab;
+}
+
+.ocs-net-topo-panel--nmstate .ocs-net-topo-group--dragging .ocs-net-topo-group__hull-path {
+  cursor: grabbing;
+}

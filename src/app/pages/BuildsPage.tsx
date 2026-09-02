@@ -28,6 +28,8 @@ import TimesCircleIcon from "@patternfly/react-icons/dist/esm/icons/times-circle
 import { Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
 import Breadcrumbs from "../components/Breadcrumbs";
 import FavoriteButton from "../components/FavoriteButton";
+import PrototypeCreateButton from "../components/prototype/PrototypeCreateButton";
+import PrototypeResourceLink from "../components/prototype/PrototypeResourceLink";
 import { IoDataViewFiltersWithMidActions } from "../components/dataView/IoDataViewFiltersWithMidActions";
 import {
   OCS_PROTOTYPE_DATAVIEW_CLASS,
@@ -220,9 +222,7 @@ export default function BuildsPage() {
               </Title>
               <FavoriteButton name="Builds" path="/builds" />
             </Flex>
-            <Button variant="primary" icon={<PlayCircleIcon />}>
-              Create Build
-            </Button>
+            <PrototypeCreateButton icon={<PlayCircleIcon />}>Create Build</PrototypeCreateButton>
           </Flex>
 
           <div className="ocs-pods-list__panel">
@@ -328,9 +328,11 @@ export default function BuildsPage() {
                     paginated.map((resource) => (
                       <Tr key={`${resource.namespace}/${resource.name}`}>
                         <Td dataLabel="Name">
-                          <Button variant="link" isInline>
-                            {resource.name}
-                          </Button>
+                          <PrototypeResourceLink
+                            listKey="builds"
+                            name={resource.name}
+                            namespace={resource.namespace}
+                          />
                         </Td>
                         <Td dataLabel="Namespace">
                           <Content component="small">{resource.namespace}</Content>

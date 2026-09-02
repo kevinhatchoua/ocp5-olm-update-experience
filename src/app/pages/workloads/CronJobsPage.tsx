@@ -22,6 +22,8 @@ import SyncIcon from "@patternfly/react-icons/dist/esm/icons/sync-icon";
 import { Tbody, Td, Th, Thead, Tr } from "@patternfly/react-table";
 import Breadcrumbs from "../../components/Breadcrumbs";
 import FavoriteButton from "../../components/FavoriteButton";
+import PrototypeCreateButton from "../../components/prototype/PrototypeCreateButton";
+import PrototypeResourceLink from "../../components/prototype/PrototypeResourceLink";
 import { IoDataViewFiltersWithMidActions } from "../../components/dataView/IoDataViewFiltersWithMidActions";
 import {
   OCS_PROTOTYPE_DATAVIEW_CLASS,
@@ -140,7 +142,7 @@ export default function CronJobsPage() {
               </Title>
               <FavoriteButton name="CronJobs" path="/workloads/cronjobs" />
             </Flex>
-            <Button variant="primary">Create CronJob</Button>
+            <PrototypeCreateButton>Create CronJob</PrototypeCreateButton>
           </Flex>
 
           <div className="ocs-pods-list__panel">
@@ -248,9 +250,7 @@ export default function CronJobsPage() {
                     paginated.map((cj) => (
                       <Tr key={`${cj.namespace}/${cj.name}`}>
                         <Td dataLabel="Name">
-                          <Button variant="link" isInline>
-                            {cj.name}
-                          </Button>
+                          <PrototypeResourceLink listKey="cronjobs" name={cj.name} namespace={cj.namespace} />
                         </Td>
                         <Td dataLabel="Namespace">
                           <Content component="small">{cj.namespace}</Content>
