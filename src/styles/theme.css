@@ -1754,6 +1754,7 @@ html.dark .ols-logo__img--dark {
   right: 0;
   bottom: 0;
   width: 26.25rem;
+  max-width: 100vw;
   z-index: 500;
   pointer-events: auto;
   overscroll-behavior: contain;
@@ -1761,6 +1762,7 @@ html.dark .ols-logo__img--dark {
   flex-direction: column;
   min-height: 0;
   overflow: hidden;
+  height: calc(100vh - var(--ols-dock-top, 0px));
 }
 
 .ols-panel--expanded {
@@ -1801,6 +1803,8 @@ html.dark .ols-logo__img--dark {
 .ols-panel__body {
   flex: 1 1 auto;
   min-height: 0;
+  min-width: 0;
+  overflow-x: hidden;
   overflow-y: auto;
   padding: var(--pf-t--global--spacer--lg);
   overscroll-behavior: contain;
@@ -1843,15 +1847,6 @@ html.dark .ols-logo__img--dark {
   margin-block-end: var(--pf-t--global--spacer--lg);
 }
 
-.ols-ask-toggle.pf-v6-c-menu-toggle {
-  --pf-v6-c-menu-toggle--PaddingBlockStart: 0.25rem;
-  --pf-v6-c-menu-toggle--PaddingBlockEnd: 0.25rem;
-  --pf-v6-c-menu-toggle--PaddingInlineStart: 0.5rem;
-  --pf-v6-c-menu-toggle--PaddingInlineEnd: 0.5rem;
-  border-radius: var(--pf-t--global--border--radius--pill);
-  font-size: var(--pf-t--global--font--size--sm);
-}
-
 .ols-ask-menu .pf-v6-c-menu__item-description {
   white-space: normal;
   max-width: 16rem;
@@ -1861,13 +1856,28 @@ html.dark .ols-logo__img--dark {
   margin-block-end: var(--pf-t--global--spacer--lg);
 }
 
+.ols-msg--user {
+  display: flex;
+  justify-content: flex-end;
+  width: 100%;
+  min-width: 0;
+}
+
 .ols-msg--user p {
   margin: 0;
   padding: var(--pf-t--global--spacer--sm) var(--pf-t--global--spacer--md);
-  border-radius: var(--pf-t--global--border--radius--pill);
+  /* Chat bubble — not pill (pill becomes an oval on long messages) */
+  border-radius: var(--pf-t--global--border--radius--large, 12px);
   background: var(--pf-t--global--color--brand--default);
   color: var(--pf-t--global--text--color--on-brand--default, #fff);
   max-width: 90%;
+  min-width: 0;
+  box-sizing: border-box;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.5;
+  font-size: var(--pf-t--global--font--size--sm);
 }
 
 .ols-msg__meta {
@@ -1879,7 +1889,10 @@ html.dark .ols-logo__img--dark {
 }
 
 .ols-msg__body {
+  max-width: 100%;
+  min-width: 0;
   white-space: pre-wrap;
+  overflow-wrap: anywhere;
   word-break: break-word;
   font-size: var(--pf-t--global--font--size--sm);
   line-height: 1.55;
@@ -1991,6 +2004,7 @@ html.dark .ols-logo__img--dark {
 
 .ols-composer {
   flex-shrink: 0;
+  min-width: 0;
   margin: 0 var(--pf-t--global--spacer--lg);
   padding: var(--pf-t--global--spacer--md);
   border: var(--pf-t--global--border--width--regular) solid var(--pf-t--global--border--color--default);
@@ -2016,28 +2030,43 @@ html.dark .ols-logo__img--dark {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: var(--pf-t--global--spacer--sm);
+  min-width: 0;
 }
 
 .ols-composer__start {
   display: flex;
   align-items: center;
   gap: var(--pf-t--global--spacer--xs);
+  min-width: 0;
+  flex: 1 1 auto;
 }
 
-.ols-ask-toggle {
+.ols-composer__mode {
+  min-width: 0;
+  flex: 0 1 auto;
+}
+
+.ols-ask-toggle.pf-v6-c-menu-toggle {
+  --pf-v6-c-menu-toggle--PaddingBlockStart: 0.25rem;
+  --pf-v6-c-menu-toggle--PaddingBlockEnd: 0.25rem;
+  --pf-v6-c-menu-toggle--PaddingInlineStart: 0.5rem;
+  --pf-v6-c-menu-toggle--PaddingInlineEnd: 0.5rem;
+  border-radius: var(--pf-t--global--border--radius--pill);
+  font-size: var(--pf-t--global--font--size--sm);
+  max-width: 100%;
+  min-width: 0;
+}
+
+.ols-ask-toggle.pf-v6-c-menu-toggle > span {
   display: inline-flex;
   align-items: center;
   gap: 0.35rem;
-  background: transparent;
-  border: 0;
-  color: var(--pf-t--global--text--color--regular);
-  cursor: pointer;
-  font: inherit;
-  font-size: var(--pf-t--global--font--size--sm);
-  padding: 0.25rem 0.4rem;
+  min-width: 0;
 }
 
 .ols-composer__send.pf-v6-c-button {
+  flex-shrink: 0;
   width: 2.25rem;
   height: 2.25rem;
   min-width: 2.25rem;
@@ -2059,6 +2088,7 @@ html.dark .ols-logo__img--dark {
   font-size: var(--pf-t--global--font--size--xs);
   color: var(--pf-t--global--text--color--subtle);
   line-height: 1.45;
+  min-width: 0;
 }
 
 .ols-panel-legal p {
@@ -2066,14 +2096,18 @@ html.dark .ols-logo__img--dark {
 }
 
 .ols-panel-legal__link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.25rem;
   text-decoration: underline;
   text-decoration-style: dashed;
   text-underline-offset: 0.15em;
 }
 
 .ols-panel-legal__ext {
-  margin-inline-start: 0.25rem;
-  vertical-align: -0.1em;
+  flex-shrink: 0;
+  vertical-align: middle;
 }
 
 .ls-composer-notice__title {

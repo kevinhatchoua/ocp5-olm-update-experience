@@ -108,10 +108,20 @@ export default function LightSpeedPanel({ isOpen, onClose, dockTop = null }: Lig
   }, [messages, isTyping]);
 
   useEffect(() => {
+    if (isOpen && chatContext === "pod-debug") {
+      setChatMode("troubleshooting");
+      setShowWelcomeAlert(false);
+      setContext("");
+    }
+  }, [isOpen, chatContext, setContext]);
+
+  useEffect(() => {
     if (isOpen && inputRef.current) {
       window.setTimeout(() => inputRef.current?.focus(), 300);
     }
   }, [isOpen]);
+
+  const hasConversation = messages.length > 0;
 
   useEffect(() => {
     if (!isOpen || !chatContext) return undefined;
@@ -239,7 +249,7 @@ export default function LightSpeedPanel({ isOpen, onClose, dockTop = null }: Lig
   const panel = (
     <div
       className={`ols-panel ${isExpanded ? "ols-panel--expanded" : ""}`}
-      style={{ top: dockTop ?? 0 }}
+      style={{ top: dockTop ?? 0, ["--ols-dock-top" as string]: `${dockTop ?? 0}px` }}
     >
       <div className="ols-panel__inner">
         <header className="ols-panel__header">
@@ -269,13 +279,17 @@ export default function LightSpeedPanel({ isOpen, onClose, dockTop = null }: Lig
         </header>
 
         <div ref={messagesScrollRef} className="ols-panel__body" role="log" aria-live="polite">
-          <div className="ols-welcome">
-            <OpenShiftLightspeedIcon size={72} className="ols-welcome__logo" />
-            <p>{OLS_WELCOME_HEADLINE}</p>
-            <p>{OLS_WELCOME_CAUTION}</p>
-          </div>
-          {showWelcomeAlert ? <LightspeedWelcomeNotice /> : null}
-          <LightspeedHeaderNotice />
+          {!hasConversation ? (
+            <>
+              <div className="ols-welcome">
+                <OpenShiftLightspeedIcon size={72} className="ols-welcome__logo" />
+                <p>{OLS_WELCOME_HEADLINE}</p>
+                <p>{OLS_WELCOME_CAUTION}</p>
+              </div>
+              {showWelcomeAlert ? <LightspeedWelcomeNotice /> : null}
+              <LightspeedHeaderNotice />
+            </>
+          ) : null}
 
           {messages.map((message) =>
             message.type === "user" ? (
@@ -392,7 +406,8 @@ export default function LightSpeedPanel({ isOpen, onClose, dockTop = null }: Lig
           <div className="ols-composer__toolbar">
             <div className="ols-composer__start">
               <Button variant="plain" aria-label="Add attachment" icon={<PlusIcon />} />
-              <Dropdown
+              <div className="ols-composer__mode">
+                <Dropdown
                 isOpen={isModeOpen}
                 onOpenChange={(open) => setIsModeOpen(open)}
                 onSelect={(_event, value) => {
@@ -434,6 +449,7 @@ export default function LightSpeedPanel({ isOpen, onClose, dockTop = null }: Lig
                   })}
                 </DropdownList>
               </Dropdown>
+              </div>
             </div>
             {isTyping ? (
               <Button
