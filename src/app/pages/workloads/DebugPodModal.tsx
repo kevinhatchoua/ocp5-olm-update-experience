@@ -18,11 +18,13 @@ import {
   ModalHeader,
   TextInput,
 } from "@patternfly/react-core";
+import RhUiAiTroubleshootIcon from "@patternfly/react-icons/dist/esm/icons/rh-ui-ai-troubleshoot-icon";
 import type { PodRecord } from "./podListData";
 import { getPodDetail } from "./podDetailData";
 import { PODS } from "./podListData";
 import { CONSOLE_PROJECTS } from "../../components/NamespaceBar";
 import { usePrototypeDemo } from "../../contexts/PrototypeDemoContext";
+import { useChat } from "../../contexts/ChatContext";
 
 export const DEFAULT_DEBUG_IMAGE = "registry.redhat.io/rhel9/support-tools:latest";
 
@@ -97,6 +99,7 @@ function containerLabel(c: ContainerOption) {
 
 export default function DebugPodModal({ target, isOpen, onClose }: DebugPodModalProps) {
   const { permission } = usePrototypeDemo();
+  const { setIsOpen: setLightspeedOpen, setContext, addMessage, clearMessages } = useChat();
   const containers = useMemo(() => (target ? containersFor(target) : []), [target]);
   const namespaceOptions = useMemo(
     () => (target ? debugNamespaceOptions(target.namespace) : []),
@@ -185,6 +188,51 @@ export default function DebugPodModal({ target, isOpen, onClose }: DebugPodModal
   ]);
 
   if (!target) return null;
+
+  const openLightspeedTroubleshoot = () => {
+    const status = target.pod?.status ?? "Unknown";
+    const imageClause = image.trim()
+      ? ` with image "${image}"`
+      : " using the cluster default debug image";
+    const prompt =
+      `Help me troubleshoot pod ${target.namespace}/${target.name} (status: ${status}). ` +
+      `I want to start an ephemeral debug container targeting "${container}"${imageClause}, ` +
+      `command "${command || "/bin/sh"}"` +
+      (asUser ? `, as user ${asUser}` : "") +
+      `. Suggest next steps for CrashLoopBackOff / distroless debugging and a safe oc debug equivalent.`;
+    const ocDebug =
+      `oc debug pod/${target.name} -n ${target.namespace} -c ${container}` +
+      (image.trim() ? ` --image=${image}` : "") +
+      (asUser ? ` --as-user=${asUser}` : "") +
+      (oneContainer ? " --one-container" : "") +
+      (preservePod ? " --preserve-pod" : "") +
+      (command && command !== "/bin/sh" ? ` -- ${command}` : "");
+
+    clearMessages();
+    setContext("pod-debug");
+    addMessage({ type: "user", content: prompt });
+    addMessage({
+      type: "ai",
+      content:
+        `I can help troubleshoot **${target.namespace}/${target.name}**.\n\n` +
+        `**Suggested approach**\n` +
+        `1. Confirm the failing container (\`${container}\`) and recent events/logs.\n` +
+        `2. Start Debug${image.trim() ? ` with \`${image}\`` : " using the cluster default image"} (maps to \`oc debug\` / ephemeral container \`--image\`).\n` +
+        `3. Inspect filesystem, processes, and network from the debug shell without needing a shell in the workload image.\n\n` +
+        `**CLI equivalent**\n` +
+        "```bash\n" +
+        ocDebug +
+        "\n```\n\n" +
+        "Always review AI-generated content prior to use.",
+      suggestions: [
+        "Why is this CrashLoopBackOff?",
+        "What should I check inside the debug container first?",
+        "Compare Debug vs Terminal for this pod",
+      ],
+    });
+    setLightspeedOpen(true);
+    onClose();
+  };
 
   const title =
     phase === "starting"
@@ -422,6 +470,9 @@ export default function DebugPodModal({ target, isOpen, onClose }: DebugPodModal
           <>
             <Button variant="primary" onClick={() => setPhase("starting")}>
               Start debug
+            </Button>
+            <Button variant="secondary" icon={<RhUiAiTroubleshootIcon aria-hidden />} onClick={openLightspeedTroubleshoot}>
+              Troubleshoot with LightSpeed
             </Button>
             <Button variant="link" onClick={onClose}>
               Cancel
