@@ -354,7 +354,10 @@ export default function PodsPage() {
                             </Button>
                           </Flex>
                         </Td>
-                        <Td dataLabel="Status">
+                        <Td
+                          dataLabel="Status"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <PodStatusDisplay
                             pod={pod}
                             onDebug={() => setDebugTarget({ namespace: pod.namespace, name: pod.name, pod })}
@@ -387,7 +390,12 @@ export default function PodsPage() {
                             <Content component="small">{pod.created}</Content>
                           </Flex>
                         </Td>
-                        <Td dataLabel="Actions" isActionCell hasAction>
+                        <Td
+                          dataLabel="Actions"
+                          isActionCell
+                          hasAction
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           <PodActionsMenu
                             pod={pod}
                             onDebug={(p) => setDebugTarget({ namespace: p.namespace, name: p.name, pod: p })}

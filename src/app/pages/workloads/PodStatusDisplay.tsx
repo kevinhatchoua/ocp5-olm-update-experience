@@ -43,40 +43,74 @@ export default function PodStatusDisplay({
     return (
       <Popover
         headerContent="CrashLoopBackOff"
-        bodyContent={
+        bodyContent={(hide) => (
           <div className="ocs-pod-status-popover">
             <p>back-off 5m0s restarting failed container {pod.name}</p>
             <div className="ocs-pod-status-popover__actions">
               {onDebug ? (
-                <Button variant="link" isInline onClick={onDebug}>
+                <Button
+                  variant="link"
+                  isInline
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    hide();
+                    onDebug();
+                  }}
+                >
                   Debug
                 </Button>
               ) : null}
               {onViewLogs ? (
-                <Button variant="link" isInline onClick={onViewLogs}>
+                <Button
+                  variant="link"
+                  isInline
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    hide();
+                    onViewLogs();
+                  }}
+                >
                   View logs
                 </Button>
               ) : null}
               {onViewEvents ? (
-                <Button variant="link" isInline onClick={onViewEvents}>
+                <Button
+                  variant="link"
+                  isInline
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    hide();
+                    onViewEvents();
+                  }}
+                >
                   View events
                 </Button>
               ) : (
-                <Button variant="link" isInline>
+                <Button
+                  variant="link"
+                  isInline
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    hide();
+                  }}
+                >
                   View events
                 </Button>
               )}
             </div>
           </div>
-        }
+        )}
       >
         {trigger}
       </Popover>
     );
   }
 
-  const inner = statusInner(status, asLabel);
-  return inner;
+  return statusInner(status, asLabel);
 }
 
 function statusInner(status: PodStatus, asLabel: boolean) {
