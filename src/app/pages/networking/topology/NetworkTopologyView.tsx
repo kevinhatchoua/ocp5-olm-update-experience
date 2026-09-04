@@ -208,7 +208,7 @@ export default function NetworkTopologyView({
   hideToolbarCreateActions = false,
   activeCreateResource: activeCreateResourceProp,
   onActiveCreateResourceChange,
-  topologyScale = "scale",
+  topologyScale = "compact",
   onTopologyScaleChange,
 }: NetworkTopologyPanelProps) {
   const navigate = useNavigate();

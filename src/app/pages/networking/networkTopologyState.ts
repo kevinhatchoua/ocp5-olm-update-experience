@@ -101,7 +101,7 @@ type TopologySnapshot = {
   provisionedBridgeConfig: NodeNetworkConfigurationInput | null;
 };
 
-let snapshot: TopologySnapshot = buildTopologySnapshot("scale");
+let snapshot: TopologySnapshot = buildTopologySnapshot("compact");
 
 const listeners = new Set<() => void>();
 
